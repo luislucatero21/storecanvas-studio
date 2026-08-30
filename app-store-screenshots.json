@@ -1,0 +1,336 @@
+{
+  "schemaVersion": 3,
+  "appName": "Rutmia",
+  "themeId": "dark-bold",
+  "templateId": "editorial-route",
+  "paletteId": "rutmia-afterglow",
+  "connectedCanvas": true,
+  "locales": [
+    "en-US",
+    "es-MX"
+  ],
+  "locale": "en-US",
+  "device": "iphone",
+  "orientation": "portrait",
+  "slidesByDevice": {
+    "iphone": [
+      {
+        "id": "rutmia-1-route",
+        "layout": "hero",
+        "label": {
+          "en-US": "A ROUTINE THAT MOVES WITH YOU",
+          "es-MX": "UNA RUTINA QUE VA CONTIGO"
+        },
+        "headline": {
+          "en-US": "Own your day.",
+          "es-MX": "Haz tuyo tu día."
+        },
+        "screenshot": "/screenshots/apple/iphone/{locale}/home.png",
+        "assetRef": "capture:home-dashboard",
+        "transforms": {
+          "device": {
+            "x": 153.18224783861672,
+            "y": 1112.7839999999999,
+            "width": 1013.6355043227666,
+            "height": 2064.96,
+            "rotation": 0,
+            "zIndex": 3
+          },
+          "caption": {
+            "x": 105.60000000000001,
+            "y": 258.12,
+            "width": 1108.8,
+            "height": 803.0400000000001,
+            "rotation": 0,
+            "zIndex": 4
+          }
+        }
+      },
+      {
+        "id": "rutmia-2-ai",
+        "layout": "device-bottom",
+        "label": {
+          "en-US": "FROM THOUGHT TO MOMENTUM",
+          "es-MX": "DE LA IDEA AL IMPULSO"
+        },
+        "headline": {
+          "en-US": "Turn thoughts into a plan.",
+          "es-MX": "De tus ideas a un plan."
+        },
+        "screenshot": "/screenshots/apple/iphone/{locale}/ai-proposal.png",
+        "assetRef": "capture:coach-suggestions"
+      },
+      {
+        "id": "rutmia-3-focus",
+        "layout": "device-top",
+        "label": {
+          "en-US": "MAKE ROOM FOR DEEP WORK",
+          "es-MX": "HAZ ESPACIO PARA ENFOCARTE"
+        },
+        "headline": {
+          "en-US": "Protect your focus.",
+          "es-MX": "Protege tu enfoque."
+        },
+        "screenshot": "/screenshots/apple/iphone/{locale}/focus-running.png",
+        "assetRef": "capture:focus-running",
+        "inverted": true
+      },
+      {
+        "id": "rutmia-4-recovery",
+        "layout": "device-bottom",
+        "label": {
+          "en-US": "PROGRESS WITHOUT THE GUILT",
+          "es-MX": "AVANZA SIN CULPA"
+        },
+        "headline": {
+          "en-US": "Missed a day? Keep going.",
+          "es-MX": "¿Fallaste un día? Sigue."
+        },
+        "screenshot": "/screenshots/apple/iphone/{locale}/recovery-paused.png",
+        "assetRef": "capture:recovery-paused"
+      },
+      {
+        "id": "rutmia-5-reflection",
+        "layout": "two-devices",
+        "label": {
+          "en-US": "THE HUMAN SIDE OF PROGRESS",
+          "es-MX": "EL LADO HUMANO DEL AVANCE"
+        },
+        "headline": {
+          "en-US": "Make space to notice.",
+          "es-MX": "Date espacio para notar."
+        },
+        "screenshot": "/screenshots/apple/iphone/{locale}/reflection-insights.png",
+        "screenshotSecondary": "/screenshots/apple/iphone/{locale}/insights.png",
+        "assetRef": "capture:daily-reflection",
+        "assetRefSecondary": "capture:insights"
+      },
+      {
+        "id": "rutmia-6-goals",
+        "layout": "device-bottom",
+        "label": {
+          "en-US": "SMALL STEPS. REAL MOMENTUM.",
+          "es-MX": "PASOS PEQUEÑOS. AVANCE REAL."
+        },
+        "headline": {
+          "en-US": "Make progress feel real.",
+          "es-MX": "Haz real tu avance."
+        },
+        "screenshot": "/screenshots/apple/iphone/{locale}/goals.png",
+        "assetRef": "capture:goals"
+      },
+      {
+        "id": "rutmia-7-insights",
+        "layout": "device-top",
+        "label": {
+          "en-US": "YOUR PATTERNS, MADE VISIBLE",
+          "es-MX": "TUS PATRONES, A LA VISTA"
+        },
+        "headline": {
+          "en-US": "See what is working.",
+          "es-MX": "Descubre qué funciona."
+        },
+        "screenshot": "/screenshots/apple/iphone/{locale}/insights.png",
+        "assetRef": "capture:insights",
+        "inverted": true
+      },
+      {
+        "id": "rutmia-8-routine",
+        "layout": "device-bottom",
+        "label": {
+          "en-US": "ONE HOME FOR YOUR HABITS",
+          "es-MX": "UN HOGAR PARA TUS HÁBITOS"
+        },
+        "headline": {
+          "en-US": "Your whole routine. Together.",
+          "es-MX": "Toda tu rutina. Unida."
+        },
+        "screenshot": "/screenshots/apple/iphone/{locale}/home.png",
+        "assetRef": "capture:home-dashboard"
+      },
+      {
+        "id": "rutmia-9-reminders",
+        "layout": "device-top",
+        "label": {
+          "en-US": "GENTLE BY DEFAULT",
+          "es-MX": "AMABLE POR DISEÑO"
+        },
+        "headline": {
+          "en-US": "Stay gently on track.",
+          "es-MX": "Sigue tu ritmo."
+        },
+        "screenshot": "/screenshots/apple/iphone/{locale}/settings.png",
+        "assetRef": "capture:settings"
+      },
+      {
+        "id": "rutmia-10-closer",
+        "layout": "device-bottom",
+        "label": {
+          "en-US": "NO MONTHLY BILL",
+          "es-MX": "SIN PAGOS MENSUALES"
+        },
+        "headline": {
+          "en-US": "Your whole routine. Yours.",
+          "es-MX": "Tu rutina. Tuya."
+        },
+        "screenshot": "/screenshots/apple/iphone/{locale}/goals.png",
+        "assetRef": "capture:goals"
+      }
+    ],
+    "android": [],
+    "ipad": [],
+    "android-7": [],
+    "android-10": [],
+    "feature-graphic": []
+  },
+  "appIcon": "/app-icon.png",
+  "assets": {
+    "capture:home-dashboard": {
+      "id": "capture:home-dashboard",
+      "type": "screen",
+      "label": "Home dashboard",
+      "platform": "ios",
+      "paths": {
+        "en-US": "/screenshots/apple/iphone/{locale}/home.png"
+      },
+      "source": {
+        "adapter": "xcuitest",
+        "captureId": "home-routine",
+        "updatedAt": "2026-08-30"
+      }
+    },
+    "capture:coach-suggestions": {
+      "id": "capture:coach-suggestions",
+      "type": "screen",
+      "label": "AI coach",
+      "platform": "ios",
+      "paths": {
+        "en-US": "/screenshots/apple/iphone/{locale}/ai-proposal.png"
+      },
+      "source": {
+        "adapter": "xcuitest",
+        "captureId": "coach-suggestions",
+        "updatedAt": "2026-08-30"
+      }
+    },
+    "capture:focus-running": {
+      "id": "capture:focus-running",
+      "type": "screen",
+      "label": "Focus timer",
+      "platform": "ios",
+      "paths": {
+        "en-US": "/screenshots/apple/iphone/{locale}/focus-running.png"
+      },
+      "source": {
+        "adapter": "xcuitest",
+        "captureId": "focus-running",
+        "updatedAt": "2026-08-30"
+      }
+    },
+    "capture:recovery-paused": {
+      "id": "capture:recovery-paused",
+      "type": "screen",
+      "label": "Recovery mode",
+      "platform": "ios",
+      "paths": {
+        "en-US": "/screenshots/apple/iphone/{locale}/recovery-paused.png"
+      },
+      "source": {
+        "adapter": "xcuitest",
+        "captureId": "pause-routine",
+        "updatedAt": "2026-08-30"
+      }
+    },
+    "capture:daily-reflection": {
+      "id": "capture:daily-reflection",
+      "type": "screen",
+      "label": "Daily reflection",
+      "platform": "ios",
+      "paths": {
+        "en-US": "/screenshots/apple/iphone/{locale}/reflection-insights.png"
+      },
+      "source": {
+        "adapter": "xcuitest",
+        "captureId": "new-reflection-insights",
+        "updatedAt": "2026-08-30"
+      }
+    },
+    "capture:insights": {
+      "id": "capture:insights",
+      "type": "screen",
+      "label": "Insights",
+      "platform": "ios",
+      "paths": {
+        "en-US": "/screenshots/apple/iphone/{locale}/insights.png"
+      },
+      "source": {
+        "adapter": "xcuitest",
+        "captureId": "insights",
+        "updatedAt": "2026-08-30"
+      }
+    },
+    "capture:goals": {
+      "id": "capture:goals",
+      "type": "screen",
+      "label": "Goals",
+      "platform": "ios",
+      "paths": {
+        "en-US": "/screenshots/apple/iphone/{locale}/goals.png"
+      },
+      "source": {
+        "adapter": "xcuitest",
+        "captureId": "goals",
+        "updatedAt": "2026-08-30"
+      }
+    },
+    "capture:settings": {
+      "id": "capture:settings",
+      "type": "screen",
+      "label": "Settings",
+      "platform": "ios",
+      "paths": {
+        "en-US": "/screenshots/apple/iphone/{locale}/settings.png"
+      },
+      "source": {
+        "adapter": "xcuitest",
+        "captureId": "settings",
+        "updatedAt": "2026-08-30"
+      }
+    }
+  },
+  "brand": {
+    "colors": {
+      "primary": "#6f7dff",
+      "accent": "#ff9f43",
+      "surface": "#191b27",
+      "surfaceAlt": "#f6f1e9",
+      "ink": "#f7f5ef",
+      "inkAlt": "#1b2030",
+      "muted": "#a7aec3"
+    },
+    "typography": {
+      "display": {
+        "family": "Fraunces",
+        "weight": 700
+      },
+      "body": {
+        "family": "DM Sans",
+        "weight": 500
+      }
+    },
+    "radius": {
+      "card": 28
+    },
+    "effects": {
+      "deviceShadow": "premium-soft"
+    }
+  },
+  "crossScreenMockupsByDevice": {
+    "iphone": [],
+    "ipad": [],
+    "android": [],
+    "android-7": [],
+    "android-10": [],
+    "feature-graphic": []
+  }
+}
