@@ -90,4 +90,62 @@ test.describe("StoreCanvas editor", () => {
       assetRef: "capture:home-dashboard",
     });
   });
+
+  test("opens an AI polish workspace that keeps a personal key out of project storage", async ({ page }) => {
+    await page.goto("/");
+
+    await expect(page.getByRole("button", { name: "AI polish" })).toBeVisible({ timeout: 2_000 });
+    await page.getByRole("button", { name: "AI polish" }).click();
+    await expect(page.getByRole("heading", { name: "AI polish" })).toBeVisible();
+    await expect(page.getByText("never saved in StoreCanvas")).toBeVisible();
+  });
+
+  test("reviews AI copy before applying it without changing Rutmia's capture", async ({ page }) => {
+    await page.route("**/api/ai/improve", async (route) => {
+      const request = route.request().postDataJSON();
+      expect(request).toMatchObject({
+        provider: "openai",
+        appName: "Rutmia",
+        locale: "en-US",
+      });
+      expect(JSON.stringify(request)).not.toContain("/screenshots/");
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          ok: true,
+          proposal: {
+            summary: "Lead with ownership, then let the product prove it.",
+            slides: [
+              {
+                id: "rutmia-1-route",
+                label: "YOUR DAY, YOUR WAY",
+                headline: "Make today yours.",
+                rationale: "It is short, outcome-led and easy to read at thumbnail size.",
+              },
+            ],
+          },
+        }),
+      });
+    });
+    await page.goto("/");
+    await page.getByRole("button", { name: "AI polish" }).click();
+    await page.getByRole("textbox", { name: "Personal API key" }).fill("sk-test-key-for-ui");
+    await page.getByRole("button", { name: "Generate suggestions" }).click();
+    await expect(page.getByText("Make today yours.")).toBeVisible();
+    await page.getByRole("button", { name: "Apply 1 suggestion" }).click();
+
+    await expect(page.getByRole("main").getByText("Make today yours.").first()).toBeVisible();
+    await expect.poll(async () => {
+      const response = await page.request.get("/api/project");
+      const body = await response.json();
+      return body.state.slidesByDevice.iphone[0].headline["en-US"];
+    }).toBe("Make today yours.");
+    const response = await page.request.get("/api/project");
+    const body = await response.json();
+    expect(body.state.slidesByDevice.iphone[0]).toMatchObject({
+      headline: { "en-US": "Make today yours." },
+      screenshot: "/screenshots/apple/iphone/{locale}/home.png",
+      assetRef: "capture:home-dashboard",
+    });
+  });
 });

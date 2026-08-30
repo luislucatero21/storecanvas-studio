@@ -32,8 +32,10 @@ import {
   supportsLandscape,
 } from "@/lib/constants";
 import { detectPlatform } from "@/lib/defaults";
-import type { Device, Orientation } from "@/lib/types";
+import type { AiProposal } from "@/lib/ai";
+import type { Device, Orientation, Slide } from "@/lib/types";
 import type { ValidationResult } from "@/lib/validation";
+import { AiPolish } from "./ai-polish";
 import { CampaignWardrobe } from "./campaign-wardrobe";
 
 type Props = {
@@ -45,6 +47,7 @@ type Props = {
   setLocale: (v: string) => void;
   locales: string[];
   device: Device;
+  slides: Slide[];
   setDevice: (v: Device) => void;
   orientation: Orientation;
   setOrientation: (v: Orientation) => void;
@@ -59,6 +62,7 @@ type Props = {
   paletteId?: string;
   onTemplateChange: (templateId: string) => void;
   onPaletteChange: (paletteId: string) => void;
+  onApplyAiProposal: (proposal: AiProposal) => void;
   validation: ValidationResult;
 };
 
@@ -200,6 +204,18 @@ export function Toolbar(props: Props) {
         disabled={props.busy}
         onTemplateChange={props.onTemplateChange}
         onPaletteChange={props.onPaletteChange}
+      />
+      <AiPolish
+        appName={props.appName}
+        locale={props.locale}
+        device={props.device}
+        slides={props.slides}
+        templateId={props.templateId}
+        paletteId={props.paletteId}
+        disabled={props.busy}
+        onApplyProposal={props.onApplyAiProposal}
+        onApplyTemplate={props.onTemplateChange}
+        onApplyPalette={props.onPaletteChange}
       />
 
       <div className="ml-auto flex shrink-0 items-center gap-2">

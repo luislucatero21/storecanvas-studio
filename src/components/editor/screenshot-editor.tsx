@@ -18,6 +18,7 @@ import { exportPath } from "@/lib/export-naming";
 import { useProject } from "@/lib/storage";
 import { validateProject } from "@/lib/validation";
 import { applyBrandTokens } from "@/lib/theme";
+import { applyAiProposal } from "@/lib/ai";
 import {
   applyCampaignTemplate,
   applyPalette,
@@ -598,6 +599,7 @@ export function ScreenshotEditor() {
         setLocale={(v) => setState((p) => ({ ...p, locale: v }))}
         locales={state.locales}
         device={state.device}
+        slides={currentSlides}
         setDevice={(v) => setState((p) => ({ ...p, device: v }))}
         orientation={state.orientation}
         setOrientation={(v) => setState((p) => ({ ...p, orientation: v }))}
@@ -630,6 +632,12 @@ export function ScreenshotEditor() {
           setState((project) => applyPalette(project, paletteId));
           toast.success(`${palette?.name || "Palette"} applied`, {
             description: "Your campaign colors changed; captures and typography stayed intact.",
+          });
+        }}
+        onApplyAiProposal={(proposal) => {
+          setState((project) => applyAiProposal(project, proposal, project.locale, project.device));
+          toast.success("AI suggestions applied", {
+            description: "Only localized copy changed. Your captures, layout and export settings stayed intact.",
           });
         }}
         validation={validation}

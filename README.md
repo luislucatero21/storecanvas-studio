@@ -14,7 +14,9 @@ Open `http://localhost:3000` and edit the campaign. Changes autosave to `app-sto
 ## What's inside
 
 - **Connected canvas editor** (`src/components/editor/`) — every screen sits on one horizontal canvas, so phones, captions, and other elements can be dragged across screen boundaries and exported as split crops when Connected mode is enabled.
-- **Screen controls** — drag-to-reorder screens, click-to-edit text, screenshot drop targets, per-screen layout switcher, theme selector, layer ordering, hide/lock controls, and responsive anchors.
+- **Campaign wardrobe** — four composition templates and four named palettes can be applied to the active deck without replacing screenshot files, semantic capture IDs, localized copy, or custom text layers. Every switch is undoable.
+- **AI polish** — review copy suggestions from a personal OpenAI or OpenRouter key before applying them. Keys are held only in the dialog session and never written to the project file. The request contains app/copy context only—never capture files or their paths.
+- **Screen controls** — drag-to-reorder screens, click-to-edit text, screenshot drop targets, per-screen layout switcher, layer ordering, hide/lock controls, and responsive anchors.
 - **Device frames** (`src/components/editor/device-frames.tsx`) — iPhone (PNG mockup), iPad, Android phone, Android tablet (portrait + landscape), feature graphic.
 - **Semantic capture library** — slides reference stable IDs such as `capture:home-dashboard`; locale-specific paths can be refreshed without changing composition transforms.
 - **Preflight QA** — the toolbar validates schema, locale, store slide limits, export targets, and screenshot availability before allowing production export.
@@ -60,6 +62,24 @@ pnpm test:all
 
 The UI suite covers the Rutmia load path, locale editing, text layers, exact-size render output, and hide/lock interactions. Tests restore the Rutmia fixture after each scenario.
 
+## AI providers
+
+Open **AI polish** in the toolbar and choose one of these options:
+
+- **OpenAI / OpenRouter:** paste your own API key into the dialog and choose a model. The key exists only in memory for that dialog session; it is never put in `app-store-screenshots.json`, local storage, source control, or server logs by StoreCanvas.
+- **StoreCanvas workspace:** use an OpenAI-compatible server-side gateway when you want managed usage or paid workspace credits. This is intentionally disabled until the deployment owner configures it; StoreCanvas does not pretend to provide billing on its own.
+
+Copy `.env.example` to `.env.local` and configure these only for managed workspace AI:
+
+```bash
+STORECANVAS_PLATFORM_AI_URL=https://your-gateway.example/v1/chat/completions
+STORECANVAS_PLATFORM_AI_TOKEN=server-side-secret
+STORECANVAS_PLATFORM_AI_MODEL=gpt-4.1-mini
+STORECANVAS_PUBLIC_URL=https://your-storecanvas.example # optional OpenRouter attribution
+```
+
+The gateway receives standard OpenAI-compatible chat-completion requests. A deployment may use it to enforce budget, users, or billing before forwarding to the actual model provider.
+
 ## Customizing
 
 | Where | What |
@@ -77,5 +97,5 @@ The UI suite covers the Rutmia load path, locale editing, text layers, exact-siz
 - Image preloading converts every static path to a base64 data URI before exports run, and export retries paths that were previously missing — this prevents the html-to-image race where some slide screenshots come out black.
 - Reset via the toolbar's circular arrow icon clears in-memory state and reloads the default screens. To wipe disk state too, delete `app-store-screenshots.json`.
 - **Persistence model** — the canonical state lives in `app-store-screenshots.json` (git-tracked). On load, the editor reads localStorage first for instant paint, then overwrites with the file contents if present; if the file endpoint is unavailable, autosave is blocked so stale cache cannot overwrite disk. On save, both are written. If you ever see a conflict, the file always wins.
-- **Migration model** — schema v1 projects do not need a manual conversion. On first load, the editor upgrades localized text and transform records, writes `schemaVersion: 2`, preserves all existing screens, and keeps `connectedCanvas: false` so old offscreen/clipped elements export exactly as isolated screens. Turn on **Connected** in the toolbar when you want elements to cross screen edges. Explicit skill migrations preserve an existing `connectedCanvas` choice, otherwise they keep legacy decks isolated too.
+- **Migration model** — schema v1/v2 projects do not need a manual conversion. On first load, the editor upgrades localized text and transform records, writes `schemaVersion: 3`, adds explicit campaign template/palette IDs, preserves all existing screens, and keeps `connectedCanvas: false` so old offscreen/clipped elements export exactly as isolated screens. Turn on **Connected** in the toolbar when you want elements to cross screen edges. Explicit skill migrations preserve an existing `connectedCanvas` choice, otherwise they keep legacy decks isolated too.
 - **Custom themes** — if a project file references a theme id that is not present in `src/lib/constants.ts`, the editor falls back to `clean-light` and shows a warning. Merge custom `THEMES` entries during in-place upgrades.

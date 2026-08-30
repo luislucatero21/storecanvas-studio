@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_PROJECT } from "@/lib/defaults";
+import {
+  applyAiProposal,
+  buildAiPrompt,
+  parseAiProposal,
+  validateAiRequest,
+} from "@/lib/ai";
+import { requestAiProposal } from "@/lib/ai-server";
 import { resolveAssetPath, replaceAssetPath } from "@/lib/asset-library";
 import { applyCampaignTemplate, applyPalette } from "@/lib/campaign-presets";
 import { resolveResponsiveTransform } from "@/lib/constraints";
@@ -75,6 +82,100 @@ describe("StoreCanvas project contracts", () => {
         typography: { display: { family: "Fraunces", weight: 700 } },
       },
     });
+  });
+
+  it("requires a personal key for BYO AI providers", () => {
+    const result = validateAiRequest({
+      provider: "openai",
+      model: "gpt-4.1-mini",
+      mode: "polish",
+      appName: "Rutmia",
+      locale: "en-US",
+      slides: [{ id: "rutmia-1-route", label: "START", headline: "Own your day." }],
+    });
+
+    expect(result).toEqual({ ok: false, error: "apiKey: Add a personal API key for this provider." });
+  });
+
+  it("keeps captures and semantic links intact when an AI copy proposal is applied", () => {
+    const proposal = parseAiProposal(
+      '```json\n{"summary":"Sharper promise.","slides":[{"id":"rutmia-1-route","label":"START WITH INTENTION","headline":"Make today yours.","rationale":"It makes the benefit immediate."},{"id":"unknown","label":"IGNORE","headline":"Ignore this.","rationale":"Not in the deck."}]}\n```',
+      ["rutmia-1-route"],
+    );
+    const original = DEFAULT_PROJECT.slidesByDevice.iphone[0];
+    const next = applyAiProposal(
+      {
+        ...DEFAULT_PROJECT,
+        slidesByDevice: {
+          ...DEFAULT_PROJECT.slidesByDevice,
+          iphone: [{ ...original, id: "rutmia-1-route", screenshot: "/captures/{locale}/home.png", assetRef: "capture:home-dashboard" }],
+        },
+      },
+      proposal,
+      "en",
+      "iphone",
+    );
+
+    expect(next.slidesByDevice.iphone[0]).toMatchObject({
+      label: { en: "START WITH INTENTION" },
+      headline: { en: "Make today yours." },
+      screenshot: "/captures/{locale}/home.png",
+      assetRef: "capture:home-dashboard",
+    });
+  });
+
+  it("forwards a text-only campaign brief through the OpenRouter-compatible route", async () => {
+    let endpoint = "";
+    let init: RequestInit | undefined;
+    const fetchImpl = (async (input: RequestInfo | URL, options?: RequestInit) => {
+      endpoint = String(input);
+      init = options;
+      return new Response(
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                content: '{"summary":"A stronger opening.","slides":[{"id":"rutmia-1-route","label":"TODAY","headline":"Own today.","rationale":"It is more direct."}]}',
+              },
+            },
+          ],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }) as typeof fetch;
+
+    const proposal = await requestAiProposal(
+      {
+        provider: "openrouter",
+        apiKey: "sk-or-v1-example-key",
+        model: "openai/gpt-4o-mini",
+        mode: "polish",
+        appName: "Rutmia",
+        locale: "en-US",
+        slides: [{ id: "rutmia-1-route", label: "START", headline: "Own your day." }],
+      },
+      { fetchImpl, env: { STORECANVAS_PUBLIC_URL: "https://storecanvas.example" } },
+    );
+
+    expect(endpoint).toBe("https://openrouter.ai/api/v1/chat/completions");
+    expect(init?.headers).toMatchObject({
+      Authorization: "Bearer sk-or-v1-example-key",
+      "HTTP-Referer": "https://storecanvas.example",
+      "X-OpenRouter-Title": "StoreCanvas",
+    });
+    const requestBody = JSON.stringify(init?.body);
+    expect(requestBody).toContain("Own your day.");
+    expect(requestBody).not.toContain("sk-or-v1-example-key");
+    expect(buildAiPrompt({
+      provider: "openrouter",
+      apiKey: "sk-or-v1-example-key",
+      model: "openai/gpt-4o-mini",
+      mode: "polish",
+      appName: "Rutmia",
+      locale: "en-US",
+      slides: [{ id: "rutmia-1-route", label: "START", headline: "Own your day." }],
+    })).not.toContain("sk-or-v1-example-key");
+    expect(proposal.slides[0].headline).toBe("Own today.");
   });
 
   it("resolves a semantic asset with locale fallback before the slide path", () => {
