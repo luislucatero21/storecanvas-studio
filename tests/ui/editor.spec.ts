@@ -185,6 +185,24 @@ test.describe("StoreCanvas editor", () => {
     await expect(page.locator('[data-device-angle="tilt-left"]').first()).toHaveAttribute("data-device-rig", "optical");
   });
 
+  test("applies contrast to each slot of a shared Rutmia caption", async ({ page }) => {
+    await page.goto("/render?device=iphone&locale=es-MX&size=1320x2868");
+
+    const headline = page
+      .locator('[data-slide-id="rutmia-8-routine"] [data-caption-headline]')
+      .filter({ hasText: "Tu rutina sigue siendo tuya." });
+    await expect(headline).toHaveCount(1);
+    await expect(headline).toHaveAttribute("data-caption-contrast", "per-slot");
+    await expect(headline).toHaveAttribute("data-caption-segment-colors", "#161D3C,#F8FBFF");
+    await expect(headline).toHaveCSS("background-clip", "text");
+
+    const continuationHeadline = page
+      .locator('[data-slide-id="rutmia-9-reminders"] [data-caption-headline]')
+      .filter({ hasText: "Tu rutina sigue siendo tuya." });
+    await expect(continuationHeadline).toHaveCount(1);
+    await expect(continuationHeadline).toHaveAttribute("data-caption-segment-colors", "#161D3C,#F8FBFF");
+  });
+
   test("template palette and placement overrides remain opt-in", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Campaign wardrobe" }).click();

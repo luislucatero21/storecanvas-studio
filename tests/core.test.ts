@@ -22,10 +22,23 @@ import { resolveResponsiveTransform } from "@/lib/constraints";
 import { setCopyLinking, writeLinkedCopy } from "@/lib/copy-sync";
 import { applyDeviceAngle, createDeviceSlot, setDeviceSlotLinking, setDeviceSlotSpan } from "@/lib/device-presentation";
 import { exportFileName, exportPath, slugify } from "@/lib/export-naming";
+import { captionSegmentColors, captionTextGradient } from "@/lib/caption-contrast";
 import { ProjectStateSchema } from "@/lib/schema";
 import { validateProject } from "@/lib/validation";
 
 describe("StoreCanvas project contracts", () => {
+  it("assigns shared-caption text contrast per connected slot", () => {
+    const colors = captionSegmentColors(
+      { fg: "#161D3C", fgAlt: "#F8FBFF" },
+      [false, true],
+    );
+
+    expect(colors).toEqual(["#161D3C", "#F8FBFF"]);
+    expect(captionTextGradient(colors)).toBe(
+      "linear-gradient(90deg, #161D3C 0%, #161D3C 50%, #F8FBFF 50%, #F8FBFF 100%)",
+    );
+  });
+
   it("ships a competitive wardrobe with at least twelve palettes and templates", () => {
     expect(PALETTE_PRESETS.length).toBeGreaterThanOrEqual(12);
     expect(CAMPAIGN_TEMPLATES.length).toBeGreaterThanOrEqual(12);

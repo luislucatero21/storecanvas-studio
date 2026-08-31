@@ -31,6 +31,7 @@ import { img } from "@/lib/image-cache";
 import { pickText } from "@/lib/locale";
 import { constraintFor, resolveResponsiveTransform } from "@/lib/constraints";
 import { resolveAssetPath } from "@/lib/asset-library";
+import { captionSegmentColors, captionTextGradient } from "@/lib/caption-contrast";
 import {
   AndroidPhone,
   AndroidTabletL,
@@ -150,6 +151,7 @@ function EditableText({
   multiline = false,
   placeholder,
   onFocus,
+  dataAttributes,
 }: {
   value: string;
   editable?: boolean;
@@ -158,6 +160,7 @@ function EditableText({
   multiline?: boolean;
   placeholder?: string;
   onFocus?: () => void;
+  dataAttributes?: Record<string, string>;
 }) {
   const ref = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
@@ -178,6 +181,7 @@ function EditableText({
   return (
     <div
       ref={ref}
+      {...dataAttributes}
       contentEditable={editable}
       suppressContentEditableWarning
       data-placeholder={placeholder}
@@ -223,6 +227,7 @@ function Caption({
   edit,
   align = "center",
   inverted,
+  segmentColors,
   onFocus,
 }: {
   cW: number;
@@ -234,10 +239,12 @@ function Caption({
   edit?: EditHandlers;
   align?: "center" | "left";
   inverted?: boolean;
+  segmentColors?: readonly string[];
   onFocus?: () => void;
 }) {
   const fg = inverted ? theme.fgAlt : theme.fg;
   const accent = theme.accent;
+  const headlineGradient = segmentColors ? captionTextGradient(segmentColors) : undefined;
   // Scale typography off the *shorter* dimension so landscape layouts don't
   // produce headlines so tall they overlap the device frame.
   const unit = Math.min(cW, cH);
@@ -266,12 +273,28 @@ function Caption({
         onChange={edit?.onHeadlineChange}
         onFocus={onFocus}
         placeholder="Headline goes here"
+        dataAttributes={
+          segmentColors
+            ? {
+                "data-caption-headline": "true",
+                "data-caption-contrast": headlineGradient ? "per-slot" : "single-slot",
+                "data-caption-segment-colors": segmentColors.join(","),
+              }
+            : { "data-caption-headline": "true" }
+        }
         style={{
           fontSize: unit * 0.092,
           fontWeight: 700,
           lineHeight: 0.96,
           letterSpacing: -unit * 0.001,
-          color: fg,
+          color: headlineGradient ? "transparent" : fg,
+          backgroundImage: headlineGradient,
+          backgroundClip: headlineGradient ? "text" : undefined,
+          WebkitBackgroundClip: headlineGradient ? "text" : undefined,
+          WebkitTextFillColor: headlineGradient ? "transparent" : undefined,
+          backgroundRepeat: headlineGradient ? "no-repeat" : undefined,
+          backgroundSize: headlineGradient ? "100% 100%" : undefined,
+          caretColor: fg,
         }}
       />
     </div>
@@ -711,6 +734,11 @@ export function DeckCanvas({
 
       {slides.map((slide, index) => {
         if (slide.layout === "feature-graphic" || device === "feature-graphic") return null;
+        const captionSpan = slide.captionSpan || 1;
+        const captionSegmentInverted =
+          connectedCanvas && captionSpan > 1
+            ? slides.slice(index, index + captionSpan).map((segment) => !!segment.inverted)
+            : undefined;
         const selectedElementId =
           selectedElement?.slideId === slide.id ? selectedElement.elementId : null;
         const perSlideEdit: EditHandlers | undefined = editable
@@ -744,6 +772,7 @@ export function DeckCanvas({
             boundsW={connectedCanvas ? totalW : cW}
             boundsH={cH}
             allowCrossScreen={connectedCanvas}
+            captionSegmentInverted={captionSegmentInverted}
           />
         );
         if (connectedCanvas) return elements;
@@ -946,6 +975,7 @@ function SlideElements({
   boundsW,
   boundsH,
   allowCrossScreen,
+  captionSegmentInverted,
 }: {
   slide: Slide;
   device: Device;
@@ -962,6 +992,7 @@ function SlideElements({
   boundsW: number;
   boundsH: number;
   allowCrossScreen: boolean;
+  captionSegmentInverted?: readonly boolean[];
 }) {
   const isHidden = (id: ElementId) => slide.hiddenElements?.includes(id) ?? false;
   const isLocked = (id: ElementId) => slide.lockedElements?.includes(id) ?? false;
@@ -974,6 +1005,11 @@ function SlideElements({
   );
   const { cW, cH, Frame, frameAspect, defaults } = getSlideGeometry(slide, device, orientation);
   const inverted = !!slide.inverted;
+  const captionSpan = slide.captionSpan || 1;
+  const captionColors =
+    captionSpan > 1 && captionSegmentInverted && captionSegmentInverted.length > 1
+      ? captionSegmentColors(theme, captionSegmentInverted.slice(0, captionSpan))
+      : undefined;
   const baseCaptionRect = resolvedRectFor("caption", slide, device, orientation, locale, defaults);
   const captionRect = baseCaptionRect && (slide.captionSpan || 1) > 1
     ? { ...baseCaptionRect, width: baseCaptionRect.width + cW * ((slide.captionSpan || 1) - 1) }
@@ -1012,6 +1048,7 @@ function SlideElements({
         edit={edit}
         align={captionRect.align || "center"}
         inverted={inverted}
+        segmentColors={captionColors}
         onFocus={() => edit?.onSelectElement?.("caption")}
       />
     );
