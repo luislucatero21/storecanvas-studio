@@ -56,6 +56,21 @@ test.describe("StoreCanvas editor", () => {
     await expect(render.locator("[data-render-slide]").first()).toHaveJSProperty("clientHeight", 2868);
   });
 
+  test("server-renders editorial copy before the PNG renderer captures the slide", async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    const baseURL = test.info().project.use.baseURL as string;
+
+    try {
+      await page.goto(`${baseURL}/render?device=iphone&locale=es-MX&size=1320x2868`);
+      const firstSlide = page.locator('[data-slide-id="rutmia-1-route"]');
+      await expect(firstSlide.getByText("UNA RUTINA QUE VA CONTIGO")).toBeVisible();
+      await expect(firstSlide.getByText("Haz tuyo tu día.")).toBeVisible();
+    } finally {
+      await context.close();
+    }
+  });
+
   test("supports hiding and locking the selected canvas element", async ({ page }) => {
     await page.goto("/");
 
@@ -80,6 +95,30 @@ test.describe("StoreCanvas editor", () => {
       const body = await response.json();
       return body.state.slidesByDevice.iphone[0].presentations?.device?.preset;
     }).toBe("tilt-left");
+  });
+
+  test("lets the user choose an iPhone hardware model", async ({ page }) => {
+    await page.goto("/");
+
+    await page.getByRole("button", { name: "Rotate element" }).first().click();
+    await page.getByRole("combobox", { name: "Device model" }).click();
+    await page.getByRole("option", { name: "iPhone 13 Pro Max" }).click();
+
+    await expect.poll(async () => {
+      const response = await page.request.get("/api/project");
+      const body = await response.json();
+      return body.state.slidesByDevice.iphone[0].presentations?.device?.deviceModel;
+    }).toBe("iphone-13-pro-max");
+  });
+
+  test("renders iPhone 17 Pro Max anatomy while editorial copy stays face-forward", async ({ page }) => {
+    await page.goto("/render?device=iphone&locale=es-MX&size=1320x2868");
+
+    const firstSlide = page.locator('[data-slide-id="rutmia-1-route"]');
+    const frame = firstSlide.locator('[data-device-model="iphone-17-pro-max"]').first();
+    await expect(frame.locator('[data-hardware-feature="dynamic-island"]')).toBeVisible();
+    await expect(frame.locator("[data-hardware-button]")).toHaveCount(5);
+    await expect(firstSlide.locator('[data-front-facing="caption"]').first()).toBeVisible();
   });
 
   test("renders a dimensional rig through an Android device frame", async ({ page }) => {

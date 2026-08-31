@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "appName": "Rutmia",
   "themeId": "warm-editorial",
   "templateId": "afterglow-rhythm",
@@ -33,7 +33,18 @@
             "rotateX": 2,
             "rotateY": -11,
             "perspective": 2100,
-            "depth": 9
+            "depth": 9,
+            "deviceModel": "iphone-17-pro-max"
+          }
+        },
+        "transforms": {
+          "device": {
+            "x": 153.18224783861672,
+            "y": 1112.7839999999999,
+            "width": 1013.6355043227666,
+            "height": 2064.96,
+            "rotation": 0,
+            "zIndex": 3
           }
         }
       },

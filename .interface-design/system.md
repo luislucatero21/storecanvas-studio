@@ -23,6 +23,10 @@ The visual world is parchment, ink, graphite, warm shadow and one coral signal. 
 
 ## Device rig pattern
 
+- Treat the iPhone as one hardware-and-content system: the chassis, glass, cutout, controls and capture share the same optical camera transform.
+- Keep the model explicit in the inspector. Model changes may alter the Dynamic Island/notch and the number and placement of physical controls without moving the capture aperture.
+- Only hardware and screen content rotate. Captions, labels and custom text remain face-forward on the artboard plane.
+- Build depth from one front face and one shallow side rail. Avoid detached backing plates, floating bezels or buttons painted onto the glass.
 - Flat: `rotateX 0° · rotateY 0° · perspective 1400px · depth 0`.
 - Left/right optical tilt: `rotateX 2° · rotateY ±11° · perspective 2100px · depth 9px`.
 - Low angle: `rotateX -9° · rotateY -4° · perspective 1900px · depth 11px`.
@@ -48,7 +52,7 @@ The visual world is parchment, ink, graphite, warm shadow and one coral signal. 
 
 ## Persistent Rutmia examples
 
-- Screen 1 demonstrates the restrained left optical tilt.
+- Screen 1 demonstrates the iPhone 17 Pro Max, including Dynamic Island and external controls, at the restrained left optical tilt.
 - Screens 4–5 demonstrate one semantic capture repeated across two connected artboards.
 - Screens 8–9 demonstrate a localized caption spanning two connected artboards.
 - These examples are part of `app-store-screenshots.json` and require unit, UI render and visual QA coverage whenever the renderer changes.

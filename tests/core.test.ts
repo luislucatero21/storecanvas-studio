@@ -423,6 +423,52 @@ describe("StoreCanvas project contracts", () => {
     expect(result.success).toBe(false);
   });
 
+  it("accepts supported iPhone hardware models and rejects unknown ones", () => {
+    const slide = DEFAULT_PROJECT.slidesByDevice.iphone[0];
+    const projectWithModel = (deviceModel: string) => ({
+      ...DEFAULT_PROJECT,
+      slidesByDevice: {
+        ...DEFAULT_PROJECT.slidesByDevice,
+        iphone: [{
+          ...slide,
+          presentations: {
+            device: {
+              preset: "tilt-left",
+              rotateX: 2,
+              rotateY: -11,
+              perspective: 2100,
+              depth: 9,
+              deviceModel,
+            },
+          },
+        }],
+      },
+    });
+
+    expect(ProjectStateSchema.safeParse(projectWithModel("iphone-17-pro-max")).success).toBe(true);
+    expect(ProjectStateSchema.safeParse(projectWithModel("iphone-future-unknown")).success).toBe(false);
+  });
+
+  it("preserves the selected hardware model when applying another camera angle", () => {
+    const slide = DEFAULT_PROJECT.slidesByDevice.iphone[0];
+    const modeled = {
+      ...slide,
+      presentations: {
+        device: {
+          preset: "flat",
+          rotateX: 0,
+          rotateY: 0,
+          perspective: 1400,
+          depth: 0,
+          deviceModel: "iphone-17-pro-max",
+        },
+      },
+    } as unknown as typeof slide;
+    const angled = applyDeviceAngle(modeled, "device", "tilt-right");
+
+    expect((angled.presentations?.device as unknown as { deviceModel?: string }).deviceModel).toBe("iphone-17-pro-max");
+  });
+
   it("rejects copy linking to an unsupported master device", () => {
     const result = ProjectStateSchema.safeParse({
       ...DEFAULT_PROJECT,
@@ -461,7 +507,13 @@ describe("StoreCanvas project contracts", () => {
       slide.deviceSlots?.some((slot) => slot.spanSlots === 2));
     const messageSpread = slides.find((slide: { captionSpan?: number }) => slide.captionSpan === 2);
 
-    expect(heroRig).toMatchObject({ rotateX: 2, rotateY: -11, perspective: 2100, depth: 9 });
+    expect(heroRig).toMatchObject({
+      rotateX: 2,
+      rotateY: -11,
+      perspective: 2100,
+      depth: 9,
+      deviceModel: "iphone-17-pro-max",
+    });
     expect(captureSpread?.deviceSlots[0]).toMatchObject({
       id: "rutmia-recovery-continuity",
       assetRef: "capture:recovery-paused",

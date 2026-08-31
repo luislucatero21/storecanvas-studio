@@ -145,7 +145,7 @@ export function hasTheme(themeId: string | undefined): boolean {
 }
 
 export const STORAGE_KEY = "app-store-screenshots:project:v1";
-export const PROJECT_SCHEMA_VERSION = 4;
+export const PROJECT_SCHEMA_VERSION = 5;
 
 export const DEVICE_LABEL: Record<Device, string> = {
   iphone: "iPhone",

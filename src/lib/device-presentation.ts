@@ -28,18 +28,32 @@ export function applyDeviceAngle(
   target: "device" | "deviceSecondary" | { slotId: string },
   preset: Exclude<DeviceAnglePreset, "custom">,
 ): Slide {
-  const presentation = presentationForPreset(preset);
   if (typeof target === "object") {
     return {
       ...slide,
       deviceSlots: (slide.deviceSlots || []).map((slot) =>
-        slot.id === target.slotId ? { ...slot, presentation } : slot,
+        slot.id === target.slotId
+          ? {
+              ...slot,
+              presentation: {
+                ...presentationForPreset(preset),
+                ...(slot.presentation?.deviceModel ? { deviceModel: slot.presentation.deviceModel } : {}),
+              },
+            }
+          : slot,
       ),
     };
   }
+  const current = slide.presentations?.[target];
   return {
     ...slide,
-    presentations: { ...(slide.presentations || {}), [target]: presentation },
+    presentations: {
+      ...(slide.presentations || {}),
+      [target]: {
+        ...presentationForPreset(preset),
+        ...(current?.deviceModel ? { deviceModel: current.deviceModel } : {}),
+      },
+    },
   };
 }
 

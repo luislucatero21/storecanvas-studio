@@ -1,26 +1,77 @@
 "use client";
 import * as React from "react";
 import { PHONE_SCREEN } from "@/lib/constants";
+import { iphoneModelDefinition } from "@/lib/device-models";
 import { img } from "@/lib/image-cache";
+import type { DeviceModel, DevicePresentation } from "@/lib/types";
 
 type FrameProps = {
   src: string;
   alt?: string;
   style?: React.CSSProperties;
+  model?: DeviceModel;
+  presentation?: DevicePresentation;
   /** When true, hide EmptySlot placeholder (so it doesn't bake into exports). */
   hideEmpty?: boolean;
 };
 
-// iPhone — uses pre-measured mockup.png overlay
-export function Phone({ src, alt = "", style, hideEmpty }: FrameProps) {
+// iPhone hardware is rendered as a layered vector frame so its cutout,
+// controls and side rail remain legible under the shared 3D camera rig.
+export function Phone({ src, alt = "", style, hideEmpty, model, presentation }: FrameProps) {
   const resolved = img(src);
+  const hardware = iphoneModelDefinition(model);
+  const tilt = presentation?.rotateY || 0;
+  const depth = Math.max(2, presentation?.depth || 2);
+  const visibleSide = tilt < 0 ? "right" : tilt > 0 ? "left" : null;
   return (
-    <div style={{ position: "relative", aspectRatio: "1022 / 2082", ...style }}>
-      <img
-        src={img("/mockup.png")}
-        alt=""
-        style={{ display: "block", width: "100%", height: "100%" }}
-        draggable={false}
+    <div
+      data-device-model={hardware.id}
+      data-device-cutout={hardware.cutout}
+      style={{
+        position: "relative",
+        aspectRatio: "1022 / 2082",
+        transformStyle: "preserve-3d",
+        isolation: "isolate",
+        ...style,
+      }}
+    >
+      <div
+        aria-hidden
+        data-hardware-feature="side-rail"
+        style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: "10.8% / 5.3%",
+          background: `linear-gradient(90deg, ${hardware.chassis[1]}, ${hardware.chassis[0]} 48%, ${hardware.chassis[2]})`,
+          transform: `translateZ(-${depth}px)`,
+          boxShadow: visibleSide === "left"
+            ? `-${Math.max(2, depth * 0.35)}px 0 ${Math.max(3, depth * 0.6)}px rgba(10,12,16,.42)`
+            : visibleSide === "right"
+              ? `${Math.max(2, depth * 0.35)}px 0 ${Math.max(3, depth * 0.6)}px rgba(10,12,16,.42)`
+              : "0 1px 3px rgba(10,12,16,.24)",
+        }}
+      />
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 2,
+          borderRadius: "10.8% / 5.3%",
+          background: `linear-gradient(115deg, ${hardware.chassis[2]} 0%, ${hardware.chassis[0]} 22%, ${hardware.chassis[1]} 64%, ${hardware.chassis[2]} 100%)`,
+          boxShadow: "inset 0 0 0 1px rgba(255,255,255,.34), inset 0 0 0 3px rgba(10,12,16,.42)",
+        }}
+      />
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: "1.15%",
+          zIndex: 3,
+          borderRadius: "10.2% / 5%",
+          background: "#050608",
+          boxShadow: "inset 0 0 0 1px rgba(255,255,255,.08)",
+        }}
       />
       <div
         style={{
@@ -46,6 +97,75 @@ export function Phone({ src, alt = "", style, hideEmpty }: FrameProps) {
           <EmptySlot />
         )}
       </div>
+      {hardware.cutout === "dynamic-island" ? (
+        <div
+          aria-hidden
+          data-hardware-feature="dynamic-island"
+          style={{
+            position: "absolute",
+            zIndex: 30,
+            top: "3.15%",
+            left: "50%",
+            width: "25%",
+            height: "2.55%",
+            transform: "translateX(-50%) translateZ(2px)",
+            borderRadius: "999px",
+            background: "#020203",
+            boxShadow: "inset 0 0 0 1px rgba(255,255,255,.025), 0 1px 2px rgba(0,0,0,.5)",
+          }}
+        >
+          <span
+            style={{
+              position: "absolute",
+              right: "8%",
+              top: "24%",
+              width: "10%",
+              aspectRatio: "1",
+              borderRadius: "50%",
+              background: "radial-gradient(circle at 40% 35%, #264d73 0 10%, #07121e 28%, #010205 70%)",
+            }}
+          />
+        </div>
+      ) : (
+        <div
+          aria-hidden
+          data-hardware-feature="notch"
+          style={{
+            position: "absolute",
+            zIndex: 30,
+            top: "2.15%",
+            left: "50%",
+            width: "43%",
+            height: "4.2%",
+            transform: "translateX(-50%) translateZ(2px)",
+            borderRadius: "0 0 22% 22% / 0 0 55% 55%",
+            background: "#020203",
+          }}
+        />
+      )}
+      {hardware.buttons.map((button) => {
+        const visible = !visibleSide || visibleSide === button.side;
+        return (
+          <div
+            key={button.id}
+            aria-hidden
+            data-hardware-button={button.id}
+            style={{
+              position: "absolute",
+              zIndex: visible ? 22 : 1,
+              [button.side]: "-0.62%",
+              top: `${button.top}%`,
+              width: "1.18%",
+              height: `${button.height}%`,
+              borderRadius: "999px",
+              opacity: visible ? 1 : 0.58,
+              background: `linear-gradient(90deg, ${hardware.chassis[1]}, ${hardware.chassis[2]}, ${hardware.chassis[0]})`,
+              boxShadow: visible ? "0 0 0 1px rgba(8,10,14,.3), 0 1px 2px rgba(8,10,14,.35)" : undefined,
+              transform: `translateZ(${-depth * 0.35}px)`,
+            }}
+          />
+        );
+      })}
     </div>
   );
 }

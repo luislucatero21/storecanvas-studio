@@ -44,6 +44,8 @@ type FrameComp = React.ComponentType<{
   alt?: string;
   style?: React.CSSProperties;
   hideEmpty?: boolean;
+  model?: DevicePresentation["deviceModel"];
+  presentation?: DevicePresentation;
 }>;
 
 export { getCanvas } from "@/lib/canvas";
@@ -203,7 +205,9 @@ function EditableText({
         cursor: editable ? "text" : "default",
         ...style,
       }}
-    />
+    >
+      {editable ? null : value}
+    </div>
   );
 }
 
@@ -1030,6 +1034,7 @@ function SlideElements({
       >
         <div
           data-caption-span={slide.captionSpan || 1}
+          data-front-facing="caption"
           style={{ width: "100%", height: "100%", display: "flex", alignItems: "flex-start" }}
         >
           {inner}
@@ -1078,7 +1083,13 @@ function SlideElements({
         onSelect={() => edit?.onSelectElement?.(id)}
       >
         <DeviceRig device={device} elementId={id} presentation={presentation} style={extraStyle}>
-          <Frame src={src} hideEmpty={hideEmpty} style={{ width: "100%", height: "100%" }} />
+          <Frame
+            src={src}
+            hideEmpty={hideEmpty}
+            model={presentation?.deviceModel}
+            presentation={presentation}
+            style={{ width: "100%", height: "100%" }}
+          />
         </DeviceRig>
       </Movable>
     );
@@ -1117,6 +1128,7 @@ function SlideElements({
         allowOverflow={allowCrossScreen}
       >
         <div
+          data-front-facing="text"
           style={{
             width: "100%",
             height: "100%",

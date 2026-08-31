@@ -42,6 +42,7 @@ import {
   toDeviceSlotElementId,
 } from "@/lib/elements";
 import { applyDeviceAngle, createDeviceSlot, DEVICE_ANGLE_PRESETS } from "@/lib/device-presentation";
+import { DEFAULT_IPHONE_MODEL, IPHONE_DEVICE_MODELS, iphoneModelDefinition } from "@/lib/device-models";
 import { pickText, writeLocalized } from "@/lib/locale";
 import { replaceAssetPath, resolveAssetPath } from "@/lib/asset-library";
 import type {
@@ -49,6 +50,7 @@ import type {
   BuiltInElementId,
   Device,
   DeviceAnglePreset,
+  DeviceModel,
   DevicePresentation,
   ElementId,
   ElementTransform,
@@ -625,6 +627,16 @@ function ElementTransformControls({
     if (!activeId) return;
     const base = activePresentation || DEVICE_ANGLE_PRESETS.flat;
     const next: DevicePresentation = { ...base, ...patch, preset: "custom" };
+    writeActivePresentation(next);
+  }
+
+  function setDeviceModel(deviceModel: DeviceModel) {
+    const base = activePresentation || DEVICE_ANGLE_PRESETS.flat;
+    writeActivePresentation({ ...base, deviceModel });
+  }
+
+  function writeActivePresentation(next: DevicePresentation) {
+    if (!activeId) return;
     if (isDeviceSlotElementId(activeId)) {
       const slotId = deviceSlotKey(activeId);
       onChange({
@@ -724,8 +736,10 @@ function ElementTransformControls({
               if (activeTextElement) deleteTextElement(activeTextElement);
             }}
             presentation={activePresentation}
+            device={device}
             isDevice={activeId === "device" || activeId === "deviceSecondary" || isDeviceSlotElementId(activeId)}
             onAnglePreset={setAnglePreset}
+            onDeviceModelChange={setDeviceModel}
             onPresentationChange={patchPresentation}
             hidden={slide.hiddenElements?.includes(activeId) ?? false}
             locked={slide.lockedElements?.includes(activeId) ?? false}
@@ -850,8 +864,10 @@ function ActiveElementPanel({
   onToggleHidden,
   onToggleLocked,
   presentation,
+  device,
   isDevice,
   onAnglePreset,
+  onDeviceModelChange,
   onPresentationChange,
 }: {
   activeId: ElementId;
@@ -868,8 +884,10 @@ function ActiveElementPanel({
   onToggleHidden: () => void;
   onToggleLocked: () => void;
   presentation?: DevicePresentation;
+  device: Device;
   isDevice: boolean;
   onAnglePreset: (preset: Exclude<DeviceAnglePreset, "custom">) => void;
+  onDeviceModelChange: (model: DeviceModel) => void;
   onPresentationChange: (patch: Partial<DevicePresentation>) => void;
 }) {
   const engaged = !!transform;
@@ -927,8 +945,10 @@ function ActiveElementPanel({
 
       {isDevice ? (
         <DeviceAnglePanel
+          device={device}
           presentation={presentation}
           onPreset={onAnglePreset}
+          onModelChange={onDeviceModelChange}
           onChange={onPresentationChange}
         />
       ) : null}
@@ -998,21 +1018,45 @@ const ANGLE_CHOICES: Array<{
 ];
 
 function DeviceAnglePanel({
+  device,
   presentation,
   onPreset,
+  onModelChange,
   onChange,
 }: {
+  device: Device;
   presentation?: DevicePresentation;
   onPreset: (preset: Exclude<DeviceAnglePreset, "custom">) => void;
+  onModelChange: (model: DeviceModel) => void;
   onChange: (patch: Partial<DevicePresentation>) => void;
 }) {
   const active = presentation || DEVICE_ANGLE_PRESETS.flat;
+  const activeModel = iphoneModelDefinition(active.deviceModel || DEFAULT_IPHONE_MODEL);
   return (
     <div className="space-y-2 rounded-md bg-muted/35 p-2.5 shadow-[inset_0_0_0_1px_hsl(var(--border)/.6)]">
       <div className="flex items-baseline justify-between gap-2">
         <Label className="text-[11px] font-semibold">Camera angle</Label>
         <span className="text-[9px] uppercase tracking-[0.12em] text-muted-foreground">3D rig</span>
       </div>
+      {device === "iphone" ? (
+        <div className="rounded-md bg-background/70 p-2 shadow-[0_0_0_1px_hsl(var(--border)/.55)]">
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <Label className="text-[10px] font-medium text-muted-foreground">Hardware</Label>
+            <span className="text-[9px] uppercase tracking-[0.1em] text-muted-foreground">physical frame</span>
+          </div>
+          <Select value={activeModel.id} onValueChange={(value) => onModelChange(value as DeviceModel)}>
+            <SelectTrigger aria-label="Device model" className="h-8 bg-background text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {IPHONE_DEVICE_MODELS.map((model) => (
+                <SelectItem key={model.id} value={model.id}>{model.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="mt-1.5 text-[9px] leading-relaxed text-muted-foreground">{activeModel.detail}</p>
+        </div>
+      ) : null}
       <div className="grid grid-cols-5 gap-1">
         {ANGLE_CHOICES.map((choice) => (
           <button

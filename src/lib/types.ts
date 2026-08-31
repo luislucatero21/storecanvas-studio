@@ -38,12 +38,18 @@ export type DeviceAnglePreset =
   | "high-angle"
   | "custom";
 
+export type DeviceModel =
+  | "iphone-17-pro-max"
+  | "iphone-14-pro-max"
+  | "iphone-13-pro-max";
+
 export type DevicePresentation = {
   preset: DeviceAnglePreset;
   rotateX: number;
   rotateY: number;
   perspective: number;
   depth: number;
+  deviceModel?: DeviceModel;
 };
 
 export type SlotSpan = 1 | 2 | 3;

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { PROJECT_SCHEMA_VERSION, STORAGE_KEY } from "./constants";
 import { DEFAULT_PROJECT } from "./defaults";
 import { coerceLocalized } from "./locale";
-import type { Device, DevicePresentation, DeviceSlot, ElementTransform, ProjectState, Slide, TextElement } from "./types";
+import type { Device, DeviceModel, DevicePresentation, DeviceSlot, ElementTransform, ProjectState, Slide, TextElement } from "./types";
 
 const HISTORY_LIMIT = 50;
 // Coalesce rapid edits (typing, slider drags) into a single undo step.
@@ -60,7 +60,15 @@ function cleanPresentation(value: unknown): DevicePresentation | undefined {
   if (!raw.preset || !presets.includes(raw.preset)) return undefined;
   if (![raw.rotateX, raw.rotateY, raw.perspective, raw.depth].every((number) => typeof number === "number" && Number.isFinite(number))) return undefined;
   if (Math.abs(raw.rotateX!) > 45 || Math.abs(raw.rotateY!) > 60 || raw.perspective! < 400 || raw.perspective! > 4000 || raw.depth! < 0 || raw.depth! > 48) return undefined;
-  return raw as DevicePresentation;
+  const models: DeviceModel[] = ["iphone-17-pro-max", "iphone-14-pro-max", "iphone-13-pro-max"];
+  return {
+    ...(raw as DevicePresentation),
+    ...(
+      raw.deviceModel && models.includes(raw.deviceModel)
+        ? { deviceModel: raw.deviceModel }
+        : { deviceModel: undefined }
+    ),
+  };
 }
 
 function cleanDeviceSlot(value: unknown): DeviceSlot | undefined {

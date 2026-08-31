@@ -12,12 +12,14 @@ const TransformSchema = z.object({
   zIndex: z.number().finite().optional(),
 }).passthrough();
 const SlotSpanSchema = z.union([z.literal(1), z.literal(2), z.literal(3)]);
+const DeviceModelSchema = z.enum(["iphone-17-pro-max", "iphone-14-pro-max", "iphone-13-pro-max"]);
 const DevicePresentationSchema = z.object({
   preset: z.enum(["flat", "tilt-left", "tilt-right", "low-angle", "high-angle", "custom"]),
   rotateX: z.number().finite().min(-45).max(45),
   rotateY: z.number().finite().min(-60).max(60),
   perspective: z.number().finite().min(400).max(4000),
   depth: z.number().finite().min(0).max(48),
+  deviceModel: DeviceModelSchema.optional(),
 });
 const DeviceSlotSchema = z.object({
   id: z.string().trim().min(1),
