@@ -18,6 +18,8 @@ import {
   applyPalette,
 } from "@/lib/campaign-presets";
 import { resolveResponsiveTransform } from "@/lib/constraints";
+import { setCopyLinking, writeLinkedCopy } from "@/lib/copy-sync";
+import { applyDeviceAngle, createDeviceSlot, setDeviceSlotSpan } from "@/lib/device-presentation";
 import { exportFileName, exportPath, slugify } from "@/lib/export-naming";
 import { ProjectStateSchema } from "@/lib/schema";
 import { validateProject } from "@/lib/validation";
@@ -367,6 +369,28 @@ describe("StoreCanvas project contracts", () => {
     expect(result.issues.some((issue) => issue.code === "missing-file")).toBe(true);
   });
 
+  it("blocks export when an extra device slot points at a missing capture", () => {
+    const slide = DEFAULT_PROJECT.slidesByDevice.iphone[0];
+    const result = validateProject({
+      ...DEFAULT_PROJECT,
+      slidesByDevice: {
+        ...DEFAULT_PROJECT.slidesByDevice,
+        iphone: [{
+          ...slide,
+          screenshot: "/primary.png",
+          deviceSlots: [{
+            id: "proof-slot",
+            screenshot: "/missing-slot.png",
+            transform: { x: 20, y: 30, width: 300, height: 600 },
+          }],
+        }],
+      },
+    }, { strict: true, existingPaths: new Set(["/primary.png"]) });
+
+    expect(result.issues.some((issue) => issue.code === "missing-slot-file")).toBe(true);
+    expect(result.valid).toBe(false);
+  });
+
   it("rejects non-positive transform dimensions at the schema boundary", () => {
     const result = ProjectStateSchema.safeParse({
       ...DEFAULT_PROJECT,
@@ -377,6 +401,68 @@ describe("StoreCanvas project contracts", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+
+  it("rejects unsafe 3D rigs, invalid extra device slots and spans beyond three screens", () => {
+    const slide = DEFAULT_PROJECT.slidesByDevice.iphone[0];
+    const result = ProjectStateSchema.safeParse({
+      ...DEFAULT_PROJECT,
+      slidesByDevice: {
+        ...DEFAULT_PROJECT.slidesByDevice,
+        iphone: [{
+          ...slide,
+          captionSpan: 4,
+          deviceSlots: [{ id: "", screenshot: slide.screenshot, transform: { x: 0, y: 0, width: 100, height: 200 } }],
+          presentations: {
+            device: { preset: "custom", rotateX: 0, rotateY: 200, perspective: 100, depth: 80 },
+          },
+        }],
+      },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects copy linking to an unsupported master device", () => {
+    const result = ProjectStateSchema.safeParse({
+      ...DEFAULT_PROJECT,
+      copySync: { enabled: true, sourceDevice: "watch", matchBy: "index" },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("applies a 3D angle and duplicates the same capture into a reusable device slot", () => {
+    const slide = DEFAULT_PROJECT.slidesByDevice.iphone[0];
+    const angled = applyDeviceAngle(slide, "device", "tilt-left");
+    const slot = createDeviceSlot(angled, "iphone", "portrait", "slot-one");
+    const withSlot = setDeviceSlotSpan({ ...angled, deviceSlots: [slot] }, slot.id, 2);
+
+    expect(angled.presentations?.device).toMatchObject({ preset: "tilt-left", rotateY: -22, depth: 18 });
+    expect(withSlot.deviceSlots?.[0]).toMatchObject({
+      id: "slot-one",
+      screenshot: slide.screenshot,
+      assetRef: slide.assetRef,
+      spanSlots: 2,
+    });
+  });
+
+  it("propagates localized copy by screen order only while linking is enabled", () => {
+    const iphone = DEFAULT_PROJECT.slidesByDevice.iphone.slice(0, 1);
+    const ipad = [{ ...iphone[0], id: "ipad-first", headline: { "en-US": "Tablet copy" } }];
+    const project = {
+      ...DEFAULT_PROJECT,
+      slidesByDevice: { ...DEFAULT_PROJECT.slidesByDevice, iphone, ipad },
+    };
+    const linked = setCopyLinking(project, true, "iphone");
+    const updated = writeLinkedCopy(linked, "iphone", iphone[0].id, "headline", "es-MX", "Una promesa.");
+    const unlinked = setCopyLinking(updated, false, "iphone");
+    const localOnly = writeLinkedCopy(unlinked, "iphone", iphone[0].id, "headline", "en-US", "Only here.");
+
+    expect(linked.slidesByDevice.ipad[0].headline).toEqual(iphone[0].headline);
+    expect(updated.slidesByDevice.iphone[0].headline["es-MX"]).toBe("Una promesa.");
+    expect(updated.slidesByDevice.ipad[0].headline["es-MX"]).toBe("Una promesa.");
+    expect(localOnly.slidesByDevice.ipad[0].headline["en-US"]).not.toBe("Only here.");
   });
 });
 

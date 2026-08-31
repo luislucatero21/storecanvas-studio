@@ -10,6 +10,7 @@ import {
   ChevronUp,
   Eye,
   EyeOff,
+  Boxes,
   LockKeyhole,
   Plus,
   SlidersHorizontal,
@@ -32,17 +33,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { LAYOUT_HINT, LAYOUT_LABEL } from "@/lib/constants";
 import { nid } from "@/lib/defaults";
 import {
+  deviceSlotKey,
   isBuiltInElementId,
+  isDeviceSlotElementId,
   isTextElementId,
   textElementKey,
   toTextElementId,
+  toDeviceSlotElementId,
 } from "@/lib/elements";
+import { applyDeviceAngle, createDeviceSlot, DEVICE_ANGLE_PRESETS } from "@/lib/device-presentation";
 import { pickText, writeLocalized } from "@/lib/locale";
 import { replaceAssetPath, resolveAssetPath } from "@/lib/asset-library";
 import type {
   AssetLibrary,
   BuiltInElementId,
   Device,
+  DeviceAnglePreset,
+  DevicePresentation,
   ElementId,
   ElementTransform,
   LayoutConstraint,
@@ -50,6 +57,7 @@ import type {
   Slide,
   SlideLayout,
   TextElement,
+  SlotSpan,
 } from "@/lib/types";
 import { ScreenshotPicker } from "./screenshot-picker";
 import { getCanvas, getElementTransform } from "./slide-canvas";
@@ -61,6 +69,7 @@ type Props = {
   locale: string;
   selectedElementId: ElementId | null;
   onChange: (patch: Partial<Slide>) => void;
+  onLocalizedChange?: (key: "label" | "headline", value: string) => void;
   onSelectElement: (id: ElementId | null) => void;
   assets?: AssetLibrary;
   onAssetLibraryChange?: (assets: AssetLibrary) => void;
@@ -79,6 +88,7 @@ export function Inspector({
   locale,
   selectedElementId,
   onChange,
+  onLocalizedChange,
   onSelectElement,
   assets,
   onAssetLibraryChange,
@@ -100,6 +110,10 @@ export function Inspector({
     : pickText(slide.headline, locale) || headlineDefault;
 
   function setLocaleField(key: "label" | "headline", value: string) {
+    if (onLocalizedChange) {
+      onLocalizedChange(key, value);
+      return;
+    }
     onChange({ [key]: writeLocalized(slide[key], locale, value) } as Partial<Slide>);
   }
 
@@ -185,6 +199,29 @@ export function Inspector({
             placeholder={headlinePlaceholder}
             aria-label="Headline"
           />
+          {!isFeatureGraphic ? (
+            <div className="flex items-center justify-between gap-3 rounded-md bg-muted/45 px-2.5 py-2">
+              <span className="text-[10px] leading-tight text-muted-foreground">
+                Message width · connected canvas
+              </span>
+              <div className="flex gap-1">
+                {([1, 2, 3] as SlotSpan[]).map((span) => (
+                  <Button
+                    key={span}
+                    type="button"
+                    variant={(slide.captionSpan || 1) === span ? "secondary" : "ghost"}
+                    size="sm"
+                    className="h-7 min-w-7 px-2 text-[10px]"
+                    onClick={() => onChange({ captionSpan: span === 1 ? undefined : span })}
+                    aria-label={`Set message width to ${span} screen${span === 1 ? "" : "s"}`}
+                    aria-pressed={(slide.captionSpan || 1) === span}
+                  >
+                    {span}×
+                  </Button>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {!isFeatureGraphic && !isNoDevice && (
@@ -237,6 +274,19 @@ export function Inspector({
           </div>
         )}
 
+        {!isFeatureGraphic && !isNoDevice ? (
+          <DeviceSlotsPanel
+            slide={slide}
+            device={device}
+            orientation={orientation}
+            locale={locale}
+            assets={assets}
+            onChange={onChange}
+            onSelectElement={onSelectElement}
+            onAssetLibraryChange={onAssetLibraryChange}
+          />
+        ) : null}
+
         {!isFeatureGraphic && (
           <ElementTransformControls
             slide={slide}
@@ -255,6 +305,138 @@ export function Inspector({
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+function DeviceSlotsPanel({
+  slide,
+  device,
+  orientation,
+  locale,
+  assets,
+  onChange,
+  onSelectElement,
+  onAssetLibraryChange,
+}: {
+  slide: Slide;
+  device: Device;
+  orientation: Orientation;
+  locale: string;
+  assets?: AssetLibrary;
+  onChange: (patch: Partial<Slide>) => void;
+  onSelectElement: (id: ElementId | null) => void;
+  onAssetLibraryChange?: (assets: AssetLibrary) => void;
+}) {
+  const [slotDisclosure, setSlotDisclosure] = React.useState<Record<string, boolean>>({});
+
+  function addSlot() {
+    const slot = createDeviceSlot(slide, device, orientation, nid());
+    onChange({ deviceSlots: [...(slide.deviceSlots || []), slot] });
+    onSelectElement(toDeviceSlotElementId(slot.id));
+  }
+
+  return (
+    <div className="space-y-2 rounded-md bg-muted/35 p-3 shadow-[inset_0_0_0_1px_hsl(var(--border)/.65)]">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <Label className="flex items-center gap-1.5 text-xs font-semibold">
+            <Boxes className="h-3.5 w-3.5" /> Device slots
+          </Label>
+          <p className="mt-0.5 text-[10px] leading-relaxed text-muted-foreground">
+            Reuse one capture as a stack, sequence or cross-screen rhythm.
+          </p>
+        </div>
+        <Button type="button" variant="outline" size="sm" className="h-7 shrink-0 px-2 text-[10px]" onClick={addSlot} aria-label="Add device slot">
+          <Plus className="h-3.5 w-3.5" /> Add
+        </Button>
+      </div>
+
+      {(slide.deviceSlots || []).map((slot, index) => (
+        <details
+          key={slot.id}
+          className="group rounded-md bg-background/70 px-2.5 py-2 shadow-[0_0_0_1px_hsl(var(--border)/.55)]"
+          open={slotDisclosure[slot.id] ?? index === (slide.deviceSlots?.length || 0) - 1}
+          onToggle={(event) => {
+            const open = event.currentTarget.open;
+            setSlotDisclosure((current) => current[slot.id] === open ? current : { ...current, [slot.id]: open });
+          }}
+        >
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-[11px] font-medium">
+            <span>Extra device {index + 1}</span>
+            <span className="text-[10px] font-normal text-muted-foreground">{slot.spanSlots || 1} slot{(slot.spanSlots || 1) > 1 ? "s" : ""}</span>
+          </summary>
+          <div className="mt-2 space-y-2 border-t border-border/60 pt-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] text-muted-foreground">Repeat across</span>
+              <div className="flex gap-1">
+                {([1, 2, 3] as SlotSpan[]).map((span) => (
+                  <Button
+                    key={span}
+                    type="button"
+                    variant={(slot.spanSlots || 1) === span ? "secondary" : "ghost"}
+                    size="sm"
+                    className="h-7 min-w-7 px-2 text-[10px]"
+                    onClick={() => onChange({
+                      deviceSlots: (slide.deviceSlots || []).map((candidate) =>
+                        candidate.id === slot.id ? { ...candidate, spanSlots: span } : candidate,
+                      ),
+                    })}
+                    aria-label={`Span extra device ${index + 1} across ${span} screen${span === 1 ? "" : "s"}`}
+                    aria-pressed={(slot.spanSlots || 1) === span}
+                  >
+                    {span}×
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <Input
+              value={slot.assetRef || ""}
+              onChange={(event) => onChange({
+                deviceSlots: (slide.deviceSlots || []).map((candidate) =>
+                  candidate.id === slot.id ? { ...candidate, assetRef: event.target.value.trim() || undefined } : candidate,
+                ),
+              })}
+              placeholder="capture:home-dashboard"
+              aria-label={`Extra device ${index + 1} semantic asset ID`}
+              className="h-8 text-xs"
+            />
+            <ScreenshotPicker
+              label={`Extra device ${index + 1}`}
+              value={resolveAssetPath(slot.assetRef, locale, assets, slot.screenshot)}
+              locale={locale}
+              onChange={(path) => {
+                onChange({
+                  deviceSlots: (slide.deviceSlots || []).map((candidate) =>
+                    candidate.id === slot.id ? { ...candidate, screenshot: path } : candidate,
+                  ),
+                });
+                if (slot.assetRef && onAssetLibraryChange) {
+                  onAssetLibraryChange(replaceAssetPath(assets, slot.assetRef, locale, path));
+                }
+              }}
+            />
+            <div className="flex justify-between gap-2">
+              <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-[10px]" onClick={() => onSelectElement(toDeviceSlotElementId(slot.id))}>
+                Edit angle & position
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-[10px] text-muted-foreground hover:text-destructive"
+                onClick={() => {
+                  onChange({ deviceSlots: (slide.deviceSlots || []).filter((candidate) => candidate.id !== slot.id) });
+                  onSelectElement(null);
+                }}
+                aria-label={`Remove extra device ${index + 1}`}
+              >
+                Remove
+              </Button>
+            </div>
+          </div>
+        </details>
+      ))}
     </div>
   );
 }
@@ -279,6 +461,7 @@ function ElementTransformControls({
   const present: ElementId[] = ["caption"];
   if (slide.layout !== "no-device") present.push("device");
   if (slide.layout === "two-devices") present.push("deviceSecondary");
+  for (const slot of slide.deviceSlots || []) present.push(toDeviceSlotElementId(slot.id));
   for (const element of slide.textElements || []) present.push(toTextElementId(element.id));
 
   const transforms = slide.transforms || {};
@@ -292,6 +475,14 @@ function ElementTransformControls({
     activeId && isTextElementId(activeId)
       ? slide.textElements?.find((element) => element.id === textElementKey(activeId))
       : null;
+  const activeSlot = activeId && isDeviceSlotElementId(activeId)
+    ? slide.deviceSlots?.find((slot) => slot.id === deviceSlotKey(activeId))
+    : undefined;
+  const activePresentation = activeSlot?.presentation || (
+    activeId && isBuiltInElementId(activeId) && activeId !== "caption"
+      ? slide.presentations?.[activeId]
+      : undefined
+  );
 
   function getTransform(id: ElementId) {
     return getElementTransform(slide, device, orientation, id, locale);
@@ -358,6 +549,15 @@ function ElementTransformControls({
       });
       return;
     }
+    if (isDeviceSlotElementId(id)) {
+      const slotId = deviceSlotKey(id);
+      onChange({
+        deviceSlots: (slide.deviceSlots || []).map((slot) =>
+          slot.id === slotId ? { ...slot, transform: { ...slot.transform, ...patch } } : slot,
+        ),
+      });
+      return;
+    }
     if (!isBuiltInElementId(id)) return;
     onChange({
       transforms: { ...transforms, [id]: { ...cur, ...patch } },
@@ -411,6 +611,34 @@ function ElementTransformControls({
     onSelectElement(toTextElementId(id));
   }
 
+  function setAnglePreset(preset: Exclude<DeviceAnglePreset, "custom">) {
+    if (!activeId) return;
+    const next = isDeviceSlotElementId(activeId)
+      ? applyDeviceAngle(slide, { slotId: deviceSlotKey(activeId) }, preset)
+      : activeId === "device" || activeId === "deviceSecondary"
+        ? applyDeviceAngle(slide, activeId, preset)
+        : slide;
+    onChange({ presentations: next.presentations, deviceSlots: next.deviceSlots });
+  }
+
+  function patchPresentation(patch: Partial<DevicePresentation>) {
+    if (!activeId) return;
+    const base = activePresentation || DEVICE_ANGLE_PRESETS.flat;
+    const next: DevicePresentation = { ...base, ...patch, preset: "custom" };
+    if (isDeviceSlotElementId(activeId)) {
+      const slotId = deviceSlotKey(activeId);
+      onChange({
+        deviceSlots: (slide.deviceSlots || []).map((slot) =>
+          slot.id === slotId ? { ...slot, presentation: next } : slot,
+        ),
+      });
+      return;
+    }
+    if (activeId === "device" || activeId === "deviceSecondary") {
+      onChange({ presentations: { ...(slide.presentations || {}), [activeId]: next } });
+    }
+  }
+
   // Z-order: re-rank zIndex among present elements so they remain contiguous.
   function reorder(id: ElementId, dir: "front" | "back" | "up" | "down") {
     const ranked = [...present].sort((a, b) => {
@@ -433,6 +661,10 @@ function ElementTransformControls({
       ...element,
       transform: { ...element.transform },
     }));
+    const nextDeviceSlots = (slide.deviceSlots || []).map((slot) => ({
+      ...slot,
+      transform: { ...slot.transform },
+    }));
     ranked.forEach((eid, i) => {
       const cur = getTransform(eid);
       if (!cur) return;
@@ -440,11 +672,14 @@ function ElementTransformControls({
         const textId = textElementKey(eid);
         const textElement = nextTextElements.find((element) => element.id === textId);
         if (textElement) textElement.transform = { ...textElement.transform, zIndex: i + 1 };
+      } else if (isDeviceSlotElementId(eid)) {
+        const slot = nextDeviceSlots.find((candidate) => candidate.id === deviceSlotKey(eid));
+        if (slot) slot.transform = { ...slot.transform, zIndex: i + 1 };
       } else if (isBuiltInElementId(eid)) {
         nextTransforms[eid] = { ...cur, zIndex: i + 1 };
       }
     });
-    onChange({ transforms: nextTransforms, textElements: nextTextElements });
+    onChange({ transforms: nextTransforms, textElements: nextTextElements, deviceSlots: nextDeviceSlots });
   }
 
   return (
@@ -488,6 +723,10 @@ function ElementTransformControls({
             onDeleteText={() => {
               if (activeTextElement) deleteTextElement(activeTextElement);
             }}
+            presentation={activePresentation}
+            isDevice={activeId === "device" || activeId === "deviceSecondary" || isDeviceSlotElementId(activeId)}
+            onAnglePreset={setAnglePreset}
+            onPresentationChange={patchPresentation}
             hidden={slide.hiddenElements?.includes(activeId) ?? false}
             locked={slide.lockedElements?.includes(activeId) ?? false}
             onToggleHidden={() => toggleElementFlag("hiddenElements")}
@@ -610,6 +849,10 @@ function ActiveElementPanel({
   locked,
   onToggleHidden,
   onToggleLocked,
+  presentation,
+  isDevice,
+  onAnglePreset,
+  onPresentationChange,
 }: {
   activeId: ElementId;
   transform: ElementTransform | undefined;
@@ -624,6 +867,10 @@ function ActiveElementPanel({
   locked: boolean;
   onToggleHidden: () => void;
   onToggleLocked: () => void;
+  presentation?: DevicePresentation;
+  isDevice: boolean;
+  onAnglePreset: (preset: Exclude<DeviceAnglePreset, "custom">) => void;
+  onPresentationChange: (patch: Partial<DevicePresentation>) => void;
 }) {
   const engaged = !!transform;
   const rotation = transform?.rotation ?? 0;
@@ -678,6 +925,14 @@ function ActiveElementPanel({
         </div>
       </div>
 
+      {isDevice ? (
+        <DeviceAnglePanel
+          presentation={presentation}
+          onPreset={onAnglePreset}
+          onChange={onPresentationChange}
+        />
+      ) : null}
+
       {textElement && (
         <TextElementPanel
           element={textElement}
@@ -727,6 +982,96 @@ function ActiveElementPanel({
         </div>
       </div>
     </div>
+  );
+}
+
+const ANGLE_CHOICES: Array<{
+  preset: Exclude<DeviceAnglePreset, "custom">;
+  label: string;
+  short: string;
+}> = [
+  { preset: "flat", label: "Flat", short: "0°" },
+  { preset: "tilt-left", label: "Left tilt", short: "↙" },
+  { preset: "tilt-right", label: "Right tilt", short: "↘" },
+  { preset: "low-angle", label: "Low angle", short: "↑" },
+  { preset: "high-angle", label: "High angle", short: "↓" },
+];
+
+function DeviceAnglePanel({
+  presentation,
+  onPreset,
+  onChange,
+}: {
+  presentation?: DevicePresentation;
+  onPreset: (preset: Exclude<DeviceAnglePreset, "custom">) => void;
+  onChange: (patch: Partial<DevicePresentation>) => void;
+}) {
+  const active = presentation || DEVICE_ANGLE_PRESETS.flat;
+  return (
+    <div className="space-y-2 rounded-md bg-muted/35 p-2.5 shadow-[inset_0_0_0_1px_hsl(var(--border)/.6)]">
+      <div className="flex items-baseline justify-between gap-2">
+        <Label className="text-[11px] font-semibold">Camera angle</Label>
+        <span className="text-[9px] uppercase tracking-[0.12em] text-muted-foreground">3D rig</span>
+      </div>
+      <div className="grid grid-cols-5 gap-1">
+        {ANGLE_CHOICES.map((choice) => (
+          <button
+            key={choice.preset}
+            type="button"
+            onClick={() => onPreset(choice.preset)}
+            aria-label={`Apply ${choice.label.toLowerCase()} angle`}
+            aria-pressed={active.preset === choice.preset}
+            title={choice.label}
+            className={`flex h-11 flex-col items-center justify-center rounded-md text-[9px] outline-none transition-[background-color,color,transform] duration-150 active:scale-[.97] focus-visible:ring-2 focus-visible:ring-ring ${
+              active.preset === choice.preset
+                ? "bg-foreground text-background"
+                : "bg-background/70 text-muted-foreground hover:bg-background hover:text-foreground"
+            }`}
+          >
+            <span className="text-sm leading-none">{choice.short}</span>
+            <span className="mt-1 truncate">{choice.label.split(" ")[0]}</span>
+          </button>
+        ))}
+      </div>
+      <details>
+        <summary className="cursor-pointer text-[10px] font-medium text-muted-foreground hover:text-foreground">
+          Fine tune perspective
+        </summary>
+        <div className="mt-2 space-y-2">
+          <RigRange label="Vertical tilt" value={active.rotateX} min={-45} max={45} suffix="°" onChange={(rotateX) => onChange({ rotateX })} />
+          <RigRange label="Side angle" value={active.rotateY} min={-60} max={60} suffix="°" onChange={(rotateY) => onChange({ rotateY })} />
+          <RigRange label="Device depth" value={active.depth} min={0} max={48} suffix="px" onChange={(depth) => onChange({ depth })} />
+          <RigRange label="Perspective" value={active.perspective} min={400} max={4000} step={50} suffix="px" onChange={(perspective) => onChange({ perspective })} />
+        </div>
+      </details>
+    </div>
+  );
+}
+
+function RigRange({
+  label,
+  value,
+  min,
+  max,
+  step = 1,
+  suffix,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step?: number;
+  suffix: string;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 flex items-center justify-between text-[9px] text-muted-foreground">
+        <span>{label}</span><span className="tabular-nums">{value}{suffix}</span>
+      </span>
+      <input type="range" min={min} max={max} step={step} value={value} onChange={(event) => onChange(Number(event.target.value))} className="w-full" aria-label={label} />
+    </label>
   );
 }
 
@@ -830,11 +1175,13 @@ function LayerButton({
 
 function elementLabel(id: ElementId): string {
   if (isBuiltInElementId(id)) return ELEMENT_LABEL[id];
+  if (isDeviceSlotElementId(id)) return "Extra device";
   return "Text";
 }
 
 function defaultZ(id: ElementId): number {
   if (isTextElementId(id)) return 5;
+  if (isDeviceSlotElementId(id)) return 5;
   if (id === "deviceSecondary") return 2;
   if (id === "device") return 3;
   return 4; // caption on top

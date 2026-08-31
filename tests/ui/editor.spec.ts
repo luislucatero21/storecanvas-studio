@@ -16,12 +16,14 @@ test.describe("StoreCanvas editor", () => {
 
   test("loads the Rutmia campaign and exposes the core editing workflow", async ({ page }) => {
     await page.goto("/");
+    const firstSlide = baseline.slidesByDevice.iphone[0];
+    const initialLocale = baseline.locale as keyof typeof firstSlide.label;
 
     await expect(page.getByRole("heading", { name: "Screens" })).toBeVisible();
     await expect(page.getByRole("textbox", { name: "App name" })).toHaveValue("Rutmia");
-    await expect(page.getByText("Connected")).toBeVisible();
-    await expect(page.getByRole("main").getByText("A ROUTINE THAT MOVES WITH YOU").first()).toBeVisible();
-    await expect(page.getByRole("main").getByText("Own your day.").first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "Connected" })).toBeVisible();
+    await expect(page.getByRole("main").getByText(firstSlide.label[initialLocale]).first()).toBeVisible();
+    await expect(page.getByRole("main").getByText(firstSlide.headline[initialLocale]).first()).toBeVisible();
     await expect(page.getByText("10 screens")).toBeVisible();
   });
 
@@ -64,6 +66,73 @@ test.describe("StoreCanvas editor", () => {
     await page.getByRole("button", { name: "Show element" }).click();
     await page.getByRole("button", { name: "Lock element" }).click();
     await expect(page.getByRole("button", { name: "Unlock element" })).toBeVisible();
+  });
+
+  test("applies a dimensional camera angle to the selected phone", async ({ page }) => {
+    await page.goto("/");
+
+    await page.getByRole("button", { name: "Rotate element" }).first().click();
+    await expect(page.getByText("Camera angle")).toBeVisible();
+    await page.getByRole("button", { name: "Apply left tilt angle" }).click();
+
+    await expect.poll(async () => {
+      const response = await page.request.get("/api/project");
+      const body = await response.json();
+      return body.state.slidesByDevice.iphone[0].presentations?.device?.preset;
+    }).toBe("tilt-left");
+  });
+
+  test("renders a dimensional rig through an Android device frame", async ({ page }) => {
+    const androidProject = JSON.parse(JSON.stringify(baseline));
+    androidProject.slidesByDevice.android = [{
+      ...androidProject.slidesByDevice.iphone[0],
+      id: "android-dimensional-proof",
+      presentations: {
+        device: { preset: "tilt-right", rotateX: 4, rotateY: 22, perspective: 1350, depth: 18 },
+      },
+    }];
+    await page.request.post("/api/project", { data: androidProject });
+    await page.goto("/render?device=android&locale=en-US&size=1080x1920");
+
+    const rig = page.locator('[data-device-type="android"][data-device-angle="tilt-right"]');
+    await expect(rig).toBeVisible();
+  });
+
+  test("adds a third device slot that reuses the active capture and spans two screens", async ({ page }) => {
+    await page.goto("/");
+
+    await page.getByRole("button", { name: "Add device slot" }).click();
+    await expect(page.getByText("Extra device 1").first()).toBeVisible();
+    await page.getByRole("button", { name: "Span extra device 1 across 2 screens" }).click();
+
+    await expect.poll(async () => {
+      const response = await page.request.get("/api/project");
+      const body = await response.json();
+      return body.state.slidesByDevice.iphone[0].deviceSlots?.[0]?.spanSlots;
+    }).toBe(2);
+  });
+
+  test("lets one large message continue across multiple connected slots", async ({ page }) => {
+    await page.goto("/");
+
+    await page.getByRole("button", { name: "Set message width to 2 screens" }).click();
+
+    await expect.poll(async () => {
+      const response = await page.request.get("/api/project");
+      const body = await response.json();
+      return body.state.slidesByDevice.iphone[0].captionSpan;
+    }).toBe(2);
+  });
+
+  test("links localized copy across iPhone and iPad when the user enables continuity", async ({ page }) => {
+    await page.goto("/");
+
+    await page.getByRole("button", { name: "Link copy across devices" }).click();
+    await page.getByLabel("Headline").fill("One promise everywhere.");
+    await page.getByRole("combobox").first().click();
+    await page.getByRole("option", { name: "iPad" }).click();
+
+    await expect(page.getByLabel("Headline")).toHaveValue("One promise everywhere.");
   });
 
   test("changes Rutmia's campaign style without replacing its captures", async ({ page }) => {
@@ -167,6 +236,8 @@ test.describe("StoreCanvas editor", () => {
       });
     });
     await page.goto("/");
+    await page.getByRole("combobox", { name: "Locale" }).click();
+    await page.getByRole("option", { name: "EN-US" }).click();
     await page.getByRole("button", { name: "AI polish" }).click();
     await page.getByRole("textbox", { name: "Personal API key" }).fill("sk-test-key-for-ui");
     await page.getByRole("button", { name: "Generate suggestions" }).click();

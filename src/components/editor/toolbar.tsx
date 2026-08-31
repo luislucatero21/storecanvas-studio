@@ -5,6 +5,7 @@ import {
   Check,
   Cloud,
   Download,
+  Link2,
   RotateCcw,
   ShieldAlert,
   ShieldCheck,
@@ -43,6 +44,8 @@ type Props = {
   setAppName: (v: string) => void;
   connectedCanvas: boolean;
   setConnectedCanvas: (v: boolean) => void;
+  copyLinked: boolean;
+  onCopyLinkChange: (enabled: boolean) => void;
   locale: string;
   setLocale: (v: string) => void;
   locales: string[];
@@ -198,6 +201,21 @@ export function Toolbar(props: Props) {
           </SelectContent>
         </Select>
       )}
+
+      <Button
+        type="button"
+        variant={props.copyLinked ? "secondary" : "ghost"}
+        size="sm"
+        className="h-8 gap-1.5 px-2 text-xs"
+        onClick={() => props.onCopyLinkChange(!props.copyLinked)}
+        aria-label={props.copyLinked ? "Unlink copy across devices" : "Link copy across devices"}
+        aria-pressed={props.copyLinked}
+        title={props.copyLinked ? "Copy continuity is on" : "Keep matching screen copy consistent across devices"}
+        disabled={props.busy}
+      >
+        <Link2 className="h-3.5 w-3.5" />
+        <span className="hidden 2xl:inline">{props.copyLinked ? "Copy linked" : "Link copy"}</span>
+      </Button>
 
       <CampaignWardrobe
         device={props.device}

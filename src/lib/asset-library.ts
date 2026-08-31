@@ -58,6 +58,16 @@ export function buildAssetLibrary(project: ProjectState): AssetLibrary {
           paths: { [project.locale]: slide.screenshotSecondary },
         };
       }
+      for (const slot of slide.deviceSlots || []) {
+        if (slot.assetRef && slot.screenshot && !assets[slot.assetRef]) {
+          assets[slot.assetRef] = {
+            id: slot.assetRef,
+            type: "screen",
+            label: slot.assetRef.replace(/^capture:/, "").replace(/[-_]/g, " "),
+            paths: { [project.locale]: slot.screenshot },
+          };
+        }
+      }
     }
   }
   return assets;
@@ -69,6 +79,9 @@ export function assetRefsInProject(project: ProjectState): string[] {
     for (const slide of slides) {
       if (slide.assetRef) refs.add(slide.assetRef);
       if (slide.assetRefSecondary) refs.add(slide.assetRefSecondary);
+      for (const slot of slide.deviceSlots || []) {
+        if (slot.assetRef) refs.add(slot.assetRef);
+      }
     }
   }
   return [...refs];

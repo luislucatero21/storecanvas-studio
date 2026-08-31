@@ -10,7 +10,7 @@ import {
   themeById,
 } from "@/lib/constants";
 import { detectPlatform, nid } from "@/lib/defaults";
-import { isBuiltInElementId, isTextElementId, textElementKey } from "@/lib/elements";
+import { deviceSlotKey, isBuiltInElementId, isDeviceSlotElementId, isTextElementId, textElementKey } from "@/lib/elements";
 import { preloadImages } from "@/lib/image-cache";
 import { resolveScreenshot, writeLocalized } from "@/lib/locale";
 import { buildAssetLibrary } from "@/lib/asset-library";
@@ -19,6 +19,7 @@ import { useProject } from "@/lib/storage";
 import { validateProject } from "@/lib/validation";
 import { applyBrandTokens } from "@/lib/theme";
 import { applyAiProposal } from "@/lib/ai";
+import { setCopyLinking, writeLinkedCopy } from "@/lib/copy-sync";
 import {
   applyCampaignTemplate,
   applyCustomColors,
@@ -102,7 +103,7 @@ export function ScreenshotEditor() {
       }
     }
     for (const s of allSlides) {
-      for (const raw of [s.screenshot, s.screenshotSecondary]) {
+      for (const raw of [s.screenshot, s.screenshotSecondary, ...(s.deviceSlots || []).map((slot) => slot.screenshot)]) {
         if (!raw || raw.startsWith("data:")) continue;
         if (raw.includes("{locale}")) {
           for (const loc of state.locales) paths.add(resolveScreenshot(raw, loc));
@@ -216,11 +217,9 @@ export function ScreenshotEditor() {
 
   const patchLocalized = React.useCallback(
     (slide: Slide, key: "label" | "headline", value: string) => {
-      patchSlide(slide.id, {
-        [key]: writeLocalized(slide[key], state.locale, value),
-      } as Partial<Slide>);
+      setState((project) => writeLinkedCopy(project, project.device, slide.id, key, project.locale, value));
     },
-    [patchSlide, state.locale],
+    [setState],
   );
 
   const patchElementTransform = React.useCallback(
@@ -237,6 +236,15 @@ export function ScreenshotEditor() {
                 ...slide,
                 textElements: (slide.textElements || []).map((element) =>
                   element.id === textId ? { ...element, transform } : element,
+                ),
+              };
+            }
+            if (isDeviceSlotElementId(elementId)) {
+              const slotId = deviceSlotKey(elementId);
+              return {
+                ...slide,
+                deviceSlots: (slide.deviceSlots || []).map((slot) =>
+                  slot.id === slotId ? { ...slot, transform } : slot,
                 ),
               };
             }
@@ -304,6 +312,15 @@ export function ScreenshotEditor() {
             text: { ...element.text },
             transform: { ...element.transform },
           })),
+          deviceSlots: src.deviceSlots?.map((slot) => ({
+            ...slot,
+            id: nid(),
+            transform: { ...slot.transform },
+            presentation: slot.presentation ? { ...slot.presentation } : undefined,
+          })),
+          presentations: src.presentations
+            ? Object.fromEntries(Object.entries(src.presentations).map(([key, value]) => [key, { ...value }]))
+            : undefined,
         };
         const next = [...slides.slice(0, idx + 1), copy, ...slides.slice(idx + 1)];
         return {
@@ -621,6 +638,7 @@ export function ScreenshotEditor() {
         busy={busy}
         templateId={state.templateId}
         paletteId={state.paletteId}
+        copyLinked={state.copySync?.enabled === true}
         brandColors={state.brand?.colors}
         onTemplateChange={(templateId) => {
           const template = campaignTemplateById(templateId);
@@ -642,8 +660,21 @@ export function ScreenshotEditor() {
             description: "Screenshots, layouts, typography and localized copy stayed in place.",
           });
         }}
+        onCopyLinkChange={(enabled) => {
+          setState((project) => setCopyLinking(project, enabled, project.device));
+          toast.success(enabled ? "Copy linked across devices" : "Copy continuity off", {
+            description: enabled
+              ? "Matching screen positions now update together across device decks."
+              : "Each device deck can now use independent copy.",
+          });
+        }}
         onApplyAiProposal={(proposal) => {
-          setState((project) => applyAiProposal(project, proposal, project.locale, project.device));
+          setState((project) => {
+            const next = applyAiProposal(project, proposal, project.locale, project.device);
+            return project.copySync?.enabled
+              ? setCopyLinking(next, true, project.device)
+              : next;
+          });
           toast.success("AI suggestions applied", {
             description: "Only localized copy changed. Your captures, layout and export settings stayed intact.",
           });
@@ -713,6 +744,7 @@ export function ScreenshotEditor() {
                 selectedElement?.slideId === activeSlide.id ? selectedElement.elementId : null
               }
               onChange={(patch) => patchSlide(activeSlide.id, patch)}
+              onLocalizedChange={(key, value) => patchLocalized(activeSlide, key, value)}
               assets={assetLibrary}
               onAssetLibraryChange={(assets) => setState((p) => ({ ...p, assets }))}
               onSelectElement={(elementId) =>

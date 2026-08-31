@@ -74,6 +74,14 @@ export function validateProject(
           refs.add(ref);
         }
       }
+      for (const slot of slide.deviceSlots || []) {
+        const resolved = resolveAssetPath(slot.assetRef, project.locale, project.assets, slot.screenshot);
+        if (!resolved) {
+          issues.push({ code: "missing-slot-screenshot", severity: severity(strict), message: "Add a capture to every extra device slot before exporting.", slideId: slide.id, locale: project.locale });
+        } else if (options.existingPaths && !resolved.startsWith("data:") && !options.existingPaths.has(resolved)) {
+          issues.push({ code: "missing-slot-file", severity: severity(strict), message: `Extra device capture is missing at ${resolved}.`, slideId: slide.id, locale: project.locale });
+        }
+      }
     });
   }
 

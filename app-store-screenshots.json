@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "appName": "Rutmia",
   "themeId": "warm-editorial",
   "templateId": "afterglow-rhythm",
@@ -26,7 +26,16 @@
           "es-MX": "Haz tuyo tu día."
         },
         "screenshot": "/screenshots/apple/iphone/{locale}/home.png",
-        "assetRef": "capture:home-dashboard"
+        "assetRef": "capture:home-dashboard",
+        "presentations": {
+          "device": {
+            "preset": "tilt-left",
+            "rotateX": 4,
+            "rotateY": -22,
+            "perspective": 1350,
+            "depth": 18
+          }
+        }
       },
       {
         "id": "rutmia-2-ai",

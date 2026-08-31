@@ -30,9 +30,38 @@ export type ElementTransform = {
   zIndex?: number;
 };
 
+export type DeviceAnglePreset =
+  | "flat"
+  | "tilt-left"
+  | "tilt-right"
+  | "low-angle"
+  | "high-angle"
+  | "custom";
+
+export type DevicePresentation = {
+  preset: DeviceAnglePreset;
+  rotateX: number;
+  rotateY: number;
+  perspective: number;
+  depth: number;
+};
+
+export type SlotSpan = 1 | 2 | 3;
+
+export type DeviceSlot = {
+  id: string;
+  screenshot: string;
+  assetRef?: string;
+  transform: ElementTransform;
+  presentation?: DevicePresentation;
+  spanSlots?: SlotSpan;
+  opacity?: number;
+};
+
 export type BuiltInElementId = "caption" | "device" | "deviceSecondary";
 export type TextElementId = `text:${string}`;
-export type ElementId = BuiltInElementId | TextElementId;
+export type DeviceSlotElementId = `slot:${string}`;
+export type ElementId = BuiltInElementId | TextElementId | DeviceSlotElementId;
 
 export type SelectedElement = {
   slideId: string;
@@ -119,6 +148,10 @@ export type Slide = {
   screenshotSecondary?: string; // for two-devices layout — may contain {locale}
   assetRef?: string;          // semantic primary capture reference
   assetRefSecondary?: string; // semantic secondary capture reference
+  deviceSlots?: DeviceSlot[];
+  presentations?: Partial<Record<"device" | "deviceSecondary", DevicePresentation>>;
+  captionSpan?: SlotSpan;
+  copyKey?: string;
   inverted?: boolean;         // dark background variant
   // Per-element overrides; when present, replaces layout default placement.
   transforms?: Partial<Record<BuiltInElementId, ElementTransform>>;
@@ -174,6 +207,11 @@ export type ProjectState = {
   templateId?: string;
   /** Named palette that produced the brand color overrides. */
   paletteId?: string;
+  copySync?: {
+    enabled: boolean;
+    sourceDevice: Device;
+    matchBy: "copyKey-or-index";
+  };
   // v1 projects render as isolated screens until the user opts into connected crops.
   connectedCanvas: boolean;
   // Locales this project targets. Drives the toolbar dropdown and bulk export.

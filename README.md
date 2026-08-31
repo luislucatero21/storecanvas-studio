@@ -18,6 +18,10 @@ Open `http://localhost:3000` and edit the campaign. Changes autosave to `app-sto
 - **AI polish** — review copy suggestions from a personal OpenAI or OpenRouter key before applying them. Keys are held only in the dialog session and never written to the project file. The request contains app/copy context only—never capture files or their paths.
 - **Screen controls** — drag-to-reorder screens, click-to-edit text, screenshot drop targets, per-screen layout switcher, layer ordering, hide/lock controls, and responsive anchors.
 - **Device frames** (`src/components/editor/device-frames.tsx`) — iPhone (PNG mockup), iPad, Android phone, Android tablet (portrait + landscape), feature graphic.
+- **3D camera rig** — every phone or tablet can use flat, left/right tilt, low-angle, high-angle, or fine-tuned perspective/depth controls. The same rig works through iPhone, iPad, Android phone, and Android tablet frames.
+- **Reusable device slots** — add two or more devices to a screen, reuse or replace each capture independently, and repeat a slot across one, two, or three connected artboards without stretching the device.
+- **Cross-screen messages** — captions can span one, two, or three connected screens for large horizontal statements.
+- **Optional copy continuity** — link matching screen positions so localized labels and headlines stay identical across iPhone, iPad, Android, and tablet decks; unlink at any time to resume device-specific copy.
 - **Semantic capture library** — slides reference stable IDs such as `capture:home-dashboard`; locale-specific paths can be refreshed without changing composition transforms.
 - **Preflight QA** — the toolbar validates schema, locale, store slide limits, export targets, and screenshot availability before allowing production export.
 - **Auto-save (git-trackable)** — every change is persisted within ~600ms to **`app-store-screenshots.json`** at the project root (via `/api/project`) **and** mirrored to `localStorage` as an instant-paint cache. Commit `app-store-screenshots.json` and you can `git clone` to another machine and resume exactly where you left off.
@@ -61,7 +65,7 @@ pnpm test:ui    # Playwright UI tests
 pnpm test:all
 ```
 
-The suites cover the Rutmia load path, locale editing, text layers, palette/template changes, custom color tuning, exact-size iPhone and iPad output, native iPad asset dimensions, AA palette contrast, AI review, and hide/lock interactions. UI tests restore the Rutmia fixture after each scenario.
+The suites cover the Rutmia load path, locale editing, text layers, 3D iPhone/Android device rendering, reusable multi-screen slots, cross-screen messages, linked cross-device copy, palette/template changes, custom color tuning, exact-size iPhone and iPad output, native iPad asset dimensions, AA palette contrast, AI review, and hide/lock interactions. UI tests restore the Rutmia fixture after each scenario.
 
 ## AI providers
 
@@ -98,5 +102,5 @@ The gateway receives standard OpenAI-compatible chat-completion requests. A depl
 - Image preloading converts every static path to a base64 data URI before exports run, and export retries paths that were previously missing — this prevents the html-to-image race where some slide screenshots come out black.
 - Reset via the toolbar's circular arrow icon clears in-memory state and reloads the default screens. To wipe disk state too, delete `app-store-screenshots.json`.
 - **Persistence model** — the canonical state lives in `app-store-screenshots.json` (git-tracked). On load, the editor reads localStorage first for instant paint, then overwrites with the file contents if present; if the file endpoint is unavailable, autosave is blocked so stale cache cannot overwrite disk. On save, both are written. If you ever see a conflict, the file always wins.
-- **Migration model** — schema v1/v2 projects do not need a manual conversion. On first load, the editor upgrades localized text and transform records, writes `schemaVersion: 3`, adds explicit campaign template/palette IDs, preserves all existing screens, and keeps `connectedCanvas: false` so old offscreen/clipped elements export exactly as isolated screens. Turn on **Connected** in the toolbar when you want elements to cross screen edges. Explicit skill migrations preserve an existing `connectedCanvas` choice, otherwise they keep legacy decks isolated too.
+- **Migration model** — older projects do not need a manual conversion. On first load, the editor upgrades localized text and transform records, writes `schemaVersion: 4`, adds explicit campaign template/palette IDs, preserves all existing screens, and keeps legacy canvas behavior intact. Schema v4 adds bounded 3D presentation values, reusable device slots, message spans, and optional copy continuity. Turn on **Connected** in the toolbar when you want elements to cross screen edges.
 - **Custom themes** — if a project file references a theme id that is not present in `src/lib/constants.ts`, the editor falls back to `clean-light` and shows a warning. Merge custom `THEMES` entries during in-place upgrades.

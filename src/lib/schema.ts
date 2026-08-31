@@ -11,6 +11,23 @@ const TransformSchema = z.object({
   rotation: z.number().finite().optional(),
   zIndex: z.number().finite().optional(),
 }).passthrough();
+const SlotSpanSchema = z.union([z.literal(1), z.literal(2), z.literal(3)]);
+const DevicePresentationSchema = z.object({
+  preset: z.enum(["flat", "tilt-left", "tilt-right", "low-angle", "high-angle", "custom"]),
+  rotateX: z.number().finite().min(-45).max(45),
+  rotateY: z.number().finite().min(-60).max(60),
+  perspective: z.number().finite().min(400).max(4000),
+  depth: z.number().finite().min(0).max(48),
+});
+const DeviceSlotSchema = z.object({
+  id: z.string().trim().min(1),
+  screenshot: z.string(),
+  assetRef: z.string().trim().min(1).optional(),
+  transform: TransformSchema,
+  presentation: DevicePresentationSchema.optional(),
+  spanSlots: SlotSpanSchema.optional(),
+  opacity: z.number().finite().min(0).max(1).optional(),
+});
 const ConstraintSchema = z.object({
   x: z.object({ anchor: z.string().optional(), value: z.number().finite().optional(), offset: z.number().finite().optional(), unit: z.enum(["px", "percent"]).optional() }).optional(),
   y: z.object({ anchor: z.string().optional(), value: z.number().finite().optional(), offset: z.number().finite().optional(), unit: z.enum(["px", "percent"]).optional() }).optional(),
@@ -46,6 +63,13 @@ export const SlideSchema = z.object({
   screenshotSecondary: z.string().optional(),
   assetRef: z.string().min(1).optional(),
   assetRefSecondary: z.string().min(1).optional(),
+  deviceSlots: z.array(DeviceSlotSchema).optional(),
+  presentations: z.object({
+    device: DevicePresentationSchema.optional(),
+    deviceSecondary: DevicePresentationSchema.optional(),
+  }).optional(),
+  captionSpan: SlotSpanSchema.optional(),
+  copyKey: z.string().trim().min(1).optional(),
   inverted: z.boolean().optional(),
   transforms: z.record(z.string(), TransformSchema).optional(),
   textElements: z.array(TextElementSchema).optional(),
@@ -61,6 +85,11 @@ export const ProjectStateSchema = z.object({
   themeId: z.string().trim().min(1),
   templateId: z.string().trim().min(1).optional(),
   paletteId: z.string().trim().min(1).optional(),
+  copySync: z.object({
+    enabled: z.boolean(),
+    sourceDevice: DeviceSchema,
+    matchBy: z.literal("copyKey-or-index"),
+  }).optional(),
   connectedCanvas: z.boolean(),
   locales: z.array(z.string().trim().min(1)).min(1),
   locale: z.string().trim().min(1),

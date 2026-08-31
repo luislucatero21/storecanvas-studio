@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { PROJECT_SCHEMA_VERSION, STORAGE_KEY } from "./constants";
 import { DEFAULT_PROJECT } from "./defaults";
 import { coerceLocalized } from "./locale";
-import type { Device, ElementTransform, ProjectState, Slide, TextElement } from "./types";
+import type { Device, DevicePresentation, DeviceSlot, ElementTransform, ProjectState, Slide, TextElement } from "./types";
 
 const HISTORY_LIMIT = 50;
 // Coalesce rapid edits (typing, slider drags) into a single undo step.
@@ -53,6 +53,35 @@ function cleanTextElement(value: unknown): TextElement | undefined {
   };
 }
 
+function cleanPresentation(value: unknown): DevicePresentation | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const raw = value as Partial<DevicePresentation>;
+  const presets = ["flat", "tilt-left", "tilt-right", "low-angle", "high-angle", "custom"];
+  if (!raw.preset || !presets.includes(raw.preset)) return undefined;
+  if (![raw.rotateX, raw.rotateY, raw.perspective, raw.depth].every((number) => typeof number === "number" && Number.isFinite(number))) return undefined;
+  if (Math.abs(raw.rotateX!) > 45 || Math.abs(raw.rotateY!) > 60 || raw.perspective! < 400 || raw.perspective! > 4000 || raw.depth! < 0 || raw.depth! > 48) return undefined;
+  return raw as DevicePresentation;
+}
+
+function cleanDeviceSlot(value: unknown): DeviceSlot | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const raw = value as Partial<DeviceSlot>;
+  if (typeof raw.id !== "string" || !raw.id.trim() || typeof raw.screenshot !== "string") return undefined;
+  const transform = cleanTransform(raw.transform);
+  if (!transform) return undefined;
+  const presentation = cleanPresentation(raw.presentation);
+  const spanSlots = raw.spanSlots === 2 || raw.spanSlots === 3 ? raw.spanSlots : 1;
+  return {
+    id: raw.id,
+    screenshot: raw.screenshot,
+    transform,
+    ...(typeof raw.assetRef === "string" && raw.assetRef.trim() ? { assetRef: raw.assetRef } : {}),
+    ...(presentation ? { presentation } : {}),
+    spanSlots,
+    ...(typeof raw.opacity === "number" && Number.isFinite(raw.opacity) ? { opacity: Math.max(0, Math.min(1, raw.opacity)) } : {}),
+  };
+}
+
 // Migrate older projects into the current schema while keeping legacy decks
 // visually stable until they explicitly opt into connected canvas.
 function migrateSlide(slide: Slide): Slide {
@@ -66,6 +95,16 @@ function migrateSlide(slide: Slide): Slide {
   const textElements = Array.isArray(slide.textElements)
     ? slide.textElements.map(cleanTextElement).filter((t): t is TextElement => !!t)
     : undefined;
+  const deviceSlots = Array.isArray(slide.deviceSlots)
+    ? slide.deviceSlots.map(cleanDeviceSlot).filter((slot): slot is DeviceSlot => !!slot)
+    : undefined;
+  const presentations = slide.presentations
+    ? Object.fromEntries(
+        Object.entries(slide.presentations)
+          .map(([id, presentation]) => [id, cleanPresentation(presentation)])
+          .filter((entry): entry is [string, DevicePresentation] => !!entry[1]),
+      )
+    : undefined;
 
   return {
     ...slide,
@@ -73,6 +112,9 @@ function migrateSlide(slide: Slide): Slide {
     headline: coerceLocalized(slide.headline as unknown),
     ...(transforms && Object.keys(transforms).length > 0 ? { transforms } : { transforms: undefined }),
     ...(textElements && textElements.length > 0 ? { textElements } : { textElements: undefined }),
+    ...(deviceSlots && deviceSlots.length > 0 ? { deviceSlots } : { deviceSlots: undefined }),
+    ...(presentations && Object.keys(presentations).length > 0 ? { presentations } : { presentations: undefined }),
+    captionSpan: slide.captionSpan === 2 || slide.captionSpan === 3 ? slide.captionSpan : undefined,
   };
 }
 
@@ -114,6 +156,11 @@ function mergeWithDefaults(parsed: Partial<ProjectState>): ProjectState {
       ...slidesByDevice,
     } as ProjectState["slidesByDevice"],
   };
+  if (merged.copySync) {
+    const validDevices: Device[] = ["iphone", "ipad", "android", "android-7", "android-10", "feature-graphic"];
+    if (!validDevices.includes(merged.copySync.sourceDevice)) merged.copySync = undefined;
+    else merged.copySync = { ...merged.copySync, matchBy: "copyKey-or-index" };
+  }
   // Clamp the active locale into the project's locale list so a stale
   // `locale` (e.g. from a project that dropped languages) doesn't show blank.
   if (!merged.locales || merged.locales.length === 0) {

@@ -6,6 +6,7 @@ import type {
   AssetLibrary,
   BuiltInElementId,
   Device,
+  DevicePresentation,
   ElementId,
   ElementTransform,
   Orientation,
@@ -25,6 +26,7 @@ import {
 } from "@/lib/constants";
 import { getCanvas } from "@/lib/canvas";
 import { toTextElementId } from "@/lib/elements";
+import { deviceSlotKey, isDeviceSlotElementId, toDeviceSlotElementId } from "@/lib/elements";
 import { img } from "@/lib/image-cache";
 import { pickText } from "@/lib/locale";
 import { constraintFor, resolveResponsiveTransform } from "@/lib/constraints";
@@ -480,6 +482,18 @@ export function getElementTransform(
   id: ElementId,
   locale = "en",
 ): ElementTransform | undefined {
+  if (isDeviceSlotElementId(id)) {
+    const slot = slide.deviceSlots?.find((candidate) => candidate.id === deviceSlotKey(id));
+    if (!slot) return undefined;
+    const { cW, cH } = getCanvas(device, orientation);
+    const { constraint, overrides } = constraintFor(slide.constraints, slide.responsive, id);
+    return resolveResponsiveTransform({
+      base: slot.transform,
+      canvas: { w: cW, h: cH },
+      constraint,
+      overrides,
+    });
+  }
   if (id.startsWith("text:")) {
     const textId = id.slice("text:".length);
     const textElement = slide.textElements?.find((element) => element.id === textId);
@@ -949,7 +963,10 @@ function SlideElements({
   );
   const { cW, cH, Frame, frameAspect, defaults } = getSlideGeometry(slide, device, orientation);
   const inverted = !!slide.inverted;
-  const captionRect = resolvedRectFor("caption", slide, device, orientation, locale, defaults);
+  const baseCaptionRect = resolvedRectFor("caption", slide, device, orientation, locale, defaults);
+  const captionRect = baseCaptionRect && (slide.captionSpan || 1) > 1
+    ? { ...baseCaptionRect, width: baseCaptionRect.width + cW * ((slide.captionSpan || 1) - 1) }
+    : baseCaptionRect;
   const deviceRect = resolvedRectFor("device", slide, device, orientation, locale, defaults);
   const secondaryRect = resolvedRectFor(
     "deviceSecondary",
@@ -1018,17 +1035,26 @@ function SlideElements({
     );
   }
 
-  function renderDevice(id: "device" | "deviceSecondary", rect: Rect, src: string, extraStyle?: React.CSSProperties) {
+  function renderDevice(
+    id: ElementId,
+    rect: Rect & { rotation?: number; zIndex?: number },
+    src: string,
+    presentation?: DevicePresentation,
+    extraStyle?: React.CSSProperties,
+    interactive = true,
+  ) {
     if (isHidden(id)) return null;
-    const saved = slide.transforms?.[id];
-    const rotation = saved?.rotation ?? 0;
-    const zIndex = saved?.zIndex ?? (id === "deviceSecondary" ? 2 : 3);
+    const saved = isDeviceSlotElementId(id)
+      ? slide.deviceSlots?.find((slot) => slot.id === deviceSlotKey(id))?.transform
+      : slide.transforms?.[id as BuiltInElementId];
+    const rotation = rect.rotation ?? saved?.rotation ?? 0;
+    const zIndex = rect.zIndex ?? saved?.zIndex ?? (id === "deviceSecondary" ? 2 : 3);
     return (
       <Movable
         rect={toGlobal(rect)}
         boundsW={boundsW}
         boundsH={boundsH}
-        editable={editable}
+        editable={interactive ? editable : false}
         previewScale={previewScale}
         rotation={rotation}
         onChange={(t) =>
@@ -1045,14 +1071,12 @@ function SlideElements({
         zIndex={zIndex}
         allowOverflow
         locked={isLocked(id)}
-        selected={selectedElementId === id}
+        selected={interactive && selectedElementId === id}
         onSelect={() => edit?.onSelectElement?.(id)}
       >
-        <Frame
-          src={src}
-          hideEmpty={hideEmpty}
-          style={{ width: "100%", height: "100%", ...extraStyle }}
-        />
+        <DeviceRig device={device} presentation={presentation} style={extraStyle}>
+          <Frame src={src} hideEmpty={hideEmpty} style={{ width: "100%", height: "100%" }} />
+        </DeviceRig>
       </Movable>
     );
   }
@@ -1133,12 +1157,88 @@ function SlideElements({
           "deviceSecondary",
           secondaryRect,
           screenshotSecondary || screenshot,
+          slide.presentations?.deviceSecondary,
           { opacity: 0.85 },
         )}
-      {deviceRect && renderDevice("device", deviceRect, screenshot)}
+      {deviceRect && renderDevice("device", deviceRect, screenshot, slide.presentations?.device)}
+      {(slide.deviceSlots || []).flatMap((slot) => {
+        const id = toDeviceSlotElementId(slot.id);
+        const resolved = getElementTransform(slide, device, orientation, id, locale) || slot.transform;
+        const src = resolveAssetPath(slot.assetRef, locale, assets, slot.screenshot || slide.screenshot);
+        return Array.from({ length: slot.spanSlots || 1 }, (_, index) => (
+          <React.Fragment key={`${slot.id}-${index}`}>
+            {renderDevice(
+              id,
+              { ...resolved, x: resolved.x + cW * index },
+              src,
+              slot.presentation,
+              { opacity: slot.opacity ?? 1 },
+              index === 0,
+            )}
+          </React.Fragment>
+        ));
+      })}
       {renderCaption()}
       {(slide.textElements || []).map(renderTextElement)}
     </>
+  );
+}
+
+function DeviceRig({
+  device,
+  presentation,
+  style,
+  children,
+}: {
+  device: Device;
+  presentation?: DevicePresentation;
+  style?: React.CSSProperties;
+  children: React.ReactNode;
+}) {
+  const rig = presentation || { preset: "flat", rotateX: 0, rotateY: 0, perspective: 1400, depth: 0 };
+  const dimensional = Math.abs(rig.rotateX) + Math.abs(rig.rotateY) + rig.depth > 0;
+  return (
+    <div
+      data-device-angle={rig.preset}
+      data-device-type={device}
+      style={{
+        width: "100%",
+        height: "100%",
+        perspective: rig.perspective,
+        perspectiveOrigin: "50% 45%",
+        ...style,
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          position: "relative",
+          transformStyle: "preserve-3d",
+          transform: `rotateX(${rig.rotateX}deg) rotateY(${rig.rotateY}deg)`,
+          transformOrigin: "center center",
+          filter: dimensional
+            ? `drop-shadow(${rig.rotateY < 0 ? rig.depth * 0.7 : -rig.depth * 0.7}px ${rig.depth * 0.9}px ${Math.max(16, rig.depth * 1.7)}px rgba(20,16,14,.34))`
+            : undefined,
+        }}
+      >
+        {rig.depth > 0 ? (
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              inset: "1.5%",
+              borderRadius: "8% / 4%",
+              background: "linear-gradient(110deg, #4b4b50, #161619)",
+              transform: `translateZ(-${rig.depth}px) translate(${rig.rotateY < 0 ? rig.depth * 0.5 : -rig.depth * 0.5}px, ${rig.depth * 0.25}px)`,
+            }}
+          />
+        ) : null}
+        <div style={{ position: "relative", width: "100%", height: "100%", transform: "translateZ(0)" }}>
+          {children}
+        </div>
+      </div>
+    </div>
   );
 }
 

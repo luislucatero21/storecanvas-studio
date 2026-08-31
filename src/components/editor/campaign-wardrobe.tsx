@@ -46,6 +46,10 @@ export function CampaignWardrobe({
   const activeTemplate = campaignTemplateById(templateId) || CAMPAIGN_TEMPLATES[0];
   const activePalette = paletteById(paletteId) || PALETTE_PRESETS[0];
   const activePaletteName = paletteId === "custom" ? "Custom colors" : activePalette.name;
+  const tuneColors = React.useMemo(
+    () => ({ ...activePalette.colors, ...colors }),
+    [activePalette, colors],
+  );
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -136,7 +140,7 @@ export function CampaignWardrobe({
 
           <TabsContent value="tune" className="mt-5">
             <ColorTune
-              colors={{ ...activePalette.colors, ...colors }}
+              colors={tuneColors}
               disabled={disabled}
               onApply={onCustomColorsChange}
             />
