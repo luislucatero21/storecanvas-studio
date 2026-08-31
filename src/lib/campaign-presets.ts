@@ -6,7 +6,9 @@ import type {
   ProjectState,
   Slide,
   SlideLayout,
+  TemplateApplyOptions,
 } from "./types";
+import { fitConnectedArtwork } from "./connected-artwork";
 
 /**
  * Presets deliberately contain no screenshot paths or copy.  A campaign can be
@@ -133,6 +135,34 @@ export const PALETTE_PRESETS: PalettePreset[] = [
       muted: "#84666E",
     },
   },
+  {
+    id: "apricot-ink",
+    name: "Apricot ink",
+    description: "Soft apricot, near-black type and a sharp periwinkle signal for human product stories.",
+    themeId: "warm-editorial",
+    colors: { primary: "#5E6DE8", accent: "#E05F3D", surface: "#F6E0CF", surfaceAlt: "#211E24", ink: "#211E24", inkAlt: "#FFF8F1", muted: "#796B67" },
+  },
+  {
+    id: "alpine-mint",
+    name: "Alpine mint",
+    description: "Cold mint, forest ink and alpine blue for precise wellness and finance tools.",
+    themeId: "ocean-fresh",
+    colors: { primary: "#176A65", accent: "#3B63E8", surface: "#DDF0E8", surfaceAlt: "#173B37", ink: "#173B37", inkAlt: "#F4FFF9", muted: "#56736D" },
+  },
+  {
+    id: "ultraviolet-cream",
+    name: "Ultraviolet cream",
+    description: "Cream canvas, deep violet proof and a citrus highlight for ambitious launches.",
+    themeId: "clean-light",
+    colors: { primary: "#5C3CCB", accent: "#D89A22", surface: "#F5F0E5", surfaceAlt: "#291A58", ink: "#261D39", inkAlt: "#FFF9EE", muted: "#756E7F" },
+  },
+  {
+    id: "midnight-pool",
+    name: "Midnight pool",
+    description: "A cinematic navy stage with aqua product light and warm coral emphasis.",
+    themeId: "dark-bold",
+    colors: { primary: "#55D6C2", accent: "#FF7D66", surface: "#121B2B", surfaceAlt: "#E7F5F1", ink: "#F5FBF9", inkAlt: "#142434", muted: "#9BA9B8" },
+  },
 ];
 
 export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
@@ -156,6 +186,7 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
       "no-device",
     ],
     invertedIndices: [2, 6],
+    connectedPairs: [{ startIndex: 3, span: 2 }, { startIndex: 7, span: 2 }],
   },
   {
     id: "afterglow-rhythm",
@@ -177,6 +208,7 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
       "no-device",
     ],
     invertedIndices: [1, 4, 6, 8],
+    connectedPairs: [{ startIndex: 3, span: 2 }, { startIndex: 7, span: 2 }],
   },
   {
     id: "proof-ledger",
@@ -198,6 +230,7 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
       "no-device",
     ],
     invertedIndices: [5],
+    connectedPairs: [{ startIndex: 2, span: 2 }, { startIndex: 6, span: 2 }],
   },
   {
     id: "monument-close",
@@ -219,6 +252,7 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
       "no-device",
     ],
     invertedIndices: [2, 3, 6, 9],
+    connectedPairs: [{ startIndex: 3, span: 2 }, { startIndex: 7, span: 2 }],
   },
   {
     id: "kinetic-stack",
@@ -240,6 +274,7 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
       "no-device",
     ],
     invertedIndices: [1, 3, 6, 9],
+    connectedPairs: [{ startIndex: 1, span: 2 }, { startIndex: 6, span: 2 }],
   },
   {
     id: "quiet-luxury",
@@ -261,6 +296,7 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
       "no-device",
     ],
     invertedIndices: [2, 5, 8],
+    connectedPairs: [{ startIndex: 3, span: 2 }, { startIndex: 7, span: 2 }],
   },
   {
     id: "field-notes",
@@ -282,6 +318,7 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
       "no-device",
     ],
     invertedIndices: [4, 7],
+    connectedPairs: [{ startIndex: 2, span: 2 }, { startIndex: 6, span: 2 }],
   },
   {
     id: "signal-poster",
@@ -303,6 +340,51 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
       "no-device",
     ],
     invertedIndices: [0, 2, 5, 9],
+    connectedPairs: [{ startIndex: 2, span: 2 }, { startIndex: 6, span: 2 }],
+  },
+  {
+    id: "panorama-story",
+    name: "Panorama story",
+    eyebrow: "Seam-first campaign",
+    description: "Two image-led reveals connect adjacent screens while devices remain independently composed.",
+    signature: "A cinematic panorama at screens four–five and a visual echo near the close.",
+    recommendedPaletteId: "apricot-ink",
+    layouts: ["hero", "device-bottom", "device-top", "device-bottom", "device-top", "no-device", "device-bottom", "device-top", "device-bottom", "no-device"],
+    invertedIndices: [2, 6],
+    connectedPairs: [{ startIndex: 3, span: 2 }, { startIndex: 6, span: 2 }],
+  },
+  {
+    id: "product-cinema",
+    name: "Product cinema",
+    eyebrow: "Large-scale proof",
+    description: "Oversized UI, quiet typography and two connected visual moments create launch-film pacing.",
+    signature: "Big crops and controlled pauses keep the product dominant.",
+    recommendedPaletteId: "midnight-pool",
+    layouts: ["hero", "device-top", "device-bottom", "two-devices", "device-top", "no-device", "device-bottom", "two-devices", "device-top", "no-device"],
+    invertedIndices: [0, 3, 5, 8],
+    connectedPairs: [{ startIndex: 3, span: 2 }, { startIndex: 7, span: 2 }],
+  },
+  {
+    id: "human-proof",
+    name: "Human proof",
+    eyebrow: "Warm & credible",
+    description: "A human editorial rhythm for health, routine and coaching products with tangible evidence.",
+    signature: "Warm connected imagery frames calm product proof.",
+    recommendedPaletteId: "alpine-mint",
+    layouts: ["hero", "device-bottom", "two-devices", "device-top", "device-bottom", "no-device", "device-bottom", "device-top", "two-devices", "no-device"],
+    invertedIndices: [2, 5, 8],
+    connectedPairs: [{ startIndex: 1, span: 2 }, { startIndex: 6, span: 2 }],
+  },
+  {
+    id: "editorial-surge",
+    name: "Editorial surge",
+    eyebrow: "Expressive launch",
+    description: "A high-contrast sequence with connected art, oversized devices and memorable typographic rests.",
+    signature: "A bold opening seam gives way to a decisive final proof beat.",
+    recommendedPaletteId: "ultraviolet-cream",
+    layouts: ["hero", "device-top", "device-bottom", "no-device", "device-bottom", "two-devices", "device-top", "device-bottom", "two-devices", "no-device"],
+    invertedIndices: [1, 3, 6, 9],
+    connectedPairs: [{ startIndex: 1, span: 2 }, { startIndex: 5, span: 2 }],
   },
 ];
 
@@ -328,21 +410,27 @@ function resolveLayout(layout: SlideLayout, slide: Slide, device: Device): Slide
 }
 
 /**
- * Recompose only the active device deck. It intentionally drops generated
- * device/caption placement rules so the new layout can do its job, while keeping
- * every capture, semantic reference, locale string, custom text layer and lock.
+ * Recompose only the active device deck. Built-in device/caption placement and
+ * the recommended palette are reset only when requested, while captures,
+ * semantic references, locale strings, custom layers and locks remain intact.
  */
 export function applyCampaignTemplate(
   project: ProjectState,
   templateId: string,
   device: Device = project.device,
+  options: TemplateApplyOptions = {},
 ): ProjectState {
   const template = campaignTemplateById(templateId);
   if (!template) return project;
 
   const slides = project.slidesByDevice[device] || [];
-  const recomposed = slides.map((slide, index) => {
-    const { constraints: _constraints, responsive: _responsive, transforms: _transforms, ...preserved } = slide;
+  let recomposed = slides.map((slide, index) => {
+    const preserved = options.resetCustomizations
+      ? (() => {
+          const { constraints: _constraints, responsive: _responsive, transforms: _transforms, ...rest } = slide;
+          return rest;
+        })()
+      : slide;
     const templateLayout = template.layouts[index % template.layouts.length] || "device-bottom";
     const layout = resolveLayout(templateLayout, slide, device);
     const inverted = template.invertedIndices.includes(index % template.layouts.length);
@@ -353,7 +441,25 @@ export function applyCampaignTemplate(
     } as Slide;
   });
 
-  return {
+  if (options.reflowConnectedArtwork !== false) {
+    const artworks = recomposed.flatMap((slide, sourceIndex) =>
+      (slide.connectedArtworks || []).map((artwork) => ({ artwork, sourceIndex })),
+    );
+    if (artworks.length > 0 && template.connectedPairs.length > 0) {
+      recomposed = recomposed.map((slide) => ({ ...slide, connectedArtworks: undefined }));
+      for (const [index, entry] of artworks.entries()) {
+        const pair = template.connectedPairs[index] || template.connectedPairs[index % template.connectedPairs.length];
+        const startIndex = Math.max(0, Math.min(pair.startIndex, Math.max(0, recomposed.length - pair.span)));
+        const fitted = fitConnectedArtwork(entry.artwork, device, project.orientation, pair.span);
+        recomposed[startIndex] = {
+          ...recomposed[startIndex],
+          connectedArtworks: [...(recomposed[startIndex].connectedArtworks || []), fitted],
+        };
+      }
+    }
+  }
+
+  const next = {
     ...project,
     templateId: template.id,
     slidesByDevice: {
@@ -361,6 +467,7 @@ export function applyCampaignTemplate(
       [device]: recomposed,
     },
   };
+  return options.applyRecommendedPalette ? applyPalette(next, template.recommendedPaletteId) : next;
 }
 
 /** Apply a named color system without discarding typography, effects or radius tokens. */

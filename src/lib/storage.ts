@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { PROJECT_SCHEMA_VERSION, STORAGE_KEY } from "./constants";
 import { DEFAULT_PROJECT } from "./defaults";
 import { coerceLocalized } from "./locale";
-import type { Device, DeviceModel, DevicePresentation, DeviceSlot, ElementTransform, ProjectState, Slide, TextElement } from "./types";
+import type { ConnectedArtwork, Device, DeviceModel, DevicePresentation, DeviceSlot, ElementTransform, ProjectState, Slide, TextElement } from "./types";
 
 const HISTORY_LIMIT = 50;
 // Coalesce rapid edits (typing, slider drags) into a single undo step.
@@ -86,6 +86,23 @@ function cleanDeviceSlot(value: unknown): DeviceSlot | undefined {
     ...(typeof raw.assetRef === "string" && raw.assetRef.trim() ? { assetRef: raw.assetRef } : {}),
     ...(presentation ? { presentation } : {}),
     spanSlots,
+    linkedTransforms: raw.linkedTransforms === true,
+    ...(typeof raw.opacity === "number" && Number.isFinite(raw.opacity) ? { opacity: Math.max(0, Math.min(1, raw.opacity)) } : {}),
+  };
+}
+
+function cleanConnectedArtwork(value: unknown): ConnectedArtwork | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const raw = value as Partial<ConnectedArtwork>;
+  if (typeof raw.id !== "string" || !raw.id.trim() || typeof raw.image !== "string") return undefined;
+  const transform = cleanTransform(raw.transform);
+  if (!transform) return undefined;
+  return {
+    id: raw.id,
+    image: raw.image,
+    transform,
+    spanSlots: raw.spanSlots === 3 ? 3 : 2,
+    ...(typeof raw.assetRef === "string" && raw.assetRef.trim() ? { assetRef: raw.assetRef } : {}),
     ...(typeof raw.opacity === "number" && Number.isFinite(raw.opacity) ? { opacity: Math.max(0, Math.min(1, raw.opacity)) } : {}),
   };
 }
@@ -106,6 +123,9 @@ function migrateSlide(slide: Slide): Slide {
   const deviceSlots = Array.isArray(slide.deviceSlots)
     ? slide.deviceSlots.map(cleanDeviceSlot).filter((slot): slot is DeviceSlot => !!slot)
     : undefined;
+  const connectedArtworks = Array.isArray(slide.connectedArtworks)
+    ? slide.connectedArtworks.map(cleanConnectedArtwork).filter((artwork): artwork is ConnectedArtwork => !!artwork)
+    : undefined;
   const presentations = slide.presentations
     ? Object.fromEntries(
         Object.entries(slide.presentations)
@@ -121,6 +141,7 @@ function migrateSlide(slide: Slide): Slide {
     ...(transforms && Object.keys(transforms).length > 0 ? { transforms } : { transforms: undefined }),
     ...(textElements && textElements.length > 0 ? { textElements } : { textElements: undefined }),
     ...(deviceSlots && deviceSlots.length > 0 ? { deviceSlots } : { deviceSlots: undefined }),
+    ...(connectedArtworks && connectedArtworks.length > 0 ? { connectedArtworks } : { connectedArtworks: undefined }),
     ...(presentations && Object.keys(presentations).length > 0 ? { presentations } : { presentations: undefined }),
     captionSpan: slide.captionSpan === 2 || slide.captionSpan === 3 ? slide.captionSpan : undefined,
   };

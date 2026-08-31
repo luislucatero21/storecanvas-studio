@@ -26,7 +26,7 @@ import {
 } from "@/lib/constants";
 import { getCanvas } from "@/lib/canvas";
 import { toTextElementId } from "@/lib/elements";
-import { deviceSlotKey, isDeviceSlotElementId, toDeviceSlotElementId } from "@/lib/elements";
+import { artworkKey, deviceSlotKey, isArtworkElementId, isDeviceSlotElementId, toArtworkElementId, toDeviceSlotElementId } from "@/lib/elements";
 import { img } from "@/lib/image-cache";
 import { pickText } from "@/lib/locale";
 import { constraintFor, resolveResponsiveTransform } from "@/lib/constraints";
@@ -486,6 +486,13 @@ export function getElementTransform(
   id: ElementId,
   locale = "en",
 ): ElementTransform | undefined {
+  if (isArtworkElementId(id)) {
+    const artwork = slide.connectedArtworks?.find((candidate) => candidate.id === artworkKey(id));
+    if (!artwork) return undefined;
+    const { cW, cH } = getCanvas(device, orientation);
+    const { constraint, overrides } = constraintFor(slide.constraints, slide.responsive, id);
+    return resolveResponsiveTransform({ base: artwork.transform, canvas: { w: cW, h: cH }, constraint, overrides });
+  }
   if (isDeviceSlotElementId(id)) {
     const slot = slide.deviceSlots?.find((candidate) => candidate.id === deviceSlotKey(id));
     if (!slot) return undefined;
@@ -1165,8 +1172,44 @@ function SlideElements({
     );
   }
 
+  function renderConnectedArtwork(artwork: NonNullable<Slide["connectedArtworks"]>[number]) {
+    const id = toArtworkElementId(artwork.id);
+    const source = resolveAssetPath(artwork.assetRef, locale, assets, artwork.image);
+    if (isHidden(id) || !source) return null;
+    const rect = getElementTransform(slide, device, orientation, id, locale) || artwork.transform;
+    const rotation = rect.rotation ?? 0;
+    const zIndex = rect.zIndex ?? 1;
+    return (
+      <Movable
+        key={artwork.id}
+        rect={toGlobal(rect)}
+        boundsW={boundsW}
+        boundsH={boundsH}
+        editable={editable}
+        previewScale={previewScale}
+        rotation={rotation}
+        onChange={(transform) => edit?.onElementChange?.(id, toLocal({ ...transform, rotation: transform.rotation ?? rotation, zIndex }))}
+        zIndex={zIndex}
+        locked={isLocked(id)}
+        selected={selectedElementId === id}
+        onSelect={() => edit?.onSelectElement?.(id)}
+        allowOverflow={allowCrossScreen}
+      >
+        <img
+          src={img(source)}
+          alt=""
+          draggable={false}
+          data-connected-artwork={artwork.id}
+          data-artwork-span={artwork.spanSlots}
+          style={{ width: "100%", height: "100%", objectFit: "cover", opacity: artwork.opacity ?? 1 }}
+        />
+      </Movable>
+    );
+  }
+
   return (
     <>
+      {(slide.connectedArtworks || []).map(renderConnectedArtwork)}
       {secondaryRect &&
         renderDevice(
           "deviceSecondary",
@@ -1180,7 +1223,8 @@ function SlideElements({
         const id = toDeviceSlotElementId(slot.id);
         const resolved = getElementTransform(slide, device, orientation, id, locale) || slot.transform;
         const src = resolveAssetPath(slot.assetRef, locale, assets, slot.screenshot || slide.screenshot);
-        return Array.from({ length: slot.spanSlots || 1 }, (_, index) => (
+        const repetitions = slot.linkedTransforms ? slot.spanSlots || 1 : 1;
+        return Array.from({ length: repetitions }, (_, index) => (
           <React.Fragment key={`${slot.id}-${index}`}>
             {renderDevice(
               id,

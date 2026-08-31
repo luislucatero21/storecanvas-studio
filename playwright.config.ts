@@ -13,7 +13,7 @@ export default defineConfig({
     trace: "on-first-retry",
     ...(executablePath ? { launchOptions: { executablePath } } : {}),
   },
-  webServer: {
+  webServer: process.env.PLAYWRIGHT_SKIP_WEBSERVER ? undefined : {
     command: "./node_modules/.bin/next dev -p 3100",
     url: "http://127.0.0.1:3100",
     reuseExistingServer: !process.env.CI,

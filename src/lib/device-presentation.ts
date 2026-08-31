@@ -82,6 +82,7 @@ export function createDeviceSlot(
     transform,
     presentation: presentationForPreset(existing % 2 === 0 ? "tilt-left" : "tilt-right"),
     spanSlots: 1,
+    linkedTransforms: false,
   };
 }
 
@@ -89,7 +90,16 @@ export function setDeviceSlotSpan(slide: Slide, slotId: string, spanSlots: SlotS
   return {
     ...slide,
     deviceSlots: (slide.deviceSlots || []).map((slot) =>
-      slot.id === slotId ? { ...slot, spanSlots } : slot,
+      slot.id === slotId ? { ...slot, spanSlots, linkedTransforms: slot.linkedTransforms === true } : slot,
+    ),
+  };
+}
+
+export function setDeviceSlotLinking(slide: Slide, slotId: string, linkedTransforms: boolean): Slide {
+  return {
+    ...slide,
+    deviceSlots: (slide.deviceSlots || []).map((slot) =>
+      slot.id === slotId ? { ...slot, linkedTransforms } : slot,
     ),
   };
 }

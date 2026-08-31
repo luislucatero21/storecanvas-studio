@@ -21,7 +21,7 @@ test.describe("StoreCanvas editor", () => {
 
     await expect(page.getByRole("heading", { name: "Screens" })).toBeVisible();
     await expect(page.getByRole("textbox", { name: "App name" })).toHaveValue("Rutmia");
-    await expect(page.getByRole("button", { name: "Connected" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Connected", exact: true })).toBeVisible();
     await expect(page.getByRole("main").getByText(firstSlide.label[initialLocale]).first()).toBeVisible();
     await expect(page.getByRole("main").getByText(firstSlide.headline[initialLocale]).first()).toBeVisible();
     await expect(page.getByText("10 screens")).toBeVisible();
@@ -137,18 +137,26 @@ test.describe("StoreCanvas editor", () => {
     await expect(rig).toBeVisible();
   });
 
-  test("adds a third device slot that reuses the active capture and spans two screens", async ({ page }) => {
+  test("reused captures stay independent until transform linking is enabled", async ({ page }) => {
     await page.goto("/");
 
     await page.getByRole("button", { name: "Add device slot" }).click();
     await expect(page.getByText("Extra device 1").first()).toBeVisible();
-    await page.getByRole("button", { name: "Span extra device 1 across 2 screens" }).click();
 
     await expect.poll(async () => {
       const response = await page.request.get("/api/project");
       const body = await response.json();
-      return body.state.slidesByDevice.iphone[0].deviceSlots?.[0]?.spanSlots;
-    }).toBe(2);
+      return body.state.slidesByDevice.iphone[0].deviceSlots?.[0]?.linkedTransforms;
+    }).toBe(false);
+
+    await page.getByRole("button", { name: "Link extra device 1 transforms across screens" }).click();
+    await page.getByRole("button", { name: "Repeat linked extra device 1 across 2 screens" }).click();
+
+    await expect.poll(async () => {
+      const response = await page.request.get("/api/project");
+      const body = await response.json();
+      return body.state.slidesByDevice.iphone[0].deviceSlots?.[0];
+    }).toMatchObject({ spanSlots: 2, linkedTransforms: true });
   });
 
   test("lets one large message continue across multiple connected slots", async ({ page }) => {
@@ -163,15 +171,61 @@ test.describe("StoreCanvas editor", () => {
     }).toBe(2);
   });
 
-  test("preloads Rutmia with rendered capture and message spreads", async ({ page }) => {
+  test("preloads Rutmia with connected art, independent phones and message continuity", async ({ page }) => {
     await page.goto("/render?device=iphone&locale=es-MX&size=1320x2868");
 
     const captureStart = page.locator('[data-slide-id="rutmia-4-recovery"]');
     const messageStart = page.locator('[data-slide-id="rutmia-8-routine"]');
     await expect(captureStart).toHaveAttribute("data-render-mode", "connected");
-    await expect(captureStart.locator('[data-device-slot="rutmia-recovery-continuity"]')).toHaveCount(2);
+    await expect(captureStart.locator('[data-connected-artwork="rutmia-dawn-ribbon"]')).toHaveCount(1);
+    await expect(captureStart.locator('[data-device-slot="rutmia-recovery-continuity"]')).toHaveCount(1);
+    await expect(page.locator('[data-slide-id="rutmia-5-reflection"] [data-device-slot="rutmia-reflection-independent"]')).toHaveCount(1);
     await expect(messageStart.locator('[data-caption-span="2"]')).toHaveCount(1);
     await expect(page.locator('[data-device-angle="tilt-left"]').first()).toHaveAttribute("data-device-rig", "optical");
+  });
+
+  test("template palette and placement overrides remain opt-in", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Campaign wardrobe" }).click();
+    await page.getByRole("button", { name: "Use template recommended palette" }).click();
+    await page.getByRole("button", { name: "Reset built-in placement with template" }).click();
+    await page.getByRole("button", { name: "Apply template Product cinema" }).click();
+
+    await expect.poll(async () => {
+      const response = await page.request.get("/api/project");
+      const body = await response.json();
+      return {
+        templateId: body.state.templateId,
+        paletteId: body.state.paletteId,
+        artworkStart: body.state.slidesByDevice.iphone.findIndex((slide: { connectedArtworks?: unknown[] }) => slide.connectedArtworks?.length),
+        firstTransform: body.state.slidesByDevice.iphone[0].transforms,
+      };
+    }).toEqual({ templateId: "product-cinema", paletteId: "midnight-pool", artworkStart: 3, firstTransform: undefined });
+  });
+
+  test("generates a two-screen artwork without storing the personal key", async ({ page }) => {
+    await page.route("**/api/ai/image", async (route) => {
+      const request = route.request().postDataJSON();
+      expect(request).toMatchObject({ provider: "openai", model: "gpt-image-2", apiKey: "sk-artwork-ui-test" });
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true, path: "/screenshots/uploaded/generated-seam.png" }),
+      });
+    });
+    await page.goto("/");
+    await page.getByRole("button", { name: /Screen 4 · Device top/ }).click();
+    await page.getByRole("combobox", { name: "Artwork image provider" }).click();
+    await page.getByRole("option", { name: "OpenAI" }).click();
+    await page.getByRole("textbox", { name: "Artwork OpenAI API key" }).fill("sk-artwork-ui-test");
+    await page.getByRole("button", { name: "Generate connected artwork 1" }).click();
+
+    await expect.poll(async () => {
+      const response = await page.request.get("/api/project");
+      const body = await response.json();
+      return body.state.slidesByDevice.iphone[3].connectedArtworks[0].image;
+    }).toBe("/screenshots/uploaded/generated-seam.png");
+    const saved = await (await page.request.get("/api/project")).text();
+    expect(saved).not.toContain("sk-artwork-ui-test");
   });
 
   test("links localized copy across iPhone and iPad when the user enables continuity", async ({ page }) => {

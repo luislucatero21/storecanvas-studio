@@ -11,13 +11,17 @@ import {
   Eye,
   EyeOff,
   Boxes,
+  ImagePlus,
+  Link2,
   LockKeyhole,
   Plus,
   SlidersHorizontal,
   RotateCw,
   Trash2,
   Type,
+  Unlink,
   UnlockKeyhole,
+  WandSparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,21 +37,26 @@ import { Textarea } from "@/components/ui/textarea";
 import { LAYOUT_HINT, LAYOUT_LABEL } from "@/lib/constants";
 import { nid } from "@/lib/defaults";
 import {
+  artworkKey,
   deviceSlotKey,
+  isArtworkElementId,
   isBuiltInElementId,
   isDeviceSlotElementId,
   isTextElementId,
   textElementKey,
+  toArtworkElementId,
   toTextElementId,
   toDeviceSlotElementId,
 } from "@/lib/elements";
 import { applyDeviceAngle, createDeviceSlot, DEVICE_ANGLE_PRESETS } from "@/lib/device-presentation";
+import { createConnectedArtwork, fitConnectedArtwork } from "@/lib/connected-artwork";
 import { DEFAULT_IPHONE_MODEL, IPHONE_DEVICE_MODELS, iphoneModelDefinition } from "@/lib/device-models";
 import { pickText, writeLocalized } from "@/lib/locale";
 import { replaceAssetPath, resolveAssetPath } from "@/lib/asset-library";
 import type {
   AssetLibrary,
   BuiltInElementId,
+  ConnectedArtwork,
   Device,
   DeviceAnglePreset,
   DeviceModel,
@@ -276,6 +285,16 @@ export function Inspector({
           </div>
         )}
 
+        {!isFeatureGraphic ? (
+          <ConnectedArtworkPanel
+            slide={slide}
+            device={device}
+            orientation={orientation}
+            onChange={onChange}
+            onSelectElement={onSelectElement}
+          />
+        ) : null}
+
         {!isFeatureGraphic && !isNoDevice ? (
           <DeviceSlotsPanel
             slide={slide}
@@ -307,6 +326,115 @@ export function Inspector({
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+function ConnectedArtworkPanel({
+  slide,
+  device,
+  orientation,
+  onChange,
+  onSelectElement,
+}: {
+  slide: Slide;
+  device: Device;
+  orientation: Orientation;
+  onChange: (patch: Partial<Slide>) => void;
+  onSelectElement: (id: ElementId | null) => void;
+}) {
+  const [provider, setProvider] = React.useState<"platform" | "openai">("platform");
+  const [apiKey, setApiKey] = React.useState("");
+  const [prompt, setPrompt] = React.useState("A calm editorial sunrise ribbon with soft indigo and coral forms, generous negative space, premium wellness campaign photography direction");
+  const [generatingId, setGeneratingId] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
+
+  function patchArtwork(id: string, patch: Partial<ConnectedArtwork>) {
+    onChange({
+      connectedArtworks: (slide.connectedArtworks || []).map((artwork) =>
+        artwork.id === id ? { ...artwork, ...patch } : artwork,
+      ),
+    });
+  }
+
+  function addArtwork() {
+    const id = nid();
+    const artwork = createConnectedArtwork(device, orientation, id);
+    onChange({ connectedArtworks: [...(slide.connectedArtworks || []), artwork] });
+    onSelectElement(toArtworkElementId(id));
+  }
+
+  async function generate(artwork: ConnectedArtwork) {
+    setError(null);
+    setGeneratingId(artwork.id);
+    try {
+      const response = await fetch("/api/ai/image", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ provider, apiKey: provider === "openai" ? apiKey : undefined, model: "gpt-image-2", prompt }),
+      });
+      const body = await response.json() as { ok?: boolean; path?: string; error?: string };
+      if (!response.ok || !body.ok || !body.path) throw new Error(body.error || "Image generation failed");
+      patchArtwork(artwork.id, { image: body.path, assetRef: undefined });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Image generation failed");
+    } finally {
+      setGeneratingId(null);
+    }
+  }
+
+  return (
+    <div className="space-y-2 rounded-md bg-[hsl(var(--accent))]/[0.06] p-3 shadow-[inset_0_0_0_1px_hsl(var(--accent)/.24)]">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <Label className="flex items-center gap-1.5 text-xs font-semibold"><ImagePlus className="h-3.5 w-3.5" /> Connected artwork</Label>
+          <p className="mt-0.5 text-[10px] leading-relaxed text-muted-foreground">One image crosses the seam; phones and copy stay independent.</p>
+        </div>
+        <Button type="button" variant="outline" size="sm" className="h-7 shrink-0 px-2 text-[10px]" onClick={addArtwork} aria-label="Add connected artwork">
+          <Plus className="h-3.5 w-3.5" /> Add
+        </Button>
+      </div>
+
+      {(slide.connectedArtworks || []).map((artwork, index) => (
+        <details key={artwork.id} open className="rounded-md bg-background/75 px-2.5 py-2 shadow-[0_0_0_1px_hsl(var(--border)/.55)]">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-[11px] font-medium">
+            <span>Seam artwork {index + 1}</span><span className="text-[10px] font-normal text-muted-foreground">{artwork.spanSlots} screens</span>
+          </summary>
+          <div className="mt-2 space-y-2 border-t border-border/60 pt-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] text-muted-foreground">Connected width</span>
+              <div className="flex gap-1">
+                {([2, 3] as SlotSpan[]).map((span) => (
+                  <Button key={span} type="button" variant={artwork.spanSlots === span ? "secondary" : "ghost"} size="sm" className="h-7 min-w-7 px-2 text-[10px]" onClick={() => patchArtwork(artwork.id, fitConnectedArtwork(artwork, device, orientation, span))} aria-label={`Set connected artwork ${index + 1} to ${span} screens`} aria-pressed={artwork.spanSlots === span}>{span}×</Button>
+                ))}
+              </div>
+            </div>
+            <ScreenshotPicker label="Panorama / background" value={artwork.image} onChange={(image) => patchArtwork(artwork.id, { image, assetRef: undefined })} />
+            <div className="rounded-md border border-dashed border-border/70 bg-muted/25 p-2.5">
+              <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"><WandSparkles className="h-3.5 w-3.5 text-[hsl(var(--accent))]" /> Generate seam artwork</div>
+              <Textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} rows={3} aria-label={`Connected artwork ${index + 1} prompt`} />
+              <div className="mt-2 grid grid-cols-[110px_1fr] gap-2">
+                <Select value={provider} onValueChange={(value) => setProvider(value as "platform" | "openai")}>
+                  <SelectTrigger aria-label="Artwork image provider" className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="platform">Platform</SelectItem><SelectItem value="openai">OpenAI</SelectItem></SelectContent>
+                </Select>
+                {provider === "openai" ? <Input type="password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder="Personal API key" aria-label="Artwork OpenAI API key" className="h-8 text-xs" autoComplete="off" /> : <p className="self-center text-[10px] text-muted-foreground">Uses the deployment image provider.</p>}
+              </div>
+              <div className="mt-2 flex items-center justify-between gap-2">
+                <p className="text-[9px] text-muted-foreground">Keys are sent per request and never stored in the project.</p>
+                <Button type="button" size="sm" className="h-7 px-2 text-[10px]" disabled={generatingId !== null || prompt.trim().length < 12 || (provider === "openai" && !apiKey.trim())} onClick={() => generate(artwork)} aria-label={`Generate connected artwork ${index + 1}`}>
+                  <WandSparkles className="h-3.5 w-3.5" /> {generatingId === artwork.id ? "Generating…" : "Generate"}
+                </Button>
+              </div>
+              {error ? <p className="mt-2 text-[10px] text-destructive">{error}</p> : null}
+            </div>
+            <div className="flex justify-between gap-2">
+              <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-[10px]" onClick={() => onSelectElement(toArtworkElementId(artwork.id))}>Edit crop & position</Button>
+              <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-[10px] text-muted-foreground hover:text-destructive" onClick={() => { onChange({ connectedArtworks: (slide.connectedArtworks || []).filter((candidate) => candidate.id !== artwork.id) || undefined }); onSelectElement(null); }} aria-label={`Remove connected artwork ${index + 1}`}>Remove</Button>
+            </div>
+          </div>
+        </details>
+      ))}
     </div>
   );
 }
@@ -366,25 +494,36 @@ function DeviceSlotsPanel({
         >
           <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-[11px] font-medium">
             <span>Extra device {index + 1}</span>
-            <span className="text-[10px] font-normal text-muted-foreground">{slot.spanSlots || 1} slot{(slot.spanSlots || 1) > 1 ? "s" : ""}</span>
+            <span className="text-[10px] font-normal text-muted-foreground">{slot.linkedTransforms ? `${slot.spanSlots || 2} linked` : "Independent"}</span>
           </summary>
           <div className="mt-2 space-y-2 border-t border-border/60 pt-2">
+            <button
+              type="button"
+              className="flex w-full items-center justify-between gap-3 rounded-md bg-muted/45 px-2.5 py-2 text-left"
+              onClick={() => onChange({ deviceSlots: (slide.deviceSlots || []).map((candidate) => candidate.id === slot.id ? { ...candidate, linkedTransforms: !candidate.linkedTransforms, spanSlots: candidate.spanSlots === 1 ? 2 : candidate.spanSlots || 2 } : candidate) })}
+              aria-label={`${slot.linkedTransforms ? "Unlink" : "Link"} extra device ${index + 1} transforms across screens`}
+              aria-pressed={slot.linkedTransforms === true}
+            >
+              <span className="flex items-center gap-1.5 text-[10px] font-medium">{slot.linkedTransforms ? <Link2 className="h-3.5 w-3.5" /> : <Unlink className="h-3.5 w-3.5" />} Share transform</span>
+              <span className="text-[9px] text-muted-foreground">{slot.linkedTransforms ? "Same angle + position" : "Off · safer default"}</span>
+            </button>
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] text-muted-foreground">Repeat across</span>
+              <span className="text-[10px] text-muted-foreground">Linked copies</span>
               <div className="flex gap-1">
-                {([1, 2, 3] as SlotSpan[]).map((span) => (
+                {([2, 3] as SlotSpan[]).map((span) => (
                   <Button
                     key={span}
                     type="button"
                     variant={(slot.spanSlots || 1) === span ? "secondary" : "ghost"}
                     size="sm"
                     className="h-7 min-w-7 px-2 text-[10px]"
+                    disabled={!slot.linkedTransforms}
                     onClick={() => onChange({
                       deviceSlots: (slide.deviceSlots || []).map((candidate) =>
                         candidate.id === slot.id ? { ...candidate, spanSlots: span } : candidate,
                       ),
                     })}
-                    aria-label={`Span extra device ${index + 1} across ${span} screen${span === 1 ? "" : "s"}`}
+                    aria-label={`Repeat linked extra device ${index + 1} across ${span} screens`}
                     aria-pressed={(slot.spanSlots || 1) === span}
                   >
                     {span}×
@@ -463,6 +602,7 @@ function ElementTransformControls({
   const present: ElementId[] = ["caption"];
   if (slide.layout !== "no-device") present.push("device");
   if (slide.layout === "two-devices") present.push("deviceSecondary");
+  for (const artwork of slide.connectedArtworks || []) present.push(toArtworkElementId(artwork.id));
   for (const slot of slide.deviceSlots || []) present.push(toDeviceSlotElementId(slot.id));
   for (const element of slide.textElements || []) present.push(toTextElementId(element.id));
 
@@ -549,6 +689,11 @@ function ElementTransformControls({
             : element,
         ),
       });
+      return;
+    }
+    if (isArtworkElementId(id)) {
+      const artworkId = artworkKey(id);
+      onChange({ connectedArtworks: (slide.connectedArtworks || []).map((artwork) => artwork.id === artworkId ? { ...artwork, transform: { ...artwork.transform, ...patch } } : artwork) });
       return;
     }
     if (isDeviceSlotElementId(id)) {
@@ -677,6 +822,7 @@ function ElementTransformControls({
       ...slot,
       transform: { ...slot.transform },
     }));
+    const nextArtworks = (slide.connectedArtworks || []).map((artwork) => ({ ...artwork, transform: { ...artwork.transform } }));
     ranked.forEach((eid, i) => {
       const cur = getTransform(eid);
       if (!cur) return;
@@ -684,6 +830,9 @@ function ElementTransformControls({
         const textId = textElementKey(eid);
         const textElement = nextTextElements.find((element) => element.id === textId);
         if (textElement) textElement.transform = { ...textElement.transform, zIndex: i + 1 };
+      } else if (isArtworkElementId(eid)) {
+        const artwork = nextArtworks.find((candidate) => candidate.id === artworkKey(eid));
+        if (artwork) artwork.transform = { ...artwork.transform, zIndex: i + 1 };
       } else if (isDeviceSlotElementId(eid)) {
         const slot = nextDeviceSlots.find((candidate) => candidate.id === deviceSlotKey(eid));
         if (slot) slot.transform = { ...slot.transform, zIndex: i + 1 };
@@ -691,7 +840,7 @@ function ElementTransformControls({
         nextTransforms[eid] = { ...cur, zIndex: i + 1 };
       }
     });
-    onChange({ transforms: nextTransforms, textElements: nextTextElements, deviceSlots: nextDeviceSlots });
+    onChange({ transforms: nextTransforms, textElements: nextTextElements, deviceSlots: nextDeviceSlots, connectedArtworks: nextArtworks });
   }
 
   return (
@@ -1219,11 +1368,13 @@ function LayerButton({
 
 function elementLabel(id: ElementId): string {
   if (isBuiltInElementId(id)) return ELEMENT_LABEL[id];
+  if (isArtworkElementId(id)) return "Connected artwork";
   if (isDeviceSlotElementId(id)) return "Extra device";
   return "Text";
 }
 
 function defaultZ(id: ElementId): number {
+  if (isArtworkElementId(id)) return 1;
   if (isTextElementId(id)) return 5;
   if (isDeviceSlotElementId(id)) return 5;
   if (id === "deviceSecondary") return 2;

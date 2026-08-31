@@ -34,7 +34,7 @@ import {
 } from "@/lib/constants";
 import { detectPlatform } from "@/lib/defaults";
 import type { AiProposal } from "@/lib/ai";
-import type { BrandTokens, Device, Orientation, Slide } from "@/lib/types";
+import type { BrandTokens, Device, Orientation, Slide, TemplateApplyOptions } from "@/lib/types";
 import type { ValidationResult } from "@/lib/validation";
 import { AiPolish } from "./ai-polish";
 import { CampaignWardrobe } from "./campaign-wardrobe";
@@ -64,7 +64,7 @@ type Props = {
   templateId?: string;
   paletteId?: string;
   brandColors?: BrandTokens["colors"];
-  onTemplateChange: (templateId: string) => void;
+  onTemplateChange: (templateId: string, options?: TemplateApplyOptions) => void;
   onPaletteChange: (paletteId: string) => void;
   onCustomColorsChange: (colors: NonNullable<BrandTokens["colors"]>) => void;
   onApplyAiProposal: (proposal: AiProposal) => void;

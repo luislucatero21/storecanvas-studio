@@ -14,13 +14,14 @@ Open `http://localhost:3000` and edit the campaign. Changes autosave to `app-sto
 ## What's inside
 
 - **Connected canvas editor** (`src/components/editor/`) — every screen sits on one horizontal canvas, so phones, captions, and other elements can be dragged across screen boundaries and exported as split crops when Connected mode is enabled.
-- **Campaign wardrobe** — eight composition templates and eight AA-checked palettes can be applied without replacing screenshot files, semantic capture IDs, localized copy, or custom text layers. The Tune panel adjusts six core color tokens with a live preview and contrast score. Every switch is undoable.
+- **Campaign wardrobe** — twelve composition templates and twelve AA-checked palettes can be applied without replacing screenshot files, semantic capture IDs, localized copy, or custom text layers. Templates automatically reflow connected artwork; replacing the palette or manual placement is explicitly opt-in. The Tune panel adjusts six core color tokens with a live preview and contrast score.
 - **AI polish** — review copy suggestions from a personal OpenAI or OpenRouter key before applying them. Keys are held only in the dialog session and never written to the project file. The request contains app/copy context only—never capture files or their paths.
 - **Screen controls** — drag-to-reorder screens, click-to-edit text, screenshot drop targets, per-screen layout switcher, layer ordering, hide/lock controls, and responsive anchors.
 - **Device frames** (`src/components/editor/device-frames.tsx`) — selectable iPhone hardware models with their own cutout and controls, plus iPad, Android phone, Android tablet (portrait + landscape), and feature graphic.
 - **3D camera rig** — every phone or tablet can use flat, left/right tilt, low-angle, high-angle, or fine-tuned perspective/depth controls. The same rig works through iPhone, iPad, Android phone, and Android tablet frames.
 - **Face-forward editorial layers** — hardware and captured screens move together in 3D, while headlines, labels, and custom copy remain on the artboard plane for consistent readability.
-- **Reusable device slots** — add two or more devices to a screen, reuse or replace each capture independently, and repeat a slot across one, two, or three connected artboards without stretching the device.
+- **Connected artwork** — upload or generate one text-free panorama that crosses two or three screens while remaining a separately editable low-z layer. OpenAI GPT Image and a managed platform image endpoint are supported; personal keys are never stored.
+- **Reusable device slots** — add two or more devices, reuse the same semantic capture with independent angle/position by default, or explicitly opt into one linked transform across two or three artboards.
 - **Cross-screen messages** — captions can span one, two, or three connected screens for large horizontal statements.
 - **Optional copy continuity** — link matching screen positions so localized labels and headlines stay identical across iPhone, iPad, Android, and tablet decks; unlink at any time to resume device-specific copy.
 - **Semantic capture library** — slides reference stable IDs such as `capture:home-dashboard`; locale-specific paths can be refreshed without changing composition transforms.
@@ -66,7 +67,7 @@ pnpm test:ui    # Playwright UI tests
 pnpm test:all
 ```
 
-The suites cover the Rutmia load path, locale editing, text layers, 3D iPhone/Android device rendering, reusable multi-screen slots, cross-screen messages, linked cross-device copy, palette/template changes, custom color tuning, exact-size iPhone and iPad output, native iPad asset dimensions, AA palette contrast, AI review, and hide/lock interactions. UI tests restore the Rutmia fixture after each scenario.
+The suites cover the Rutmia load path, locale editing, text layers, 3D iPhone/Android rendering, independent and opt-in-linked device slots, connected artwork upload/generation, template artwork reflow and opt-in overrides, cross-screen messages, linked cross-device copy, exact-size iPhone/iPad output, palette contrast, AI review, and hide/lock interactions.
 
 ## AI providers
 
@@ -85,6 +86,14 @@ STORECANVAS_PUBLIC_URL=https://your-storecanvas.example # optional OpenRouter at
 ```
 
 The gateway receives standard OpenAI-compatible chat-completion requests. A deployment may use it to enforce budget, users, or billing before forwarding to the actual model provider.
+
+Connected artwork generation uses OpenAI's Images API with `gpt-image-2` by default, or a managed endpoint with the same response shape (`data[0].b64_json`) or `{ "path": "/public-path.png" }`:
+
+```bash
+STORECANVAS_PLATFORM_IMAGE_URL=https://your-gateway.example/v1/images/generations
+STORECANVAS_PLATFORM_IMAGE_TOKEN=server-side-secret
+STORECANVAS_PLATFORM_IMAGE_MODEL=gpt-image-2
+```
 
 ## Customizing
 

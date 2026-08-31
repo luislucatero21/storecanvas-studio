@@ -9,6 +9,7 @@ import {
   validateAiRequest,
 } from "@/lib/ai";
 import { requestAiProposal } from "@/lib/ai-server";
+import { requestArtworkImage, resolveArtworkProviderRequest } from "@/lib/artwork-ai-server";
 import { resolveAssetPath, replaceAssetPath } from "@/lib/asset-library";
 import {
   CAMPAIGN_TEMPLATES,
@@ -19,17 +20,17 @@ import {
 } from "@/lib/campaign-presets";
 import { resolveResponsiveTransform } from "@/lib/constraints";
 import { setCopyLinking, writeLinkedCopy } from "@/lib/copy-sync";
-import { applyDeviceAngle, createDeviceSlot, setDeviceSlotSpan } from "@/lib/device-presentation";
+import { applyDeviceAngle, createDeviceSlot, setDeviceSlotLinking, setDeviceSlotSpan } from "@/lib/device-presentation";
 import { exportFileName, exportPath, slugify } from "@/lib/export-naming";
 import { ProjectStateSchema } from "@/lib/schema";
 import { validateProject } from "@/lib/validation";
 
 describe("StoreCanvas project contracts", () => {
-  it("ships a competitive wardrobe with at least eight palettes and templates", () => {
-    expect(PALETTE_PRESETS).toHaveLength(8);
-    expect(CAMPAIGN_TEMPLATES).toHaveLength(8);
-    expect(new Set(PALETTE_PRESETS.map((palette) => palette.id)).size).toBe(8);
-    expect(new Set(CAMPAIGN_TEMPLATES.map((template) => template.id)).size).toBe(8);
+  it("ships a competitive wardrobe with at least twelve palettes and templates", () => {
+    expect(PALETTE_PRESETS.length).toBeGreaterThanOrEqual(12);
+    expect(CAMPAIGN_TEMPLATES.length).toBeGreaterThanOrEqual(12);
+    expect(new Set(PALETTE_PRESETS.map((palette) => palette.id)).size).toBe(PALETTE_PRESETS.length);
+    expect(new Set(CAMPAIGN_TEMPLATES.map((template) => template.id)).size).toBe(CAMPAIGN_TEMPLATES.length);
   });
 
   it("keeps every named palette readable on light and contrast surfaces", () => {
@@ -94,7 +95,55 @@ describe("StoreCanvas project contracts", () => {
       textElements: [expect.objectContaining({ id: "proof", text: { en: "10-day streak" } })],
       layout: "hero",
     });
-    expect(next.slidesByDevice.iphone[0].transforms).toBeUndefined();
+    expect(next.slidesByDevice.iphone[0].transforms).toEqual(slide.transforms);
+  });
+
+  it("only lets a template replace palette and manual placement when explicitly opted in", () => {
+    const slide = {
+      ...DEFAULT_PROJECT.slidesByDevice.iphone[0],
+      transforms: { device: { x: 10, y: 20, width: 300, height: 610 } },
+    };
+    const project = {
+      ...DEFAULT_PROJECT,
+      paletteId: "custom",
+      slidesByDevice: { ...DEFAULT_PROJECT.slidesByDevice, iphone: [slide] },
+    };
+
+    const preserved = applyCampaignTemplate(project, "afterglow-rhythm", "iphone");
+    const overridden = applyCampaignTemplate(project, "afterglow-rhythm", "iphone", {
+      applyRecommendedPalette: true,
+      resetCustomizations: true,
+    });
+
+    expect(preserved.paletteId).toBe("custom");
+    expect(preserved.slidesByDevice.iphone[0].transforms).toEqual(slide.transforms);
+    expect(overridden.paletteId).toBe("rutmia-afterglow");
+    expect(overridden.slidesByDevice.iphone[0].transforms).toBeUndefined();
+  });
+
+  it("reflows uploaded connected artwork to the active template's two-screen seam", () => {
+    const slides = DEFAULT_PROJECT.slidesByDevice.iphone.slice(0, 6).map((slide) => ({ ...slide }));
+    slides[0] = {
+      ...slides[0],
+      connectedArtworks: [{
+        id: "shared-visual",
+        image: "/screenshots/uploaded/panorama.png",
+        spanSlots: 2,
+        transform: { x: 14, y: 20, width: 2500, height: 2868, zIndex: 1 },
+      }],
+    };
+    const project = { ...DEFAULT_PROJECT, slidesByDevice: { ...DEFAULT_PROJECT.slidesByDevice, iphone: slides } };
+
+    const next = applyCampaignTemplate(project, "afterglow-rhythm", "iphone");
+    const startIndex = CAMPAIGN_TEMPLATES.find((item) => item.id === "afterglow-rhythm")!.connectedPairs[0].startIndex;
+
+    expect(next.slidesByDevice.iphone[0].connectedArtworks).toBeUndefined();
+    expect(next.slidesByDevice.iphone[startIndex].connectedArtworks?.[0]).toMatchObject({
+      id: "shared-visual",
+      image: "/screenshots/uploaded/panorama.png",
+      spanSlots: 2,
+      transform: { x: 0, y: 0, width: 2640, height: 2868 },
+    });
   });
 
   it("applies a palette without discarding the project typography", () => {
@@ -478,11 +527,12 @@ describe("StoreCanvas project contracts", () => {
     expect(result.success).toBe(false);
   });
 
-  it("applies a 3D angle and duplicates the same capture into a reusable device slot", () => {
+  it("keeps reused captures independent until transform linking is explicitly enabled", () => {
     const slide = DEFAULT_PROJECT.slidesByDevice.iphone[0];
     const angled = applyDeviceAngle(slide, "device", "tilt-left");
     const slot = createDeviceSlot(angled, "iphone", "portrait", "slot-one");
-    const withSlot = setDeviceSlotSpan({ ...angled, deviceSlots: [slot] }, slot.id, 2);
+    const independent = setDeviceSlotSpan({ ...angled, deviceSlots: [slot] }, slot.id, 2);
+    const linked = setDeviceSlotLinking(independent, slot.id, true);
 
     expect(angled.presentations?.device).toMatchObject({
       preset: "tilt-left",
@@ -491,20 +541,27 @@ describe("StoreCanvas project contracts", () => {
       perspective: 2100,
       depth: 9,
     });
-    expect(withSlot.deviceSlots?.[0]).toMatchObject({
+    expect(independent.deviceSlots?.[0]).toMatchObject({
       id: "slot-one",
       screenshot: slide.screenshot,
       assetRef: slide.assetRef,
       spanSlots: 2,
+      linkedTransforms: false,
+    });
+    expect(linked.deviceSlots?.[0]).toMatchObject({
+      spanSlots: 2,
+      linkedTransforms: true,
     });
   });
 
-  it("ships Rutmia with restrained rotation plus capture and message spreads", () => {
+  it("ships Rutmia with independent phones, premium connected artwork and message continuity", () => {
     const project = JSON.parse(readFileSync(resolve("app-store-screenshots.json"), "utf8"));
     const slides = project.slidesByDevice.iphone;
     const heroRig = slides[0].presentations?.device;
-    const captureSpread = slides.find((slide: { deviceSlots?: Array<{ spanSlots?: number }> }) =>
-      slide.deviceSlots?.some((slot) => slot.spanSlots === 2));
+    const connectedArtwork = slides.find((slide: { connectedArtworks?: Array<{ spanSlots?: number }> }) =>
+      slide.connectedArtworks?.some((artwork) => artwork.spanSlots === 2));
+    const recoverySlot = slides[3].deviceSlots?.[0];
+    const reflectionSlot = slides[4].deviceSlots?.[0];
     const messageSpread = slides.find((slide: { captionSpan?: number }) => slide.captionSpan === 2);
 
     expect(heroRig).toMatchObject({
@@ -514,12 +571,48 @@ describe("StoreCanvas project contracts", () => {
       depth: 9,
       deviceModel: "iphone-17-pro-max",
     });
-    expect(captureSpread?.deviceSlots[0]).toMatchObject({
-      id: "rutmia-recovery-continuity",
-      assetRef: "capture:recovery-paused",
+    expect(connectedArtwork?.connectedArtworks[0]).toMatchObject({
+      id: "rutmia-dawn-ribbon",
       spanSlots: 2,
     });
+    expect(recoverySlot).toMatchObject({ assetRef: "capture:recovery-paused", linkedTransforms: false });
+    expect(reflectionSlot).toMatchObject({ assetRef: "capture:daily-reflection", linkedTransforms: false });
+    expect(recoverySlot.transform).not.toEqual(reflectionSlot.transform);
     expect(messageSpread).toMatchObject({ id: "rutmia-8-routine", captionSpan: 2 });
+  });
+
+  it("resolves and saves a generated OpenAI artwork without persisting the personal key", async () => {
+    const provider = resolveArtworkProviderRequest({
+      provider: "openai",
+      apiKey: "sk-private",
+      model: "gpt-image-2",
+      prompt: "A continuous editorial ribbon across two App Store screens",
+    });
+    expect(provider).toMatchObject({
+      endpoint: "https://api.openai.com/v1/images/generations",
+      model: "gpt-image-2",
+    });
+
+    const result = await requestArtworkImage(
+      {
+        provider: "openai",
+        apiKey: "sk-private",
+        model: "gpt-image-2",
+        prompt: "A continuous editorial ribbon across two App Store screens",
+      },
+      {
+        fetchImpl: async (_url, init) => {
+          expect(String(init?.body)).not.toContain("sk-private");
+          return new Response(JSON.stringify({ data: [{ b64_json: Buffer.from("image").toString("base64") }] }), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        },
+        saveDataUrl: async () => "/screenshots/uploaded/generated.png",
+      },
+    );
+
+    expect(result.path).toBe("/screenshots/uploaded/generated.png");
   });
 
   it("propagates localized copy by screen order only while linking is enabled", () => {

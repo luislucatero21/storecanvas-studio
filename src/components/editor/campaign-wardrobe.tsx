@@ -18,7 +18,7 @@ import {
   campaignTemplateById,
   paletteById,
 } from "@/lib/campaign-presets";
-import type { BrandTokens, CampaignTemplate, Device, PalettePreset } from "@/lib/types";
+import type { BrandTokens, CampaignTemplate, Device, PalettePreset, TemplateApplyOptions } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -27,7 +27,7 @@ type Props = {
   paletteId?: string;
   colors?: BrandTokens["colors"];
   disabled?: boolean;
-  onTemplateChange: (templateId: string) => void;
+  onTemplateChange: (templateId: string, options?: TemplateApplyOptions) => void;
   onPaletteChange: (paletteId: string) => void;
   onCustomColorsChange: (colors: NonNullable<BrandTokens["colors"]>) => void;
 };
@@ -43,6 +43,8 @@ export function CampaignWardrobe({
   onCustomColorsChange,
 }: Props) {
   const [open, setOpen] = React.useState(false);
+  const [useRecommendedPalette, setUseRecommendedPalette] = React.useState(false);
+  const [resetCustomizations, setResetCustomizations] = React.useState(false);
   const activeTemplate = campaignTemplateById(templateId) || CAMPAIGN_TEMPLATES[0];
   const activePalette = paletteById(paletteId) || PALETTE_PRESETS[0];
   const activePaletteName = paletteId === "custom" ? "Custom colors" : activePalette.name;
@@ -103,6 +105,15 @@ export function CampaignWardrobe({
           </div>
 
           <TabsContent value="templates" className="mt-5">
+            <div className="mb-4 grid gap-2 rounded-lg border border-border/70 bg-muted/35 p-3 sm:grid-cols-2">
+              <button type="button" className={cn("flex items-center justify-between rounded-md border px-3 py-2 text-left text-xs", useRecommendedPalette ? "border-[hsl(var(--accent))]/60 bg-[hsl(var(--accent))]/10" : "border-border/60 bg-background/55")} onClick={() => setUseRecommendedPalette((value) => !value)} aria-label="Use template recommended palette" aria-pressed={useRecommendedPalette}>
+                <span><span className="block font-medium">Use recommended palette</span><span className="text-[10px] text-muted-foreground">Override current or custom colors</span></span>{useRecommendedPalette ? <Check className="h-4 w-4 text-[hsl(var(--accent))]" /> : null}
+              </button>
+              <button type="button" className={cn("flex items-center justify-between rounded-md border px-3 py-2 text-left text-xs", resetCustomizations ? "border-[hsl(var(--accent))]/60 bg-[hsl(var(--accent))]/10" : "border-border/60 bg-background/55")} onClick={() => setResetCustomizations((value) => !value)} aria-label="Reset built-in placement with template" aria-pressed={resetCustomizations}>
+                <span><span className="block font-medium">Reset built-in placement</span><span className="text-[10px] text-muted-foreground">Override primary device and caption positions</span></span>{resetCustomizations ? <Check className="h-4 w-4 text-[hsl(var(--accent))]" /> : null}
+              </button>
+              <p className="sm:col-span-2 text-[10px] leading-relaxed text-muted-foreground">Connected artwork automatically moves to this template’s designed two-screen seams. Both overrides above are opt-in.</p>
+            </div>
             <div className="grid gap-3 md:grid-cols-2">
               {CAMPAIGN_TEMPLATES.map((template) => (
                 <TemplateChoice
@@ -110,12 +121,12 @@ export function CampaignWardrobe({
                   template={template}
                   selected={template.id === activeTemplate.id}
                   disabled={disabled}
-                  onSelect={() => onTemplateChange(template.id)}
+                  onSelect={() => onTemplateChange(template.id, { applyRecommendedPalette: useRecommendedPalette, resetCustomizations, reflowConnectedArtwork: true })}
                 />
               ))}
             </div>
             <p className="mt-4 rounded-md bg-muted/55 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-              A template resets only built-in device and caption placement for this {device} deck.
+              A template changes layout rhythm and connected seams for this {device} deck. Manual placement and colors stay unless you opt in above.
               Press <kbd className="rounded border bg-background px-1 font-sans text-[10px]">⌘Z</kbd> to undo it.
             </p>
           </TabsContent>

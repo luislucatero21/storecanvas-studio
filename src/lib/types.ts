@@ -61,13 +61,25 @@ export type DeviceSlot = {
   transform: ElementTransform;
   presentation?: DevicePresentation;
   spanSlots?: SlotSpan;
+  /** Repeat this device with one shared transform. Off by default. */
+  linkedTransforms?: boolean;
+  opacity?: number;
+};
+
+export type ConnectedArtwork = {
+  id: string;
+  image: string;
+  assetRef?: string;
+  transform: ElementTransform;
+  spanSlots: SlotSpan;
   opacity?: number;
 };
 
 export type BuiltInElementId = "caption" | "device" | "deviceSecondary";
 export type TextElementId = `text:${string}`;
 export type DeviceSlotElementId = `slot:${string}`;
-export type ElementId = BuiltInElementId | TextElementId | DeviceSlotElementId;
+export type ArtworkElementId = `artwork:${string}`;
+export type ElementId = BuiltInElementId | TextElementId | DeviceSlotElementId | ArtworkElementId;
 
 export type SelectedElement = {
   slideId: string;
@@ -155,6 +167,7 @@ export type Slide = {
   assetRef?: string;          // semantic primary capture reference
   assetRefSecondary?: string; // semantic secondary capture reference
   deviceSlots?: DeviceSlot[];
+  connectedArtworks?: ConnectedArtwork[];
   presentations?: Partial<Record<"device" | "deviceSecondary", DevicePresentation>>;
   captionSpan?: SlotSpan;
   copyKey?: string;
@@ -203,6 +216,13 @@ export type CampaignTemplate = {
   recommendedPaletteId: string;
   layouts: SlideLayout[];
   invertedIndices: number[];
+  connectedPairs: Array<{ startIndex: number; span: SlotSpan }>;
+};
+
+export type TemplateApplyOptions = {
+  applyRecommendedPalette?: boolean;
+  resetCustomizations?: boolean;
+  reflowConnectedArtwork?: boolean;
 };
 
 export type ProjectState = {

@@ -28,6 +28,15 @@ const DeviceSlotSchema = z.object({
   transform: TransformSchema,
   presentation: DevicePresentationSchema.optional(),
   spanSlots: SlotSpanSchema.optional(),
+  linkedTransforms: z.boolean().optional(),
+  opacity: z.number().finite().min(0).max(1).optional(),
+});
+const ConnectedArtworkSchema = z.object({
+  id: z.string().trim().min(1),
+  image: z.string(),
+  assetRef: z.string().trim().min(1).optional(),
+  transform: TransformSchema,
+  spanSlots: SlotSpanSchema,
   opacity: z.number().finite().min(0).max(1).optional(),
 });
 const ConstraintSchema = z.object({
@@ -66,6 +75,7 @@ export const SlideSchema = z.object({
   assetRef: z.string().min(1).optional(),
   assetRefSecondary: z.string().min(1).optional(),
   deviceSlots: z.array(DeviceSlotSchema).optional(),
+  connectedArtworks: z.array(ConnectedArtworkSchema).optional(),
   presentations: z.object({
     device: DevicePresentationSchema.optional(),
     deviceSecondary: DevicePresentationSchema.optional(),

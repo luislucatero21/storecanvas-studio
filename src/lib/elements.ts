@@ -1,4 +1,4 @@
-import type { BuiltInElementId, DeviceSlotElementId, ElementId, TextElementId } from "./types";
+import type { ArtworkElementId, BuiltInElementId, DeviceSlotElementId, ElementId, TextElementId } from "./types";
 
 export const BUILT_IN_ELEMENT_IDS: BuiltInElementId[] = [
   "caption",
@@ -8,6 +8,7 @@ export const BUILT_IN_ELEMENT_IDS: BuiltInElementId[] = [
 
 export const TEXT_ELEMENT_PREFIX = "text:";
 export const DEVICE_SLOT_PREFIX = "slot:";
+export const ARTWORK_PREFIX = "artwork:";
 
 export function isBuiltInElementId(id: ElementId | string): id is BuiltInElementId {
   return (BUILT_IN_ELEMENT_IDS as string[]).includes(id);
@@ -35,4 +36,16 @@ export function toDeviceSlotElementId(id: string): DeviceSlotElementId {
 
 export function deviceSlotKey(id: DeviceSlotElementId | ElementId): string {
   return isDeviceSlotElementId(id) ? id.slice(DEVICE_SLOT_PREFIX.length) : id;
+}
+
+export function isArtworkElementId(id: ElementId | string | null | undefined): id is ArtworkElementId {
+  return typeof id === "string" && id.startsWith(ARTWORK_PREFIX);
+}
+
+export function toArtworkElementId(id: string): ArtworkElementId {
+  return `${ARTWORK_PREFIX}${id}` as ArtworkElementId;
+}
+
+export function artworkKey(id: ArtworkElementId | ElementId): string {
+  return isArtworkElementId(id) ? id.slice(ARTWORK_PREFIX.length) : id;
 }

@@ -68,6 +68,16 @@ export function buildAssetLibrary(project: ProjectState): AssetLibrary {
           };
         }
       }
+      for (const artwork of slide.connectedArtworks || []) {
+        if (artwork.assetRef && artwork.image && !assets[artwork.assetRef]) {
+          assets[artwork.assetRef] = {
+            id: artwork.assetRef,
+            type: "image",
+            label: artwork.assetRef.replace(/^image:/, "").replace(/[-_]/g, " "),
+            paths: { [project.locale]: artwork.image },
+          };
+        }
+      }
     }
   }
   return assets;
@@ -81,6 +91,9 @@ export function assetRefsInProject(project: ProjectState): string[] {
       if (slide.assetRefSecondary) refs.add(slide.assetRefSecondary);
       for (const slot of slide.deviceSlots || []) {
         if (slot.assetRef) refs.add(slot.assetRef);
+      }
+      for (const artwork of slide.connectedArtworks || []) {
+        if (artwork.assetRef) refs.add(artwork.assetRef);
       }
     }
   }

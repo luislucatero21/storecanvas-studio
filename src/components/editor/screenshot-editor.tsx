@@ -10,7 +10,7 @@ import {
   themeById,
 } from "@/lib/constants";
 import { detectPlatform, nid } from "@/lib/defaults";
-import { deviceSlotKey, isBuiltInElementId, isDeviceSlotElementId, isTextElementId, textElementKey } from "@/lib/elements";
+import { artworkKey, deviceSlotKey, isArtworkElementId, isBuiltInElementId, isDeviceSlotElementId, isTextElementId, textElementKey } from "@/lib/elements";
 import { preloadImages } from "@/lib/image-cache";
 import { resolveScreenshot, writeLocalized } from "@/lib/locale";
 import { buildAssetLibrary } from "@/lib/asset-library";
@@ -103,7 +103,7 @@ export function ScreenshotEditor() {
       }
     }
     for (const s of allSlides) {
-      for (const raw of [s.screenshot, s.screenshotSecondary, ...(s.deviceSlots || []).map((slot) => slot.screenshot)]) {
+    for (const raw of [s.screenshot, s.screenshotSecondary, ...(s.deviceSlots || []).map((slot) => slot.screenshot), ...(s.connectedArtworks || []).map((artwork) => artwork.image)]) {
         if (!raw || raw.startsWith("data:")) continue;
         if (raw.includes("{locale}")) {
           for (const loc of state.locales) paths.add(resolveScreenshot(raw, loc));
@@ -236,6 +236,15 @@ export function ScreenshotEditor() {
                 ...slide,
                 textElements: (slide.textElements || []).map((element) =>
                   element.id === textId ? { ...element, transform } : element,
+                ),
+              };
+            }
+            if (isArtworkElementId(elementId)) {
+              const artworkId = artworkKey(elementId);
+              return {
+                ...slide,
+                connectedArtworks: (slide.connectedArtworks || []).map((artwork) =>
+                  artwork.id === artworkId ? { ...artwork, transform } : artwork,
                 ),
               };
             }
@@ -640,11 +649,13 @@ export function ScreenshotEditor() {
         paletteId={state.paletteId}
         copyLinked={state.copySync?.enabled === true}
         brandColors={state.brand?.colors}
-        onTemplateChange={(templateId) => {
+        onTemplateChange={(templateId, options) => {
           const template = campaignTemplateById(templateId);
-          setState((project) => applyCampaignTemplate(project, templateId, project.device));
+          setState((project) => applyCampaignTemplate(project, templateId, project.device, options));
           toast.success(`${template?.name || "Template"} applied`, {
-            description: "Captures, semantic links, localized copy and custom text stayed in place.",
+            description: options?.resetCustomizations
+              ? "The template rebuilt manual placement and reflowed connected artwork."
+              : "Captures and manual placement stayed independent; connected artwork moved to the designed seams.",
           });
         }}
         onPaletteChange={(paletteId) => {

@@ -36,12 +36,19 @@ The visual world is parchment, ink, graphite, warm shadow and one coral signal. 
 
 ## Connected spread patterns
 
-### Repeated capture spread
+### Connected artwork spread
 
-- One source slide owns a `deviceSlot` with `spanSlots: 2` or `3`.
-- The semantic `assetRef` remains stable so locale refreshes do not break the composition.
-- Continuation slides hide their built-in `device` when it would compete with the repeated slot.
+- One source slide owns `connectedArtworks` with a text-free image, a 2–3 screen span and one crop transform.
+- The artwork is a separate, low-z layer. It may be uploaded or generated, but it never fabricates app UI.
+- Each exported crop must work alone; the full strip should reward adjacency with a clearly continuous path, subject or photographic gesture.
+- Templates reflow existing artwork to their authored seam pairs by default. Replacing palette or manual placement remains opt-in.
 - The editor and deterministic renderer must both crop the same connected deck geometry.
+
+### Reused device capture
+
+- Reusing a semantic capture never implies shared placement. Each slide owns its own device slot, angle, model and transform.
+- `linkedTransforms` is explicit and false by default. Only when enabled may one device slot repeat across 2–3 screens with one shared transform.
+- Keep the link state visible beside its span controls; never infer it from matching screenshot paths.
 
 ### Message spread
 
@@ -53,6 +60,6 @@ The visual world is parchment, ink, graphite, warm shadow and one coral signal. 
 ## Persistent Rutmia examples
 
 - Screen 1 demonstrates the iPhone 17 Pro Max, including Dynamic Island and external controls, at the restrained left optical tilt.
-- Screens 4–5 demonstrate one semantic capture repeated across two connected artboards.
+- Screens 4–5 demonstrate one generated artwork crossing the seam behind two independently positioned iPhone 17 Pro Max devices and two different semantic captures.
 - Screens 8–9 demonstrate a localized caption spanning two connected artboards.
 - These examples are part of `app-store-screenshots.json` and require unit, UI render and visual QA coverage whenever the renderer changes.
