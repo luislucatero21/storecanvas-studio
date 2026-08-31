@@ -124,6 +124,17 @@ test.describe("StoreCanvas editor", () => {
     }).toBe(2);
   });
 
+  test("preloads Rutmia with rendered capture and message spreads", async ({ page }) => {
+    await page.goto("/render?device=iphone&locale=es-MX&size=1320x2868");
+
+    const captureStart = page.locator('[data-slide-id="rutmia-4-recovery"]');
+    const messageStart = page.locator('[data-slide-id="rutmia-8-routine"]');
+    await expect(captureStart).toHaveAttribute("data-render-mode", "connected");
+    await expect(captureStart.locator('[data-device-slot="rutmia-recovery-continuity"]')).toHaveCount(2);
+    await expect(messageStart.locator('[data-caption-span="2"]')).toHaveCount(1);
+    await expect(page.locator('[data-device-angle="tilt-left"]').first()).toHaveAttribute("data-device-rig", "optical");
+  });
+
   test("links localized copy across iPhone and iPad when the user enables continuity", async ({ page }) => {
     await page.goto("/");
 

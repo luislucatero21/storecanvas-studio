@@ -9,7 +9,7 @@
     "en-US",
     "es-MX"
   ],
-  "locale": "en-US",
+  "locale": "es-MX",
   "device": "iphone",
   "orientation": "portrait",
   "slidesByDevice": {
@@ -30,10 +30,10 @@
         "presentations": {
           "device": {
             "preset": "tilt-left",
-            "rotateX": 4,
-            "rotateY": -22,
-            "perspective": 1350,
-            "depth": 18
+            "rotateX": 2,
+            "rotateY": -11,
+            "perspective": 2100,
+            "depth": 9
           }
         }
       },
@@ -78,11 +78,37 @@
           "es-MX": "¿Fallaste un día? Sigue."
         },
         "screenshot": "/screenshots/apple/iphone/{locale}/recovery-paused.png",
-        "assetRef": "capture:recovery-paused"
+        "assetRef": "capture:recovery-paused",
+        "deviceSlots": [
+          {
+            "id": "rutmia-recovery-continuity",
+            "screenshot": "/screenshots/apple/iphone/{locale}/recovery-paused.png",
+            "assetRef": "capture:recovery-paused",
+            "transform": {
+              "x": 280,
+              "y": 1080,
+              "width": 760,
+              "height": 1548,
+              "rotation": -1,
+              "zIndex": 5
+            },
+            "presentation": {
+              "preset": "tilt-right",
+              "rotateX": 2,
+              "rotateY": 11,
+              "perspective": 2100,
+              "depth": 9
+            },
+            "spanSlots": 2
+          }
+        ],
+        "hiddenElements": [
+          "device"
+        ]
       },
       {
         "id": "rutmia-5-reflection",
-        "layout": "device-top",
+        "layout": "device-bottom",
         "label": {
           "en-US": "THE HUMAN SIDE OF PROGRESS",
           "es-MX": "EL LADO HUMANO DEL AVANCE"
@@ -95,7 +121,10 @@
         "screenshotSecondary": "/screenshots/apple/iphone/{locale}/insights.png",
         "assetRef": "capture:daily-reflection",
         "assetRefSecondary": "capture:insights",
-        "inverted": true
+        "inverted": true,
+        "hiddenElements": [
+          "device"
+        ]
       },
       {
         "id": "rutmia-6-goals",
@@ -130,15 +159,16 @@
         "id": "rutmia-8-routine",
         "layout": "device-bottom",
         "label": {
-          "en-US": "ONE HOME FOR YOUR HABITS",
-          "es-MX": "UN HOGAR PARA TUS HÁBITOS"
+          "en-US": "ONE STORY              EVERY SCREEN",
+          "es-MX": "UNA HISTORIA                        CADA PANTALLA"
         },
         "headline": {
-          "en-US": "Your whole routine. Together.",
-          "es-MX": "Toda tu rutina. Unida."
+          "en-US": "Your routine.              Your rhythm.",
+          "es-MX": "Tu rutina.              Tu ritmo."
         },
         "screenshot": "/screenshots/apple/iphone/{locale}/home.png",
-        "assetRef": "capture:home-dashboard"
+        "assetRef": "capture:home-dashboard",
+        "captionSpan": 2
       },
       {
         "id": "rutmia-9-reminders",
@@ -153,7 +183,9 @@
         },
         "screenshot": "/screenshots/apple/iphone/{locale}/settings.png",
         "assetRef": "capture:settings",
-        "inverted": true
+        "hiddenElements": [
+          "caption"
+        ]
       },
       {
         "id": "rutmia-10-closer",

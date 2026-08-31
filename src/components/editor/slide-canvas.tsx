@@ -1028,7 +1028,10 @@ function SlideElements({
         onSelect={() => edit?.onSelectElement?.("caption")}
         allowOverflow={allowCrossScreen}
       >
-        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "flex-start" }}>
+        <div
+          data-caption-span={slide.captionSpan || 1}
+          style={{ width: "100%", height: "100%", display: "flex", alignItems: "flex-start" }}
+        >
           {inner}
         </div>
       </Movable>
@@ -1074,7 +1077,7 @@ function SlideElements({
         selected={interactive && selectedElementId === id}
         onSelect={() => edit?.onSelectElement?.(id)}
       >
-        <DeviceRig device={device} presentation={presentation} style={extraStyle}>
+        <DeviceRig device={device} elementId={id} presentation={presentation} style={extraStyle}>
           <Frame src={src} hideEmpty={hideEmpty} style={{ width: "100%", height: "100%" }} />
         </DeviceRig>
       </Movable>
@@ -1186,26 +1189,33 @@ function SlideElements({
 
 function DeviceRig({
   device,
+  elementId,
   presentation,
   style,
   children,
 }: {
   device: Device;
+  elementId: ElementId;
   presentation?: DevicePresentation;
   style?: React.CSSProperties;
   children: React.ReactNode;
 }) {
   const rig = presentation || { preset: "flat", rotateX: 0, rotateY: 0, perspective: 1400, depth: 0 };
   const dimensional = Math.abs(rig.rotateX) + Math.abs(rig.rotateY) + rig.depth > 0;
+  const opticalScale = dimensional
+    ? Math.max(0.965, 1 - Math.abs(rig.rotateY) / 900 - Math.abs(rig.rotateX) / 1200)
+    : 1;
   return (
     <div
       data-device-angle={rig.preset}
+      data-device-rig="optical"
+      data-device-slot={isDeviceSlotElementId(elementId) ? deviceSlotKey(elementId) : undefined}
       data-device-type={device}
       style={{
         width: "100%",
         height: "100%",
         perspective: rig.perspective,
-        perspectiveOrigin: "50% 45%",
+        perspectiveOrigin: "50% 50%",
         ...style,
       }}
     >
@@ -1215,25 +1225,14 @@ function DeviceRig({
           height: "100%",
           position: "relative",
           transformStyle: "preserve-3d",
-          transform: `rotateX(${rig.rotateX}deg) rotateY(${rig.rotateY}deg)`,
+          transform: `rotateY(${rig.rotateY}deg) rotateX(${rig.rotateX}deg) scale(${opticalScale})`,
           transformOrigin: "center center",
           filter: dimensional
-            ? `drop-shadow(${rig.rotateY < 0 ? rig.depth * 0.7 : -rig.depth * 0.7}px ${rig.depth * 0.9}px ${Math.max(16, rig.depth * 1.7)}px rgba(20,16,14,.34))`
+            ? `drop-shadow(${rig.rotateY < 0 ? rig.depth * 0.35 : -rig.depth * 0.35}px ${rig.depth * 0.55}px ${Math.max(12, rig.depth * 1.4)}px rgba(20,16,14,.24))`
             : undefined,
+          willChange: dimensional ? "transform, filter" : undefined,
         }}
       >
-        {rig.depth > 0 ? (
-          <div
-            aria-hidden
-            style={{
-              position: "absolute",
-              inset: "1.5%",
-              borderRadius: "8% / 4%",
-              background: "linear-gradient(110deg, #4b4b50, #161619)",
-              transform: `translateZ(-${rig.depth}px) translate(${rig.rotateY < 0 ? rig.depth * 0.5 : -rig.depth * 0.5}px, ${rig.depth * 0.25}px)`,
-            }}
-          />
-        ) : null}
         <div style={{ position: "relative", width: "100%", height: "100%", transform: "translateZ(0)" }}>
           {children}
         </div>

@@ -13,10 +13,10 @@ import type {
 
 export const DEVICE_ANGLE_PRESETS: Record<Exclude<DeviceAnglePreset, "custom">, DevicePresentation> = {
   flat: { preset: "flat", rotateX: 0, rotateY: 0, perspective: 1400, depth: 0 },
-  "tilt-left": { preset: "tilt-left", rotateX: 4, rotateY: -22, perspective: 1350, depth: 18 },
-  "tilt-right": { preset: "tilt-right", rotateX: 4, rotateY: 22, perspective: 1350, depth: 18 },
-  "low-angle": { preset: "low-angle", rotateX: -18, rotateY: -8, perspective: 1200, depth: 22 },
-  "high-angle": { preset: "high-angle", rotateX: 18, rotateY: 8, perspective: 1500, depth: 14 },
+  "tilt-left": { preset: "tilt-left", rotateX: 2, rotateY: -11, perspective: 2100, depth: 9 },
+  "tilt-right": { preset: "tilt-right", rotateX: 2, rotateY: 11, perspective: 2100, depth: 9 },
+  "low-angle": { preset: "low-angle", rotateX: -9, rotateY: -4, perspective: 1900, depth: 11 },
+  "high-angle": { preset: "high-angle", rotateX: 9, rotateY: 4, perspective: 2200, depth: 8 },
 };
 
 export function presentationForPreset(preset: Exclude<DeviceAnglePreset, "custom">): DevicePresentation {
@@ -58,7 +58,7 @@ export function createDeviceSlot(
     y: cH * (0.3 + (existing % 2) * 0.08),
     width,
     height: width / aspect,
-    rotation: existing % 2 === 0 ? -7 : 7,
+    rotation: existing % 2 === 0 ? -2 : 2,
     zIndex: 5 + existing,
   };
   return {

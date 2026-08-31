@@ -1,7 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { buildAssetLibrary } from "@/lib/asset-library";
-import { SlideCanvas } from "@/components/editor/slide-canvas";
+import { DeckCanvas } from "@/components/editor/slide-canvas";
 import { getCanvas } from "@/lib/canvas";
 import { getExportSizes, themeById } from "@/lib/constants";
 import { DEFAULT_PROJECT } from "@/lib/defaults";
@@ -77,6 +77,7 @@ export default async function RenderPage({
             data-render-slide={index + 1}
             data-slide-id={slide.id}
             data-layout={slide.layout}
+            data-render-mode={state.connectedCanvas ? "connected" : "isolated"}
             style={{
               position: "relative",
               width: size.w,
@@ -96,18 +97,21 @@ export default async function RenderPage({
                 transformOrigin: "top left",
               }}
             >
-              <SlideCanvas
-                slide={slide}
-                device={device}
-                orientation={orientation}
-                theme={theme}
-                locale={locale}
-                appName={state.appName}
-                appIcon={state.appIcon}
-                assets={assets}
-                editable={false}
-                hideEmpty
-              />
+              <div style={{ position: "absolute", left: -index * cW, top: 0 }}>
+                <DeckCanvas
+                  slides={slides}
+                  device={device}
+                  orientation={orientation}
+                  theme={theme}
+                  locale={locale}
+                  appName={state.appName}
+                  appIcon={state.appIcon}
+                  assets={assets}
+                  connectedCanvas={state.connectedCanvas}
+                  editable={false}
+                  hideEmpty
+                />
+              </div>
             </div>
           </section>
         ))}

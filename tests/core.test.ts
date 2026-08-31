@@ -438,13 +438,36 @@ describe("StoreCanvas project contracts", () => {
     const slot = createDeviceSlot(angled, "iphone", "portrait", "slot-one");
     const withSlot = setDeviceSlotSpan({ ...angled, deviceSlots: [slot] }, slot.id, 2);
 
-    expect(angled.presentations?.device).toMatchObject({ preset: "tilt-left", rotateY: -22, depth: 18 });
+    expect(angled.presentations?.device).toMatchObject({
+      preset: "tilt-left",
+      rotateX: 2,
+      rotateY: -11,
+      perspective: 2100,
+      depth: 9,
+    });
     expect(withSlot.deviceSlots?.[0]).toMatchObject({
       id: "slot-one",
       screenshot: slide.screenshot,
       assetRef: slide.assetRef,
       spanSlots: 2,
     });
+  });
+
+  it("ships Rutmia with restrained rotation plus capture and message spreads", () => {
+    const project = JSON.parse(readFileSync(resolve("app-store-screenshots.json"), "utf8"));
+    const slides = project.slidesByDevice.iphone;
+    const heroRig = slides[0].presentations?.device;
+    const captureSpread = slides.find((slide: { deviceSlots?: Array<{ spanSlots?: number }> }) =>
+      slide.deviceSlots?.some((slot) => slot.spanSlots === 2));
+    const messageSpread = slides.find((slide: { captionSpan?: number }) => slide.captionSpan === 2);
+
+    expect(heroRig).toMatchObject({ rotateX: 2, rotateY: -11, perspective: 2100, depth: 9 });
+    expect(captureSpread?.deviceSlots[0]).toMatchObject({
+      id: "rutmia-recovery-continuity",
+      assetRef: "capture:recovery-paused",
+      spanSlots: 2,
+    });
+    expect(messageSpread).toMatchObject({ id: "rutmia-8-routine", captionSpan: 2 });
   });
 
   it("propagates localized copy by screen order only while linking is enabled", () => {
