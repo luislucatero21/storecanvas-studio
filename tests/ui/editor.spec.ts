@@ -82,6 +82,12 @@ test.describe("StoreCanvas editor", () => {
     await page.getByRole("tab", { name: "Palettes" }).click();
     await page.getByRole("button", { name: "Apply palette Rutmia afterglow" }).click();
 
+    await expect.poll(async () => {
+      const saved = await page.request.get("/api/project");
+      const body = await saved.json();
+      return body.state.paletteId;
+    }).toBe("rutmia-afterglow");
+
     const response = await page.request.get("/api/project");
     const body = await response.json();
     expect(body.state.paletteId).toBe("rutmia-afterglow");
@@ -89,6 +95,39 @@ test.describe("StoreCanvas editor", () => {
       screenshot: "/screenshots/apple/iphone/{locale}/home.png",
       assetRef: "capture:home-dashboard",
     });
+  });
+
+  test("tunes campaign colors directly without replacing Rutmia's captures", async ({ page }) => {
+    await page.goto("/");
+
+    await page.getByRole("button", { name: "Campaign wardrobe" }).click();
+    await page.getByRole("tab", { name: "Tune" }).click();
+    await page.getByRole("textbox", { name: "Accent hex color" }).fill("#2F6BFF");
+    await page.getByRole("button", { name: "Apply custom colors" }).click();
+
+    await expect.poll(async () => {
+      const response = await page.request.get("/api/project");
+      const body = await response.json();
+      return body.state.brand.colors.accent;
+    }).toBe("#2F6BFF");
+
+    const response = await page.request.get("/api/project");
+    const body = await response.json();
+    expect(body.state.paletteId).toBe("custom");
+    expect(body.state.slidesByDevice.iphone[0]).toMatchObject({
+      screenshot: "/screenshots/apple/iphone/{locale}/home.png",
+      assetRef: "capture:home-dashboard",
+    });
+  });
+
+  test("renders Rutmia's native iPad campaign at App Store size", async ({ page }) => {
+    await page.goto("/render?device=ipad&locale=en-US&size=2064x2752");
+
+    const render = page.locator('[data-render-valid="true"]');
+    await expect(render).toHaveAttribute("data-render-width", "2064");
+    await expect(render.locator("[data-render-slide]")).toHaveCount(6);
+    await expect(render.locator("[data-render-slide]").first()).toHaveJSProperty("clientWidth", 2064);
+    await expect(render.locator("[data-render-slide]").first()).toHaveJSProperty("clientHeight", 2752);
   });
 
   test("opens an AI polish workspace that keeps a personal key out of project storage", async ({ page }) => {

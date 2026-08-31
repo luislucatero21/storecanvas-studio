@@ -14,7 +14,7 @@ Open `http://localhost:3000` and edit the campaign. Changes autosave to `app-sto
 ## What's inside
 
 - **Connected canvas editor** (`src/components/editor/`) — every screen sits on one horizontal canvas, so phones, captions, and other elements can be dragged across screen boundaries and exported as split crops when Connected mode is enabled.
-- **Campaign wardrobe** — four composition templates and four named palettes can be applied to the active deck without replacing screenshot files, semantic capture IDs, localized copy, or custom text layers. Every switch is undoable.
+- **Campaign wardrobe** — eight composition templates and eight AA-checked palettes can be applied without replacing screenshot files, semantic capture IDs, localized copy, or custom text layers. The Tune panel adjusts six core color tokens with a live preview and contrast score. Every switch is undoable.
 - **AI polish** — review copy suggestions from a personal OpenAI or OpenRouter key before applying them. Keys are held only in the dialog session and never written to the project file. The request contains app/copy context only—never capture files or their paths.
 - **Screen controls** — drag-to-reorder screens, click-to-edit text, screenshot drop targets, per-screen layout switcher, layer ordering, hide/lock controls, and responsive anchors.
 - **Device frames** (`src/components/editor/device-frames.tsx`) — iPhone (PNG mockup), iPad, Android phone, Android tablet (portrait + landscape), feature graphic.
@@ -22,6 +22,7 @@ Open `http://localhost:3000` and edit the campaign. Changes autosave to `app-sto
 - **Preflight QA** — the toolbar validates schema, locale, store slide limits, export targets, and screenshot availability before allowing production export.
 - **Auto-save (git-trackable)** — every change is persisted within ~600ms to **`app-store-screenshots.json`** at the project root (via `/api/project`) **and** mirrored to `localStorage` as an instant-paint cache. Commit `app-store-screenshots.json` and you can `git clone` to another machine and resume exactly where you left off.
 - **Multi-device decks** — iOS and Android slide decks live side by side; switching the platform tab preserves both.
+- **Native iPad campaign** — the Rutmia starter includes six real 2064×2752 iPad captures in English and Spanish, generated from deterministic XCUITest marketing journeys.
 - **One-click export** — bulk PNG export at every configured store resolution using `html-to-image`; each PNG is rendered from the current connected or isolated deck mode.
 - **Deterministic renderer** — `pnpm storecanvas render --device iphone --locale en-US --output exports/rendered` captures exact-size PNGs from `/render` with Playwright.
 - **Project migration** — older `app-store-screenshots.json` files are migrated on load. Existing per-slide transforms remain valid, and connected crops become available without rewriting the deck by hand.
@@ -60,7 +61,7 @@ pnpm test:ui    # Playwright UI tests
 pnpm test:all
 ```
 
-The UI suite covers the Rutmia load path, locale editing, text layers, exact-size render output, and hide/lock interactions. Tests restore the Rutmia fixture after each scenario.
+The suites cover the Rutmia load path, locale editing, text layers, palette/template changes, custom color tuning, exact-size iPhone and iPad output, native iPad asset dimensions, AA palette contrast, AI review, and hide/lock interactions. UI tests restore the Rutmia fixture after each scenario.
 
 ## AI providers
 

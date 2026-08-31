@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { DEFAULT_PROJECT } from "@/lib/defaults";
 import {
   applyAiProposal,
@@ -8,13 +10,43 @@ import {
 } from "@/lib/ai";
 import { requestAiProposal } from "@/lib/ai-server";
 import { resolveAssetPath, replaceAssetPath } from "@/lib/asset-library";
-import { applyCampaignTemplate, applyPalette } from "@/lib/campaign-presets";
+import {
+  CAMPAIGN_TEMPLATES,
+  PALETTE_PRESETS,
+  applyCampaignTemplate,
+  applyCustomColors,
+  applyPalette,
+} from "@/lib/campaign-presets";
 import { resolveResponsiveTransform } from "@/lib/constraints";
 import { exportFileName, exportPath, slugify } from "@/lib/export-naming";
 import { ProjectStateSchema } from "@/lib/schema";
 import { validateProject } from "@/lib/validation";
 
 describe("StoreCanvas project contracts", () => {
+  it("ships a competitive wardrobe with at least eight palettes and templates", () => {
+    expect(PALETTE_PRESETS).toHaveLength(8);
+    expect(CAMPAIGN_TEMPLATES).toHaveLength(8);
+    expect(new Set(PALETTE_PRESETS.map((palette) => palette.id)).size).toBe(8);
+    expect(new Set(CAMPAIGN_TEMPLATES.map((template) => template.id)).size).toBe(8);
+  });
+
+  it("keeps every named palette readable on light and contrast surfaces", () => {
+    for (const palette of PALETTE_PRESETS) {
+      expect(contrastRatio(palette.colors.surface, palette.colors.ink), palette.name).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(palette.colors.surfaceAlt, palette.colors.inkAlt), palette.name).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it("includes exact-size native iPad captures for both Rutmia locales", () => {
+    for (const locale of ["en-US", "es-MX"]) {
+      for (const name of ["home", "coach", "goals", "insights", "settings", "lifetime"]) {
+        const png = readFileSync(resolve("public/screenshots/apple/ipad", locale, `${name}.png`));
+        expect(png.readUInt32BE(16), `${locale}/${name} width`).toBe(2064);
+        expect(png.readUInt32BE(20), `${locale}/${name} height`).toBe(2752);
+      }
+    }
+  });
+
   it("starts projects with an explicit campaign template and palette", () => {
     expect(DEFAULT_PROJECT).toMatchObject({
       templateId: "editorial-route",
@@ -82,6 +114,24 @@ describe("StoreCanvas project contracts", () => {
         typography: { display: { family: "Fraunces", weight: 700 } },
       },
     });
+  });
+
+  it("applies custom colors without discarding captures, layouts or typography", () => {
+    const project = {
+      ...DEFAULT_PROJECT,
+      brand: {
+        ...DEFAULT_PROJECT.brand,
+        typography: { display: { family: "Fraunces", weight: 700 } },
+      },
+    };
+    const next = applyCustomColors(project, { accent: "#2F6BFF", surface: "#FAF7F0" });
+
+    expect(next.paletteId).toBe("custom");
+    expect(next.brand).toMatchObject({
+      colors: { accent: "#2F6BFF", surface: "#FAF7F0" },
+      typography: project.brand.typography,
+    });
+    expect(next.slidesByDevice).toEqual(project.slidesByDevice);
   });
 
   it("requires a personal key for BYO AI providers", () => {
@@ -329,3 +379,16 @@ describe("StoreCanvas project contracts", () => {
     expect(result.success).toBe(false);
   });
 });
+
+function contrastRatio(first: string, second: string) {
+  const luminance = (hex: string) => {
+    const channels = [1, 3, 5].map((offset) => Number.parseInt(hex.slice(offset, offset + 2), 16) / 255);
+    return channels.reduce((total, channel, index) => {
+      const linear = channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+      return total + linear * [0.2126, 0.7152, 0.0722][index];
+    }, 0);
+  };
+  const light = Math.max(luminance(first), luminance(second));
+  const dark = Math.min(luminance(first), luminance(second));
+  return (light + 0.05) / (dark + 0.05);
+}

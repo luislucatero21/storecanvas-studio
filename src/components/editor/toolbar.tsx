@@ -33,7 +33,7 @@ import {
 } from "@/lib/constants";
 import { detectPlatform } from "@/lib/defaults";
 import type { AiProposal } from "@/lib/ai";
-import type { Device, Orientation, Slide } from "@/lib/types";
+import type { BrandTokens, Device, Orientation, Slide } from "@/lib/types";
 import type { ValidationResult } from "@/lib/validation";
 import { AiPolish } from "./ai-polish";
 import { CampaignWardrobe } from "./campaign-wardrobe";
@@ -60,8 +60,10 @@ type Props = {
   busy: boolean;
   templateId?: string;
   paletteId?: string;
+  brandColors?: BrandTokens["colors"];
   onTemplateChange: (templateId: string) => void;
   onPaletteChange: (paletteId: string) => void;
+  onCustomColorsChange: (colors: NonNullable<BrandTokens["colors"]>) => void;
   onApplyAiProposal: (proposal: AiProposal) => void;
   validation: ValidationResult;
 };
@@ -201,9 +203,11 @@ export function Toolbar(props: Props) {
         device={props.device}
         templateId={props.templateId}
         paletteId={props.paletteId}
+        colors={props.brandColors}
         disabled={props.busy}
         onTemplateChange={props.onTemplateChange}
         onPaletteChange={props.onPaletteChange}
+        onCustomColorsChange={props.onCustomColorsChange}
       />
       <AiPolish
         appName={props.appName}

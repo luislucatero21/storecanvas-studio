@@ -21,6 +21,7 @@ import { applyBrandTokens } from "@/lib/theme";
 import { applyAiProposal } from "@/lib/ai";
 import {
   applyCampaignTemplate,
+  applyCustomColors,
   applyPalette,
   campaignTemplateById,
   paletteById,
@@ -620,6 +621,7 @@ export function ScreenshotEditor() {
         busy={busy}
         templateId={state.templateId}
         paletteId={state.paletteId}
+        brandColors={state.brand?.colors}
         onTemplateChange={(templateId) => {
           const template = campaignTemplateById(templateId);
           setState((project) => applyCampaignTemplate(project, templateId, project.device));
@@ -632,6 +634,12 @@ export function ScreenshotEditor() {
           setState((project) => applyPalette(project, paletteId));
           toast.success(`${palette?.name || "Palette"} applied`, {
             description: "Your campaign colors changed; captures and typography stayed intact.",
+          });
+        }}
+        onCustomColorsChange={(colors) => {
+          setState((project) => applyCustomColors(project, colors));
+          toast.success("Custom colors applied", {
+            description: "Screenshots, layouts, typography and localized copy stayed in place.",
           });
         }}
         onApplyAiProposal={(proposal) => {

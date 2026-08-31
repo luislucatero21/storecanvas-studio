@@ -1,9 +1,9 @@
 {
   "schemaVersion": 3,
   "appName": "Rutmia",
-  "themeId": "dark-bold",
-  "templateId": "editorial-route",
-  "paletteId": "rutmia-afterglow",
+  "themeId": "warm-editorial",
+  "templateId": "afterglow-rhythm",
+  "paletteId": "parchment-signal",
   "connectedCanvas": true,
   "locales": [
     "en-US",
@@ -26,29 +26,11 @@
           "es-MX": "Haz tuyo tu día."
         },
         "screenshot": "/screenshots/apple/iphone/{locale}/home.png",
-        "assetRef": "capture:home-dashboard",
-        "transforms": {
-          "device": {
-            "x": 153.18224783861672,
-            "y": 1112.7839999999999,
-            "width": 1013.6355043227666,
-            "height": 2064.96,
-            "rotation": 0,
-            "zIndex": 3
-          },
-          "caption": {
-            "x": 105.60000000000001,
-            "y": 258.12,
-            "width": 1108.8,
-            "height": 803.0400000000001,
-            "rotation": 0,
-            "zIndex": 4
-          }
-        }
+        "assetRef": "capture:home-dashboard"
       },
       {
         "id": "rutmia-2-ai",
-        "layout": "device-bottom",
+        "layout": "device-top",
         "label": {
           "en-US": "FROM THOUGHT TO MOMENTUM",
           "es-MX": "DE LA IDEA AL IMPULSO"
@@ -58,11 +40,12 @@
           "es-MX": "De tus ideas a un plan."
         },
         "screenshot": "/screenshots/apple/iphone/{locale}/ai-proposal.png",
-        "assetRef": "capture:coach-suggestions"
+        "assetRef": "capture:coach-suggestions",
+        "inverted": true
       },
       {
         "id": "rutmia-3-focus",
-        "layout": "device-top",
+        "layout": "device-bottom",
         "label": {
           "en-US": "MAKE ROOM FOR DEEP WORK",
           "es-MX": "HAZ ESPACIO PARA ENFOCARTE"
@@ -72,8 +55,7 @@
           "es-MX": "Protege tu enfoque."
         },
         "screenshot": "/screenshots/apple/iphone/{locale}/focus-running.png",
-        "assetRef": "capture:focus-running",
-        "inverted": true
+        "assetRef": "capture:focus-running"
       },
       {
         "id": "rutmia-4-recovery",
@@ -91,7 +73,7 @@
       },
       {
         "id": "rutmia-5-reflection",
-        "layout": "two-devices",
+        "layout": "device-top",
         "label": {
           "en-US": "THE HUMAN SIDE OF PROGRESS",
           "es-MX": "EL LADO HUMANO DEL AVANCE"
@@ -103,7 +85,8 @@
         "screenshot": "/screenshots/apple/iphone/{locale}/reflection-insights.png",
         "screenshotSecondary": "/screenshots/apple/iphone/{locale}/insights.png",
         "assetRef": "capture:daily-reflection",
-        "assetRefSecondary": "capture:insights"
+        "assetRefSecondary": "capture:insights",
+        "inverted": true
       },
       {
         "id": "rutmia-6-goals",
@@ -150,7 +133,7 @@
       },
       {
         "id": "rutmia-9-reminders",
-        "layout": "device-top",
+        "layout": "device-bottom",
         "label": {
           "en-US": "GENTLE BY DEFAULT",
           "es-MX": "AMABLE POR DISEÑO"
@@ -160,11 +143,12 @@
           "es-MX": "Sigue tu ritmo."
         },
         "screenshot": "/screenshots/apple/iphone/{locale}/settings.png",
-        "assetRef": "capture:settings"
+        "assetRef": "capture:settings",
+        "inverted": true
       },
       {
         "id": "rutmia-10-closer",
-        "layout": "device-bottom",
+        "layout": "no-device",
         "label": {
           "en-US": "NO MONTHLY BILL",
           "es-MX": "SIN PAGOS MENSUALES"
@@ -178,7 +162,96 @@
       }
     ],
     "android": [],
-    "ipad": [],
+    "ipad": [
+      {
+        "id": "rutmia-ipad-1-home",
+        "layout": "hero",
+        "label": {
+          "en-US": "BUILT FOR THE BIG SCREEN",
+          "es-MX": "DISEÑADA PARA LA GRAN PANTALLA"
+        },
+        "headline": {
+          "en-US": "See your whole day.",
+          "es-MX": "Ve todo tu día."
+        },
+        "screenshot": "/screenshots/apple/ipad/{locale}/home.png",
+        "assetRef": "capture:ipad-home"
+      },
+      {
+        "id": "rutmia-ipad-2-coach",
+        "layout": "device-top",
+        "label": {
+          "en-US": "CALM COACHING, MORE CONTEXT",
+          "es-MX": "GUÍA TRANQUILA, MÁS CONTEXTO"
+        },
+        "headline": {
+          "en-US": "Plan with a little help.",
+          "es-MX": "Planea con un poco de ayuda."
+        },
+        "screenshot": "/screenshots/apple/ipad/{locale}/coach.png",
+        "assetRef": "capture:ipad-coach",
+        "inverted": true
+      },
+      {
+        "id": "rutmia-ipad-3-goals",
+        "layout": "device-bottom",
+        "label": {
+          "en-US": "GOALS THAT STAY VISIBLE",
+          "es-MX": "METAS SIEMPRE A LA VISTA"
+        },
+        "headline": {
+          "en-US": "Keep the bigger picture close.",
+          "es-MX": "Mantén cerca el panorama completo."
+        },
+        "screenshot": "/screenshots/apple/ipad/{locale}/goals.png",
+        "assetRef": "capture:ipad-goals"
+      },
+      {
+        "id": "rutmia-ipad-4-insights",
+        "layout": "two-devices",
+        "label": {
+          "en-US": "PATTERNS, NOT PRESSURE",
+          "es-MX": "PATRONES, NO PRESIÓN"
+        },
+        "headline": {
+          "en-US": "Notice what is working.",
+          "es-MX": "Descubre lo que sí funciona."
+        },
+        "screenshot": "/screenshots/apple/ipad/{locale}/insights.png",
+        "screenshotSecondary": "/screenshots/apple/ipad/{locale}/settings.png",
+        "assetRef": "capture:ipad-insights",
+        "assetRefSecondary": "capture:ipad-settings"
+      },
+      {
+        "id": "rutmia-ipad-5-settings",
+        "layout": "device-top",
+        "label": {
+          "en-US": "YOUR ROUTINE, YOUR RULES",
+          "es-MX": "TU RUTINA, TUS REGLAS"
+        },
+        "headline": {
+          "en-US": "Private and flexible by design.",
+          "es-MX": "Privada y flexible por diseño."
+        },
+        "screenshot": "/screenshots/apple/ipad/{locale}/settings.png",
+        "assetRef": "capture:ipad-settings",
+        "inverted": true
+      },
+      {
+        "id": "rutmia-ipad-6-lifetime",
+        "layout": "device-bottom",
+        "label": {
+          "en-US": "ONE PURCHASE, NO SUBSCRIPTION",
+          "es-MX": "UN PAGO, SIN SUSCRIPCIÓN"
+        },
+        "headline": {
+          "en-US": "Make the routine yours.",
+          "es-MX": "Haz tuya la rutina."
+        },
+        "screenshot": "/screenshots/apple/ipad/{locale}/lifetime.png",
+        "assetRef": "capture:ipad-lifetime"
+      }
+    ],
     "android-7": [],
     "android-10": [],
     "feature-graphic": []
@@ -296,17 +369,107 @@
         "captureId": "settings",
         "updatedAt": "2026-08-30"
       }
+    },
+    "capture:ipad-home": {
+      "id": "capture:ipad-home",
+      "type": "screen",
+      "label": "iPad home dashboard",
+      "platform": "ios",
+      "paths": {
+        "en-US": "/screenshots/apple/ipad/en-US/home.png",
+        "es-MX": "/screenshots/apple/ipad/es-MX/home.png"
+      },
+      "source": {
+        "adapter": "xcuitest",
+        "captureId": "home-routine",
+        "updatedAt": "2026-08-30"
+      }
+    },
+    "capture:ipad-coach": {
+      "id": "capture:ipad-coach",
+      "type": "screen",
+      "label": "iPad AI coach",
+      "platform": "ios",
+      "paths": {
+        "en-US": "/screenshots/apple/ipad/en-US/coach.png",
+        "es-MX": "/screenshots/apple/ipad/es-MX/coach.png"
+      },
+      "source": {
+        "adapter": "xcuitest",
+        "captureId": "coach-statistics",
+        "updatedAt": "2026-08-30"
+      }
+    },
+    "capture:ipad-goals": {
+      "id": "capture:ipad-goals",
+      "type": "screen",
+      "label": "iPad goals",
+      "platform": "ios",
+      "paths": {
+        "en-US": "/screenshots/apple/ipad/en-US/goals.png",
+        "es-MX": "/screenshots/apple/ipad/es-MX/goals.png"
+      },
+      "source": {
+        "adapter": "xcuitest",
+        "captureId": "goals",
+        "updatedAt": "2026-08-30"
+      }
+    },
+    "capture:ipad-insights": {
+      "id": "capture:ipad-insights",
+      "type": "screen",
+      "label": "iPad insights",
+      "platform": "ios",
+      "paths": {
+        "en-US": "/screenshots/apple/ipad/en-US/insights.png",
+        "es-MX": "/screenshots/apple/ipad/es-MX/insights.png"
+      },
+      "source": {
+        "adapter": "xcuitest",
+        "captureId": "insights",
+        "updatedAt": "2026-08-30"
+      }
+    },
+    "capture:ipad-settings": {
+      "id": "capture:ipad-settings",
+      "type": "screen",
+      "label": "iPad settings",
+      "platform": "ios",
+      "paths": {
+        "en-US": "/screenshots/apple/ipad/en-US/settings.png",
+        "es-MX": "/screenshots/apple/ipad/es-MX/settings.png"
+      },
+      "source": {
+        "adapter": "xcuitest",
+        "captureId": "settings",
+        "updatedAt": "2026-08-30"
+      }
+    },
+    "capture:ipad-lifetime": {
+      "id": "capture:ipad-lifetime",
+      "type": "screen",
+      "label": "iPad lifetime plan",
+      "platform": "ios",
+      "paths": {
+        "en-US": "/screenshots/apple/ipad/en-US/lifetime.png",
+        "es-MX": "/screenshots/apple/ipad/es-MX/lifetime.png"
+      },
+      "source": {
+        "adapter": "xcuitest",
+        "captureId": "lifetime-paywall",
+        "updatedAt": "2026-08-30"
+      }
     }
   },
   "brand": {
     "colors": {
-      "primary": "#6f7dff",
-      "accent": "#ff9f43",
-      "surface": "#191b27",
-      "surfaceAlt": "#f6f1e9",
-      "ink": "#f7f5ef",
-      "inkAlt": "#1b2030",
-      "muted": "#a7aec3"
+      "primary": "#C75C48",
+      "accent": "#E56750",
+      "surface": "#F3E9DE",
+      "surfaceAlt": "#2B2421",
+      "ink": "#2B2421",
+      "inkAlt": "#FFF7EF",
+      "muted": "#7F6A5F"
     },
     "typography": {
       "display": {
