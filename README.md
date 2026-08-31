@@ -1,63 +1,58 @@
-# StoreCanvas — Campaign studio
+# StoreCanvas
 
-Local-first screenshot composition studio for turning real app captures into App Store and Google Play campaign assets. The starter project is wired to the current Rutmia capture deck.
+StoreCanvas is a local-first studio for turning real app captures into App Store and Google Play campaign assets. It combines a connected canvas, independent device slots, editable copy, reusable templates, palettes, hardware-aware iPhone frames, deterministic exports and optional App Store metadata import.
+
+The repository includes a neutral, shareable demo project. Your own campaign files and downloaded assets stay local by default.
 
 ## Quick start
 
 ```bash
-bun install   # or pnpm / yarn / npm
-bun dev       # http://localhost:3000
+pnpm install   # bun install also works
+pnpm dev       # http://localhost:3000
 ```
 
-Open `http://localhost:3000` and edit the campaign. Changes autosave to `app-store-screenshots.json` and to the browser cache.
+Open `http://localhost:3000`. The editor loads `example-project.json` and autosaves changes to that file plus the browser cache.
 
-## What's inside
-
-- **Connected canvas editor** (`src/components/editor/`) — every screen sits on one horizontal canvas, so phones, captions, and other elements can be dragged across screen boundaries and exported as split crops when Connected mode is enabled.
-- **Campaign wardrobe** — twelve composition templates and twelve AA-checked palettes can be applied without replacing screenshot files, semantic capture IDs, localized copy, or custom text layers. Templates automatically reflow connected artwork; replacing the palette or manual placement is explicitly opt-in. The Tune panel adjusts six core color tokens with a live preview and contrast score.
-- **App Store listing import** — paste a public `apps.apple.com` URL to generate a project-owned template, brand palette and evidence-backed campaign narrative from Apple metadata, the app icon and current published screenshots. Every decision is reviewed before applying. Published marketing composites remain reference-only by default so StoreCanvas never creates a screen-inside-a-screen accidentally.
-- **AI polish** — review copy suggestions from a personal OpenAI or OpenRouter key before applying them. Keys are held only in the dialog session and never written to the project file. The request contains app/copy context only—never capture files or their paths.
-- **Screen controls** — drag-to-reorder screens, click-to-edit text, screenshot drop targets, per-screen layout switcher, layer ordering, hide/lock controls, and responsive anchors.
-- **Device frames** (`src/components/editor/device-frames.tsx`) — selectable iPhone hardware models with their own cutout and controls, plus iPad, Android phone, Android tablet (portrait + landscape), and feature graphic.
-- **3D camera rig** — every phone or tablet can use flat, left/right tilt, low-angle, high-angle, or fine-tuned perspective/depth controls. The same rig works through iPhone, iPad, Android phone, and Android tablet frames.
-- **Face-forward editorial layers** — hardware and captured screens move together in 3D, while headlines, labels, and custom copy remain on the artboard plane for consistent readability.
-- **Connected artwork** — upload or generate one text-free panorama that crosses two or three screens while remaining a separately editable low-z layer. OpenAI GPT Image and a managed platform image endpoint are supported; personal keys are never stored.
-- **Reusable device slots** — add two or more devices, reuse the same semantic capture with independent angle/position by default, or explicitly opt into one linked transform across two or three artboards.
-- **Cross-screen messages** — captions can span one, two, or three connected screens for large horizontal statements.
-- **Optional copy continuity** — link matching screen positions so localized labels and headlines stay identical across iPhone, iPad, Android, and tablet decks; unlink at any time to resume device-specific copy.
-- **Semantic capture library** — slides reference stable IDs such as `capture:home-dashboard`; locale-specific paths can be refreshed without changing composition transforms.
-- **Preflight QA** — the toolbar validates schema, locale, store slide limits, export targets, and screenshot availability before allowing production export.
-- **Auto-save (git-trackable)** — every change is persisted within ~600ms to **`app-store-screenshots.json`** at the project root (via `/api/project`) **and** mirrored to `localStorage` as an instant-paint cache. Commit `app-store-screenshots.json` and you can `git clone` to another machine and resume exactly where you left off.
-- **Multi-device decks** — iOS and Android slide decks live side by side; switching the platform tab preserves both.
-- **Native iPad campaign** — the Rutmia starter includes six real 2064×2752 iPad captures in English and Spanish, generated from deterministic XCUITest marketing journeys.
-- **One-click export** — bulk PNG export at every configured store resolution using `html-to-image`; each PNG is rendered from the current connected or isolated deck mode.
-- **Deterministic renderer** — `pnpm storecanvas render --device iphone --locale en-US --output exports/rendered` captures exact-size PNGs from `/render` with Playwright.
-- **Project migration** — older `app-store-screenshots.json` files are migrated on load. Existing per-slide transforms remain valid, and connected crops become available without rewriting the deck by hand.
-- **Legacy-safe mode** — pre-v2 projects opened directly in the editor start in isolated-screen mode first, then can opt into connected crops with the toolbar's Connected/Isolated control. Skill-run in-place migrations keep legacy decks isolated unless the project had already explicitly opted into connected canvas.
-
-## Adding screenshots
-
-Two ways:
-
-1. **Drop a file in the inspector** — drag-and-drop or click Pick. The file is sent to `/api/upload`, hashed, and written to `public/screenshots/uploaded/<hash>.png`. The slide stores the resulting `/screenshots/uploaded/...` path, so commit those files alongside `app-store-screenshots.json` and the screenshots survive a `git clone`.
-2. **Reference a static file** — put PNGs under `public/screenshots/{platform}/{device}/{locale}/` and reference them by path. Default sample slides expect:
-   - `public/screenshots/apple/iphone/en/...`
-   - `public/screenshots/android/phone/en/...`
-   - `public/screenshots/apple/ipad/en/...`
-
-Update the matching `screenshot` fields in `app-store-screenshots.json` to point at whatever filenames you choose.
-
-## Exporting
-
-The toolbar dropdown lists every Apple/Google-required size for the current device. Click **Export bundle** to download a zip. In Connected mode, each PNG is clipped from the connected canvas, so an element that straddles two screens appears split exactly where you placed it. In Isolated mode, each screen clips its own elements and legacy offscreen content cannot leak into neighboring exports.
-
-For repeatable CLI output, start the dev server and run:
+To work on a private project without adding it to Git, create `.env.local`:
 
 ```bash
-pnpm storecanvas render --device iphone --locale en-US --output exports/rutmia-preview
+STORECANVAS_PROJECT_FILE=app-store-screenshots.json
 ```
 
-Use `--all` to render every configured locale and every device deck with screens. Set `PLAYWRIGHT_EXECUTABLE_PATH` only when your local Playwright browser is installed outside its normal cache.
+`app-store-screenshots.json`, uploaded screenshots, generated backgrounds and exports are ignored by Git. This keeps private app captures out of an open-source checkout while preserving the existing local file.
+
+## Features
+
+- Connected or isolated screen composition with crops that remain exact at export time.
+- Captions and artwork that span two or three screens.
+- Independent device slots by default, with explicit opt-in transform linking.
+- iPhone 17 Pro Max, iPhone 14 Pro Max and iPhone 13 Pro Max hardware frames with Dynamic Island/cutout and physical controls.
+- Flat, optical tilt, low-angle, high-angle and custom camera controls.
+- Twelve campaign templates and twelve accessible palette presets, with separate opt-in controls for recommended colors and placement resets.
+- Direct brand-token customization, per-slide text layers, responsive constraints, hiding/locking and undo/redo.
+- App Store URL import that derives a project-owned template, palette and copy suggestions from listing metadata and screenshot signals. Published composites remain reference-only unless the user explicitly enables them as captures.
+- Optional connected-artwork generation through an OpenAI-compatible Images API or a managed deployment endpoint. API keys stay in the active dialog and are never written to the project file.
+- Deterministic Playwright rendering for exact storefront sizes.
+
+## Working with assets
+
+Drop captures into the inspector or reference static files under `public/screenshots/`. The included demo uses small, self-authored SVG screens under `public/screenshots/demo/` and a text-free connected ribbon under `public/backgrounds/demo-ribbon.svg`.
+
+For a private campaign, keep downloaded or generated assets under the ignored upload/import directories. Only redistribute assets for which you have the necessary rights. App Store listing metadata and published screenshots are third-party content; StoreCanvas does not grant permission to reuse them.
+
+## Rendering
+
+Start the dev server and run:
+
+```bash
+pnpm storecanvas render --device iphone --locale en-US --output exports/rendered
+```
+
+Use `--all` to render every configured locale and device deck with screens. Set `STORECANVAS_URL` when the server is not at the default address. The renderer reads the same `STORECANVAS_PROJECT_FILE` setting as the editor.
+
+## AI providers
+
+AI copy polish accepts a user-provided OpenAI or OpenRouter key in memory for the current dialog session. Connected artwork generation follows the same pattern. A deployment can optionally configure a server-side OpenAI-compatible gateway in `.env.local`; copy `.env.example` to get the available variables. StoreCanvas does not provide billing, key storage or a hosted proxy by itself.
 
 ## Tests
 
@@ -68,50 +63,27 @@ pnpm test:ui    # Playwright UI tests
 pnpm test:all
 ```
 
-The suites cover the Rutmia load path, App Store URL validation and listing-derived campaigns, locale editing, text layers, 3D iPhone/Android rendering, independent and opt-in-linked device slots, connected artwork upload/generation, template artwork reflow and opt-in overrides, cross-screen messages, linked cross-device copy, exact-size iPhone/iPad output, palette contrast, AI review, and hide/lock interactions.
+The suites cover schema/migration contracts, palette contrast, template reflow, shared-caption contrast and dragging, independent and linked device slots, App Store import validation, AI key handling, exact-size rendering and the main editor workflows.
 
-## AI providers
+## Project structure
 
-Open **AI polish** in the toolbar and choose one of these options:
+| Path | Purpose |
+|------|---------|
+| `example-project.json` | Safe, checked-in demo campaign |
+| `src/lib/defaults.ts` | Blank fallback/reset state |
+| `src/lib/project-file.ts` | Configurable project-file resolution |
+| `src/components/editor/` | Editor UI, canvas, frames and inspectors |
+| `src/lib/campaign-presets.ts` | Templates and palette presets |
+| `src/app/render/` | Server-rendered deterministic export surface |
+| `scripts/storecanvas.mjs` | Playwright export CLI |
+| `tests/` | Unit and UI regression suites |
 
-- **OpenAI / OpenRouter:** paste your own API key into the dialog and choose a model. The key exists only in memory for that dialog session; it is never put in `app-store-screenshots.json`, local storage, source control, or server logs by StoreCanvas.
-- **StoreCanvas workspace:** use an OpenAI-compatible server-side gateway when you want managed usage or paid workspace credits. This is intentionally disabled until the deployment owner configures it; StoreCanvas does not pretend to provide billing on its own.
+## Open-source attribution
 
-Copy `.env.example` to `.env.local` and configure these only for managed workspace AI:
+StoreCanvas is released under the MIT License. Direct open-source dependencies and their upstream repositories are listed in [THIRD_PARTY.md](THIRD_PARTY.md), including React, Next.js, Radix UI, dnd-kit, Playwright, Vitest, Sharp, Lucide and the other libraries used by this project.
 
-```bash
-STORECANVAS_PLATFORM_AI_URL=https://your-gateway.example/v1/chat/completions
-STORECANVAS_PLATFORM_AI_TOKEN=server-side-secret
-STORECANVAS_PLATFORM_AI_MODEL=gpt-4.1-mini
-STORECANVAS_PUBLIC_URL=https://your-storecanvas.example # optional OpenRouter attribution
-```
+## License
 
-The gateway receives standard OpenAI-compatible chat-completion requests. A deployment may use it to enforce budget, users, or billing before forwarding to the actual model provider.
+Copyright (c) 2026 Luis Lucatero.
 
-Connected artwork generation uses OpenAI's Images API with `gpt-image-2` by default, or a managed endpoint with the same response shape (`data[0].b64_json`) or `{ "path": "/public-path.png" }`:
-
-```bash
-STORECANVAS_PLATFORM_IMAGE_URL=https://your-gateway.example/v1/images/generations
-STORECANVAS_PLATFORM_IMAGE_TOKEN=server-side-secret
-STORECANVAS_PLATFORM_IMAGE_MODEL=gpt-image-2
-```
-
-## Customizing
-
-| Where | What |
-|-------|------|
-| `src/lib/constants.ts` | Canvas dimensions, export sizes, frame ratios, themes, locales |
-| `app-store-screenshots.json` | Canonical starter project: app name, current device, connected-canvas mode, slide copy, screenshots, and transforms |
-| `src/lib/defaults.ts` | Fallback/reset state used when no project file or local cache exists |
-| `src/components/editor/slide-canvas.tsx` | Add new layouts and connected-canvas element rendering |
-| `src/components/editor/device-frames.tsx` | Tweak device chrome (bezel radii, camera dots) |
-| `src/app/layout.tsx` | Swap the font (`next/font/google`) |
-
-## Notes
-
-- iPhone hardware is rendered from model definitions in `src/lib/device-models.ts`; `PHONE_SCREEN` remains the shared capture aperture.
-- Image preloading converts every static path to a base64 data URI before exports run, and export retries paths that were previously missing — this prevents the html-to-image race where some slide screenshots come out black.
-- Reset via the toolbar's circular arrow icon clears in-memory state and reloads the default screens. To wipe disk state too, delete `app-store-screenshots.json`.
-- **Persistence model** — the canonical state lives in `app-store-screenshots.json` (git-tracked). On load, the editor reads localStorage first for instant paint, then overwrites with the file contents if present; if the file endpoint is unavailable, autosave is blocked so stale cache cannot overwrite disk. On save, both are written. If you ever see a conflict, the file always wins.
-- **Migration model** — older projects do not need a manual conversion. On first load, the editor upgrades localized text and transform records, writes `schemaVersion: 5`, adds explicit campaign template/palette IDs, preserves all existing screens, and keeps legacy canvas behavior intact. Schema v5 adds selectable iPhone hardware models on top of the bounded 3D presentation values, reusable device slots, message spans, and optional copy continuity introduced previously. Turn on **Connected** in the toolbar when you want elements to cross screen edges.
-- **Custom themes** — if a project file references a theme id that is not present in `src/lib/constants.ts`, the editor falls back to `clean-light` and shows a warning. Merge custom `THEMES` entries during in-place upgrades.
+Source code and the included demo assets are available under the [MIT License](LICENSE).

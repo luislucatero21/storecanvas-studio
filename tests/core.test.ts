@@ -82,14 +82,12 @@ describe("StoreCanvas project contracts", () => {
     }
   });
 
-  it("includes exact-size native iPad captures for both Rutmia locales", () => {
-    for (const locale of ["en-US", "es-MX"]) {
-      for (const name of ["home", "coach", "goals", "insights", "settings", "lifetime"]) {
-        const png = readFileSync(resolve("public/screenshots/apple/ipad", locale, `${name}.png`));
-        expect(png.readUInt32BE(16), `${locale}/${name} width`).toBe(2064);
-        expect(png.readUInt32BE(20), `${locale}/${name} height`).toBe(2752);
-      }
+  it("includes self-contained demo captures for the checked-in example", () => {
+    for (const name of ["overview", "plan", "focus", "progress", "insights", "settings"]) {
+      const svg = readFileSync(resolve("public/screenshots/demo", `${name}.svg`), "utf8");
+      expect(svg, name).toContain("<svg");
     }
+    expect(readFileSync(resolve("public/backgrounds/demo-ribbon.svg"), "utf8")).toContain("<svg");
   });
 
   it("starts projects with an explicit campaign template and palette", () => {
@@ -99,8 +97,8 @@ describe("StoreCanvas project contracts", () => {
     });
   });
 
-  it("accepts the Rutmia-shaped starter project", () => {
-    const result = ProjectStateSchema.safeParse(DEFAULT_PROJECT);
+  it("accepts the checked-in example project", () => {
+    const result = ProjectStateSchema.safeParse(JSON.parse(readFileSync(resolve("example-project.json"), "utf8")));
 
     expect(result.success).toBe(true);
   });
@@ -159,7 +157,7 @@ describe("StoreCanvas project contracts", () => {
 
     expect(preserved.paletteId).toBe("custom");
     expect(preserved.slidesByDevice.iphone[0].transforms).toEqual(slide.transforms);
-    expect(overridden.paletteId).toBe("rutmia-afterglow");
+    expect(overridden.paletteId).toBe("afterglow-pulse");
     expect(overridden.slidesByDevice.iphone[0].transforms).toBeUndefined();
   });
 
@@ -196,11 +194,11 @@ describe("StoreCanvas project contracts", () => {
           typography: { display: { family: "Fraunces", weight: 700 } },
         },
       },
-      "rutmia-afterglow",
+      "afterglow-pulse",
     );
 
     expect(next).toMatchObject({
-      paletteId: "rutmia-afterglow",
+      paletteId: "afterglow-pulse",
       themeId: "dark-bold",
       brand: {
         colors: { surface: "#191B27", accent: "#FFA04A" },
@@ -232,9 +230,9 @@ describe("StoreCanvas project contracts", () => {
       provider: "openai",
       model: "gpt-4.1-mini",
       mode: "polish",
-      appName: "Rutmia",
+      appName: "Example app",
       locale: "en-US",
-      slides: [{ id: "rutmia-1-route", label: "START", headline: "Own your day." }],
+      slides: [{ id: "demo-1-route", label: "START", headline: "Own your day." }],
     });
 
     expect(result).toEqual({ ok: false, error: "apiKey: Add a personal API key for this provider." });
@@ -242,8 +240,8 @@ describe("StoreCanvas project contracts", () => {
 
   it("keeps captures and semantic links intact when an AI copy proposal is applied", () => {
     const proposal = parseAiProposal(
-      '```json\n{"summary":"Sharper promise.","slides":[{"id":"rutmia-1-route","label":"START WITH INTENTION","headline":"Make today yours.","rationale":"It makes the benefit immediate."},{"id":"unknown","label":"IGNORE","headline":"Ignore this.","rationale":"Not in the deck."}]}\n```',
-      ["rutmia-1-route"],
+      '```json\n{"summary":"Sharper promise.","slides":[{"id":"demo-1-route","label":"START WITH INTENTION","headline":"Make today yours.","rationale":"It makes the benefit immediate."},{"id":"unknown","label":"IGNORE","headline":"Ignore this.","rationale":"Not in the deck."}]}\n```',
+      ["demo-1-route"],
     );
     const original = DEFAULT_PROJECT.slidesByDevice.iphone[0];
     const next = applyAiProposal(
@@ -251,7 +249,7 @@ describe("StoreCanvas project contracts", () => {
         ...DEFAULT_PROJECT,
         slidesByDevice: {
           ...DEFAULT_PROJECT.slidesByDevice,
-          iphone: [{ ...original, id: "rutmia-1-route", screenshot: "/captures/{locale}/home.png", assetRef: "capture:home-dashboard" }],
+          iphone: [{ ...original, id: "demo-1-route", screenshot: "/captures/{locale}/home.png", assetRef: "capture:home-dashboard" }],
         },
       },
       proposal,
@@ -278,7 +276,7 @@ describe("StoreCanvas project contracts", () => {
           choices: [
             {
               message: {
-                content: '{"summary":"A stronger opening.","slides":[{"id":"rutmia-1-route","label":"TODAY","headline":"Own today.","rationale":"It is more direct."}]}',
+                content: '{"summary":"A stronger opening.","slides":[{"id":"demo-1-route","label":"TODAY","headline":"Own today.","rationale":"It is more direct."}]}',
               },
             },
           ],
@@ -293,9 +291,9 @@ describe("StoreCanvas project contracts", () => {
         apiKey: "sk-or-v1-example-key",
         model: "openai/gpt-4o-mini",
         mode: "polish",
-        appName: "Rutmia",
+        appName: "Example app",
         locale: "en-US",
-        slides: [{ id: "rutmia-1-route", label: "START", headline: "Own your day." }],
+        slides: [{ id: "demo-1-route", label: "START", headline: "Own your day." }],
       },
       { fetchImpl, env: { STORECANVAS_PUBLIC_URL: "https://storecanvas.example" } },
     );
@@ -314,9 +312,9 @@ describe("StoreCanvas project contracts", () => {
       apiKey: "sk-or-v1-example-key",
       model: "openai/gpt-4o-mini",
       mode: "polish",
-      appName: "Rutmia",
+      appName: "Example app",
       locale: "en-US",
-      slides: [{ id: "rutmia-1-route", label: "START", headline: "Own your day." }],
+      slides: [{ id: "demo-1-route", label: "START", headline: "Own your day." }],
     })).not.toContain("sk-or-v1-example-key");
     expect(proposal.slides[0].headline).toBe("Own today.");
   });
@@ -411,7 +409,7 @@ describe("StoreCanvas project contracts", () => {
   });
 
   it("creates stable, sortable export names", () => {
-    expect(slugify("Rutmia — App Store 2026")).toBe("rutmia-app-store-2026");
+    expect(slugify("Example app — App Store 2026")).toBe("example-app-app-store-2026");
     expect(exportFileName(1, "device-bottom")).toBe("02-device-bottom.png");
     expect(
       exportPath({
@@ -596,8 +594,8 @@ describe("StoreCanvas project contracts", () => {
     });
   });
 
-  it("ships Rutmia with independent phones, premium connected artwork and message continuity", () => {
-    const project = JSON.parse(readFileSync(resolve("app-store-screenshots.json"), "utf8"));
+  it("ships the example with independent phones, premium connected artwork and message continuity", () => {
+    const project = JSON.parse(readFileSync(resolve("example-project.json"), "utf8"));
     const slides = project.slidesByDevice.iphone;
     const heroRig = slides[0].presentations?.device;
     const connectedArtwork = slides.find((slide: { connectedArtworks?: Array<{ spanSlots?: number }> }) =>
@@ -614,13 +612,13 @@ describe("StoreCanvas project contracts", () => {
       deviceModel: "iphone-17-pro-max",
     });
     expect(connectedArtwork?.connectedArtworks[0]).toMatchObject({
-      id: "rutmia-dawn-ribbon",
+      id: "demo-dawn-ribbon",
       spanSlots: 2,
     });
-    expect(recoverySlot).toMatchObject({ assetRef: "capture:recovery-paused", linkedTransforms: false });
-    expect(reflectionSlot).toMatchObject({ assetRef: "capture:daily-reflection", linkedTransforms: false });
+    expect(recoverySlot).toMatchObject({ assetRef: "capture:focus", linkedTransforms: false });
+    expect(reflectionSlot).toMatchObject({ assetRef: "capture:progress", linkedTransforms: false });
     expect(recoverySlot.transform).not.toEqual(reflectionSlot.transform);
-    expect(messageSpread).toMatchObject({ id: "rutmia-8-routine", captionSpan: 2 });
+    expect(messageSpread).toMatchObject({ id: "demo-8-routine", captionSpan: 2 });
   });
 
   it("resolves and saves a generated OpenAI artwork without persisting the personal key", async () => {

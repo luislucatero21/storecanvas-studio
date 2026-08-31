@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1022" height="2082" viewBox="0 0 1022 2082">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#222b52"/><stop offset="1" stop-color="#11182b"/></linearGradient></defs>
+  <rect width="1022" height="2082" fill="url(#bg)"/>
+  <text x="72" y="150" fill="#aeb8d8" font-family="system-ui, sans-serif" font-size="30">9:41</text>
+  <text x="72" y="310" fill="#f8f5ef" font-family="system-ui, sans-serif" font-size="64" font-weight="700">Weekly view</text>
+  <text x="72" y="370" fill="#aeb8d8" font-family="system-ui, sans-serif" font-size="30">A little distance reveals the pattern.</text>
+  <rect x="72" y="510" width="878" height="570" rx="42" fill="#1d2949" stroke="#56668f" stroke-width="3"/>
+  <text x="116" y="610" fill="#aeb8d8" font-family="system-ui, sans-serif" font-size="25">MOMENTUM</text>
+  <text x="116" y="700" fill="#f8f5ef" font-family="system-ui, sans-serif" font-size="52" font-weight="700">A steadier week</text>
+  <g fill="#586cf2"><rect x="150" y="910" width="68" height="70" rx="20"/><rect x="270" y="850" width="68" height="130" rx="20"/><rect x="390" y="760" width="68" height="220" rx="20"/><rect x="510" y="820" width="68" height="160" rx="20"/><rect x="630" y="700" width="68" height="280" rx="20"/></g>
+  <rect x="750" y="785" width="68" height="195" rx="20" fill="#ffb45c"/>
+  <text x="72" y="1250" fill="#f8f5ef" font-family="system-ui, sans-serif" font-size="40" font-weight="700">What stands out</text>
+  <rect x="72" y="1320" width="878" height="170" rx="34" fill="#f8f5ef"/>
+  <text x="120" y="1420" fill="#20294d" font-family="system-ui, sans-serif" font-size="34">Longer sessions happen on quiet mornings.</text>
+  <rect x="72" y="1540" width="878" height="170" rx="34" fill="#ffb45c"/>
+  <text x="120" y="1640" fill="#20294d" font-family="system-ui, sans-serif" font-size="34">Keep the next step easy to repeat.</text>
+</svg>

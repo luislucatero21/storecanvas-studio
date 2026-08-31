@@ -1,14 +1,12 @@
 import { promises as fs } from "node:fs";
-import path from "node:path";
 import { NextResponse } from "next/server";
 import { ProjectStateSchema } from "@/lib/schema";
+import { projectFilePath } from "@/lib/project-file";
 
 export const dynamic = "force-dynamic";
 
-const PROJECT_FILE = "app-store-screenshots.json";
-
 function filePath() {
-  return path.join(process.cwd(), PROJECT_FILE);
+  return projectFilePath();
 }
 
 export async function GET() {

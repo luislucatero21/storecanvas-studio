@@ -48,7 +48,7 @@ export function getExportSizes(device: Device, orientation: Orientation): Export
 }
 
 // ---------- Frame aspect ratios ----------
-export const MK_RATIO    = 1022 / 2082; // iPhone PNG mockup
+export const MK_RATIO    = 1022 / 2082; // iPhone frame aspect ratio
 export const TAB_P_RATIO = 0.667;        // tablet portrait
 export const TAB_L_RATIO = 1.5;          // tablet landscape
 export const IPAD_RATIO  = 0.770;        // iPad

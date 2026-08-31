@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1022" height="2082" viewBox="0 0 1022 2082">
+  <rect width="1022" height="2082" fill="#11182b"/>
+  <text x="72" y="150" fill="#aeb8d8" font-family="system-ui, sans-serif" font-size="30">9:41</text>
+  <text x="72" y="310" fill="#f8f5ef" font-family="system-ui, sans-serif" font-size="64" font-weight="700">Settings</text>
+  <text x="72" y="370" fill="#aeb8d8" font-family="system-ui, sans-serif" font-size="30">Make the system feel like yours.</text>
+  <g fill="#1d2949" stroke="#334675" stroke-width="3"><rect x="72" y="510" width="878" height="150" rx="32"/><rect x="72" y="700" width="878" height="150" rx="32"/><rect x="72" y="890" width="878" height="150" rx="32"/><rect x="72" y="1080" width="878" height="150" rx="32"/></g>
+  <g fill="#f8f5ef" font-family="system-ui, sans-serif" font-size="34"><text x="120" y="600">Notifications</text><text x="120" y="790">Appearance</text><text x="120" y="980">Privacy</text><text x="120" y="1170">Export data</text></g>
+  <g fill="#586cf2"><rect x="820" y="560" width="82" height="48" rx="24"/><circle cx="875" cy="584" r="18" fill="#fff"/><rect x="820" y="750" width="82" height="48" rx="24"/><circle cx="875" cy="774" r="18" fill="#fff"/></g>
+  <text x="72" y="1730" fill="#ffb45c" font-family="system-ui, sans-serif" font-size="30" font-weight="700">Private by default</text>
+</svg>

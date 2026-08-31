@@ -1,0 +1,465 @@
+{
+  "schemaVersion": 6,
+  "appName": "Example app",
+  "themeId": "dark-bold",
+  "templateId": "afterglow-rhythm",
+  "paletteId": "afterglow-pulse",
+  "connectedCanvas": true,
+  "locales": [
+    "en-US",
+    "es-MX"
+  ],
+  "locale": "en-US",
+  "device": "iphone",
+  "orientation": "portrait",
+  "slidesByDevice": {
+    "iphone": [
+      {
+        "id": "demo-1-route",
+        "layout": "hero",
+        "label": {
+          "en-US": "A CLEARER WAY FORWARD",
+          "es-MX": "UNA FORMA MÁS CLARA DE AVANZAR"
+        },
+        "headline": {
+          "en-US": "Make space for what matters.",
+          "es-MX": "Haz espacio para lo importante."
+        },
+        "screenshot": "/screenshots/demo/overview.svg",
+        "assetRef": "capture:overview",
+        "presentations": {
+          "device": {
+            "preset": "tilt-left",
+            "rotateX": 2,
+            "rotateY": -11,
+            "perspective": 2100,
+            "depth": 9,
+            "deviceModel": "iphone-17-pro-max"
+          }
+        }
+      },
+      {
+        "id": "demo-2-ai",
+        "layout": "device-top",
+        "label": {
+          "en-US": "FROM THOUGHT TO MOMENTUM",
+          "es-MX": "DE IDEA A IMPULSO"
+        },
+        "headline": {
+          "en-US": "Turn thoughts into a plan.",
+          "es-MX": "Convierte ideas en un plan."
+        },
+        "screenshot": "/screenshots/demo/plan.svg",
+        "assetRef": "capture:plan",
+        "inverted": true
+      },
+      {
+        "id": "demo-3-focus",
+        "layout": "device-bottom",
+        "label": {
+          "en-US": "MAKE ROOM FOR DEEP WORK",
+          "es-MX": "HAZ ESPACIO PARA CONCENTRARTE"
+        },
+        "headline": {
+          "en-US": "Protect your focus.",
+          "es-MX": "Protege tu concentración."
+        },
+        "screenshot": "/screenshots/demo/focus.svg",
+        "assetRef": "capture:focus"
+      },
+      {
+        "id": "demo-4-recovery",
+        "layout": "device-bottom",
+        "label": {
+          "en-US": "PROGRESS WITHOUT THE GUILT",
+          "es-MX": "AVANZA SIN CULPA"
+        },
+        "headline": {
+          "en-US": "Missed a day? Keep going.",
+          "es-MX": "¿Te detuviste? Sigue adelante."
+        },
+        "screenshot": "/screenshots/demo/focus.svg",
+        "assetRef": "capture:focus",
+        "deviceSlots": [
+          {
+            "id": "demo-recovery-continuity",
+            "screenshot": "/screenshots/demo/focus.svg",
+            "assetRef": "capture:focus",
+            "transform": {
+              "x": 439,
+              "y": 610,
+              "width": 778,
+              "height": 1585,
+              "rotation": -1.5,
+              "zIndex": 5
+            },
+            "presentation": {
+              "preset": "tilt-left",
+              "rotateX": 2,
+              "rotateY": -11,
+              "perspective": 2100,
+              "depth": 9,
+              "deviceModel": "iphone-17-pro-max"
+            },
+            "spanSlots": 2,
+            "linkedTransforms": false
+          }
+        ],
+        "connectedArtworks": [
+          {
+            "id": "demo-dawn-ribbon",
+            "image": "/backgrounds/demo-ribbon.svg",
+            "assetRef": "image:demo-ribbon",
+            "transform": {
+              "x": 0,
+              "y": 0,
+              "width": 2640,
+              "height": 2868,
+              "zIndex": 1
+            },
+            "spanSlots": 2,
+            "opacity": 0.92
+          }
+        ],
+        "hiddenElements": [
+          "device"
+        ]
+      },
+      {
+        "id": "demo-5-reflection",
+        "layout": "device-top",
+        "label": {
+          "en-US": "THE HUMAN SIDE OF PROGRESS",
+          "es-MX": "EL LADO HUMANO DEL AVANCE"
+        },
+        "headline": {
+          "en-US": "Make space to notice.",
+          "es-MX": "Haz espacio para observar."
+        },
+        "screenshot": "/screenshots/demo/progress.svg",
+        "screenshotSecondary": "/screenshots/demo/insights.svg",
+        "assetRef": "capture:progress",
+        "assetRefSecondary": "capture:insights",
+        "deviceSlots": [
+          {
+            "id": "demo-reflection-independent",
+            "screenshot": "/screenshots/demo/progress.svg",
+            "assetRef": "capture:progress",
+            "transform": {
+              "x": 223,
+              "y": -208,
+              "width": 761,
+              "height": 1551,
+              "rotation": 1.5,
+              "zIndex": 5
+            },
+            "presentation": {
+              "preset": "tilt-right",
+              "rotateX": 2,
+              "rotateY": 11,
+              "perspective": 2100,
+              "depth": 9,
+              "deviceModel": "iphone-17-pro-max"
+            },
+            "spanSlots": 2,
+            "linkedTransforms": false
+          }
+        ],
+        "inverted": true,
+        "hiddenElements": [
+          "device"
+        ]
+      },
+      {
+        "id": "demo-6-goals",
+        "layout": "device-bottom",
+        "label": {
+          "en-US": "SMALL STEPS. REAL MOMENTUM.",
+          "es-MX": "PASOS PEQUEÑOS. AVANCE REAL."
+        },
+        "headline": {
+          "en-US": "Make progress feel real.",
+          "es-MX": "Haz visible tu avance."
+        },
+        "screenshot": "/screenshots/demo/plan.svg",
+        "assetRef": "capture:plan"
+      },
+      {
+        "id": "demo-7-insights",
+        "layout": "device-top",
+        "label": {
+          "en-US": "YOUR PATTERNS, MADE VISIBLE",
+          "es-MX": "TUS PATRONES, A LA VISTA"
+        },
+        "headline": {
+          "en-US": "See what is working.",
+          "es-MX": "Descubre qué funciona."
+        },
+        "screenshot": "/screenshots/demo/insights.svg",
+        "assetRef": "capture:insights",
+        "inverted": true,
+        "transforms": {
+          "device": {
+            "x": 153.1822478386166,
+            "y": -286.8,
+            "width": 1013.6355043227666,
+            "height": 2064.96,
+            "rotation": 0,
+            "zIndex": 3
+          }
+        }
+      },
+      {
+        "id": "demo-8-routine",
+        "layout": "device-bottom",
+        "label": {
+          "en-US": "ONE STORY              EVERY SCREEN",
+          "es-MX": "UNA HISTORIA              EN CADA PANTALLA"
+        },
+        "headline": {
+          "en-US": "One clear idea.              Every screen.",
+          "es-MX": "Una idea clara.              Cada pantalla."
+        },
+        "screenshot": "/screenshots/demo/overview.svg",
+        "assetRef": "capture:overview",
+        "captionSpan": 2,
+        "transforms": {
+          "caption": {
+            "x": 106,
+            "y": 229,
+            "width": 2429,
+            "height": 369,
+            "rotation": 0,
+            "zIndex": 2
+          },
+          "device": {
+            "x": 153,
+            "y": 746,
+            "width": 1014,
+            "height": 2065,
+            "rotation": 0,
+            "zIndex": 1
+          }
+        },
+        "constraints": {
+          "caption": {
+            "width": {
+              "value": 1,
+              "unit": "percent"
+            }
+          }
+        }
+      },
+      {
+        "id": "demo-9-reminders",
+        "layout": "device-bottom",
+        "label": {
+          "en-US": "GENTLE BY DEFAULT",
+          "es-MX": "SUAVE POR DEFECTO"
+        },
+        "headline": {
+          "en-US": "Stay gently on track.",
+          "es-MX": "Mantén el rumbo con calma."
+        },
+        "screenshot": "/screenshots/demo/settings.svg",
+        "assetRef": "capture:settings",
+        "inverted": true,
+        "hiddenElements": [
+          "caption"
+        ]
+      },
+      {
+        "id": "demo-10-closer",
+        "layout": "no-device",
+        "label": {
+          "en-US": "YOUR NEXT STEP IS ENOUGH",
+          "es-MX": "TU SIGUIENTE PASO ES SUFICIENTE"
+        },
+        "headline": {
+          "en-US": "Keep the signal. Lose the noise.",
+          "es-MX": "Quédate con la señal. Suelta el ruido."
+        },
+        "screenshot": "/screenshots/demo/progress.svg",
+        "assetRef": "capture:progress"
+      }
+    ],
+    "android": [],
+    "ipad": [
+      {
+        "id": "demo-ipad-1-home",
+        "layout": "hero",
+        "label": {
+          "en-US": "A CLEARER WAY FORWARD",
+          "es-MX": "UNA FORMA MÁS CLARA DE AVANZAR"
+        },
+        "headline": {
+          "en-US": "Make space for what matters.",
+          "es-MX": "Haz espacio para lo importante."
+        },
+        "screenshot": "/screenshots/demo/overview.svg",
+        "assetRef": "capture:overview"
+      },
+      {
+        "id": "demo-ipad-2-plan",
+        "layout": "device-top",
+        "label": {
+          "en-US": "FROM THOUGHT TO MOMENTUM",
+          "es-MX": "DE IDEA A IMPULSO"
+        },
+        "headline": {
+          "en-US": "Turn thoughts into a plan.",
+          "es-MX": "Convierte ideas en un plan."
+        },
+        "screenshot": "/screenshots/demo/plan.svg",
+        "assetRef": "capture:plan",
+        "inverted": true
+      },
+      {
+        "id": "demo-ipad-3-focus",
+        "layout": "device-bottom",
+        "label": {
+          "en-US": "MAKE ROOM FOR DEEP WORK",
+          "es-MX": "HAZ ESPACIO PARA CONCENTRARTE"
+        },
+        "headline": {
+          "en-US": "Protect your focus.",
+          "es-MX": "Protege tu concentración."
+        },
+        "screenshot": "/screenshots/demo/focus.svg",
+        "assetRef": "capture:focus"
+      },
+      {
+        "id": "demo-ipad-4-insights",
+        "layout": "two-devices",
+        "label": {
+          "en-US": "PROGRESS, MADE VISIBLE",
+          "es-MX": "AVANCE, A LA VISTA"
+        },
+        "headline": {
+          "en-US": "See what is working.",
+          "es-MX": "Descubre qué funciona."
+        },
+        "screenshot": "/screenshots/demo/progress.svg",
+        "screenshotSecondary": "/screenshots/demo/insights.svg",
+        "assetRef": "capture:progress",
+        "assetRefSecondary": "capture:insights"
+      },
+      {
+        "id": "demo-ipad-5-settings",
+        "layout": "device-top",
+        "label": {
+          "en-US": "MAKE IT YOURS",
+          "es-MX": "HAZLO TUYO"
+        },
+        "headline": {
+          "en-US": "A system with room to breathe.",
+          "es-MX": "Un sistema con espacio para respirar."
+        },
+        "screenshot": "/screenshots/demo/settings.svg",
+        "assetRef": "capture:settings",
+        "inverted": true
+      },
+      {
+        "id": "demo-ipad-6-close",
+        "layout": "device-bottom",
+        "label": {
+          "en-US": "SMALL STEPS. REAL MOMENTUM.",
+          "es-MX": "PASOS PEQUEÑOS. AVANCE REAL."
+        },
+        "headline": {
+          "en-US": "Keep moving with intention.",
+          "es-MX": "Avanza con intención."
+        },
+        "screenshot": "/screenshots/demo/progress.svg",
+        "assetRef": "capture:progress"
+      }
+    ],
+    "android-7": [],
+    "android-10": [],
+    "feature-graphic": []
+  },
+  "appIcon": "/app-icon.svg",
+  "assets": {
+    "capture:overview": {
+      "id": "capture:overview",
+      "type": "screen",
+      "label": "Overview",
+      "platform": "ios",
+      "paths": {
+        "en-US": "/screenshots/demo/overview.svg",
+        "es-MX": "/screenshots/demo/overview.svg"
+      }
+    },
+    "capture:plan": {
+      "id": "capture:plan",
+      "type": "screen",
+      "label": "Plan builder",
+      "platform": "ios",
+      "paths": {
+        "en-US": "/screenshots/demo/plan.svg",
+        "es-MX": "/screenshots/demo/plan.svg"
+      }
+    },
+    "capture:focus": {
+      "id": "capture:focus",
+      "type": "screen",
+      "label": "Focus session",
+      "platform": "ios",
+      "paths": {
+        "en-US": "/screenshots/demo/focus.svg",
+        "es-MX": "/screenshots/demo/focus.svg"
+      }
+    },
+    "capture:progress": {
+      "id": "capture:progress",
+      "type": "screen",
+      "label": "Progress",
+      "platform": "ios",
+      "paths": {
+        "en-US": "/screenshots/demo/progress.svg",
+        "es-MX": "/screenshots/demo/progress.svg"
+      }
+    },
+    "capture:insights": {
+      "id": "capture:insights",
+      "type": "screen",
+      "label": "Insights",
+      "platform": "ios",
+      "paths": {
+        "en-US": "/screenshots/demo/insights.svg",
+        "es-MX": "/screenshots/demo/insights.svg"
+      }
+    },
+    "capture:settings": {
+      "id": "capture:settings",
+      "type": "screen",
+      "label": "Settings",
+      "platform": "ios",
+      "paths": {
+        "en-US": "/screenshots/demo/settings.svg",
+        "es-MX": "/screenshots/demo/settings.svg"
+      }
+    },
+    "image:demo-ribbon": {
+      "id": "image:demo-ribbon",
+      "type": "image",
+      "label": "Connected ribbon",
+      "platform": "ios",
+      "paths": {
+        "en-US": "/backgrounds/demo-ribbon.svg",
+        "es-MX": "/backgrounds/demo-ribbon.svg"
+      }
+    }
+  },
+  "brand": {
+    "colors": {
+      "primary": "#737CFF",
+      "accent": "#FFA04A",
+      "surface": "#191B27",
+      "surfaceAlt": "#F6F1E9",
+      "ink": "#F8F5EF",
+      "inkAlt": "#1B2030",
+      "muted": "#A7AEC3"
+    }
+  }
+}

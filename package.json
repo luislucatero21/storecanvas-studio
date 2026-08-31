@@ -1,7 +1,16 @@
 {
-  "name": "app-store-screenshots",
+  "name": "storecanvas-studio",
   "version": "0.1.0",
-  "private": true,
+  "description": "Local-first studio for designing App Store and Google Play campaign screenshots.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/luislucatero21/storecanvas-studio.git"
+  },
+  "bugs": {
+    "url": "https://github.com/luislucatero21/storecanvas-studio/issues"
+  },
+  "homepage": "https://github.com/luislucatero21/storecanvas-studio",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

@@ -27,8 +27,6 @@ import { Input } from "@/components/ui/input";
 import type { CampaignImportOptions, CampaignImportProposal } from "@/lib/app-store-import";
 import { cn } from "@/lib/utils";
 
-const RUTMIA_URL = "https://apps.apple.com/mx/app/rutmia/id6757990035";
-
 type Props = {
   appName: string;
   currentSourceUrl?: string;
@@ -47,7 +45,7 @@ const DEFAULT_OPTIONS: Record<ToggleKey, boolean> = {
 };
 
 export function AppStoreImporter({ appName, currentSourceUrl, disabled, onApply }: Props) {
-  const initialUrl = currentSourceUrl || (appName.toLowerCase() === "rutmia" ? RUTMIA_URL : "");
+  const initialUrl = currentSourceUrl || "";
   const [open, setOpen] = React.useState(false);
   const [url, setUrl] = React.useState(initialUrl);
   const [loading, setLoading] = React.useState(false);
@@ -56,7 +54,7 @@ export function AppStoreImporter({ appName, currentSourceUrl, disabled, onApply 
   const [options, setOptions] = React.useState(DEFAULT_OPTIONS);
 
   React.useEffect(() => {
-    if (!open) setUrl(currentSourceUrl || (appName.toLowerCase() === "rutmia" ? RUTMIA_URL : ""));
+    if (!open) setUrl(currentSourceUrl || "");
   }, [appName, currentSourceUrl, open]);
 
   function handleOpenChange(next: boolean) {

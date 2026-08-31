@@ -1,5 +1,4 @@
 import { promises as fs } from "node:fs";
-import path from "node:path";
 import { buildAssetLibrary } from "@/lib/asset-library";
 import { DeckCanvas } from "@/components/editor/slide-canvas";
 import { getCanvas } from "@/lib/canvas";
@@ -7,11 +6,11 @@ import { getExportSizes, themeById } from "@/lib/constants";
 import { DEFAULT_PROJECT } from "@/lib/defaults";
 import { ProjectStateSchema } from "@/lib/schema";
 import { applyBrandTokens } from "@/lib/theme";
+import { projectFilePath } from "@/lib/project-file";
 import type { Device, Orientation, ProjectState } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-const PROJECT_FILE = path.join(process.cwd(), "app-store-screenshots.json");
 const DEVICES: Device[] = ["iphone", "ipad", "android", "android-7", "android-10", "feature-graphic"];
 
 function one(value: string | string[] | undefined) {
@@ -28,7 +27,7 @@ function isOrientation(value: string | undefined): value is Orientation {
 
 async function readProject(): Promise<ProjectState> {
   try {
-    const raw = await fs.readFile(PROJECT_FILE, "utf8");
+    const raw = await fs.readFile(projectFilePath(), "utf8");
     const parsed = ProjectStateSchema.safeParse(JSON.parse(raw));
     return parsed.success ? (parsed.data as ProjectState) : DEFAULT_PROJECT;
   } catch {

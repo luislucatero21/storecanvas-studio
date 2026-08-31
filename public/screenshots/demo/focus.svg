@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1022" height="2082" viewBox="0 0 1022 2082">
+  <rect width="1022" height="2082" fill="#11182b"/>
+  <circle cx="511" cy="750" r="300" fill="none" stroke="#334675" stroke-width="30"/>
+  <circle cx="511" cy="750" r="300" fill="none" stroke="#586cf2" stroke-width="30" stroke-linecap="round" stroke-dasharray="1320 565" transform="rotate(-90 511 750)"/>
+  <text x="72" y="150" fill="#aeb8d8" font-family="system-ui, sans-serif" font-size="30">9:41</text>
+  <text x="72" y="315" fill="#f8f5ef" font-family="system-ui, sans-serif" font-size="60" font-weight="700">Focus session</text>
+  <text x="511" y="720" text-anchor="middle" fill="#f8f5ef" font-family="system-ui, sans-serif" font-size="116" font-weight="700">24:18</text>
+  <text x="511" y="790" text-anchor="middle" fill="#aeb8d8" font-family="system-ui, sans-serif" font-size="30">one step at a time</text>
+  <rect x="212" y="1170" width="598" height="140" rx="70" fill="#586cf2"/>
+  <text x="511" y="1258" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="38" font-weight="700">Pause session</text>
+  <rect x="72" y="1510" width="878" height="260" rx="40" fill="#1d2949" stroke="#334675" stroke-width="3"/>
+  <text x="116" y="1600" fill="#aeb8d8" font-family="system-ui, sans-serif" font-size="25">CURRENT NOTE</text>
+  <text x="116" y="1685" fill="#f8f5ef" font-family="system-ui, sans-serif" font-size="40" font-weight="700">Make progress visible.</text>
+</svg>

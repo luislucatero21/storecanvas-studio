@@ -36,12 +36,12 @@ describe("App Store import server", () => {
   it("looks up only the parsed Apple app id and returns a generated campaign", async () => {
     const fetchImpl = vi.fn(async (input: string | URL | Request) => {
       const url = String(input);
-      expect(url).toBe("https://itunes.apple.com/lookup?id=6757990035&country=mx&entity=software");
+      expect(url).toBe("https://itunes.apple.com/lookup?id=1234567890&country=mx&entity=software");
       return new Response(JSON.stringify({
         resultCount: 1,
         results: [{
-          trackName: "Rutmia",
-          description: "PLANEA CON RUTMIA AI. Tú apruebas cada cambio. PRIVACIDAD PRIMERO. Hábitos, metas, rachas y Pro de por vida.",
+          trackName: "Example app",
+          description: "PLANEA CON IA. Tú apruebas cada cambio. PRIVACIDAD PRIMERO. Metas, tendencias y Pro de por vida.",
           primaryGenreName: "Productivity",
           version: "1.6.1",
           artworkUrl512: "https://is1-ssl.mzstatic.com/icon.jpg",
@@ -51,7 +51,7 @@ describe("App Store import server", () => {
     });
 
     const result = await fetchAppStoreCampaign(
-      "https://apps.apple.com/mx/app/rutmia/id6757990035",
+      "https://apps.apple.com/mx/app/demo/id1234567890",
       {
         fetchImpl: fetchImpl as typeof fetch,
         cacheAssets: false,
@@ -66,15 +66,15 @@ describe("App Store import server", () => {
 
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     expect(result.listing).toMatchObject({
-      appId: "6757990035",
+      appId: "1234567890",
       country: "mx",
       locale: "es-MX",
-      name: "Rutmia",
+      name: "Example app",
       screenshotUrls: ["https://is1-ssl.mzstatic.com/store-01.jpg"],
     });
     expect(result.proposal).toMatchObject({
       baseTemplateId: "afterglow-rhythm",
-      palette: { name: "Rutmia sky rhythm" },
+      palette: { name: "Example app sky rhythm" },
     });
   });
 });

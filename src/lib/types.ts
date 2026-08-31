@@ -263,7 +263,7 @@ export type ProjectState = {
   orientation: Orientation;
   // Per-device slide decks so platform switching preserves work
   slidesByDevice: Record<Device, Slide[]>;
-  appIcon?: string;    // path under /public (e.g. /app-icon.png)
+  appIcon?: string;    // path under /public (e.g. /app-icon.svg)
   assets?: AssetLibrary;
   brand?: BrandTokens;
 };

@@ -31,9 +31,9 @@ export const PALETTE_PRESETS: PalettePreset[] = [
     },
   },
   {
-    id: "rutmia-afterglow",
-    name: "Rutmia afterglow",
-    description: "Inky recovery-night with a quiet violet pulse and amber reward.",
+    id: "afterglow-pulse",
+    name: "Afterglow pulse",
+    description: "Inky night with a quiet violet pulse and amber reward.",
     themeId: "dark-bold",
     colors: {
       primary: "#737CFF",
@@ -194,7 +194,7 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
     eyebrow: "Confident & kinetic",
     description: "Alternating light and dark beats for apps with momentum, routines or motion.",
     signature: "An energetic front-to-back cadence with a late reveal.",
-    recommendedPaletteId: "rutmia-afterglow",
+    recommendedPaletteId: "afterglow-pulse",
     layouts: [
       "hero",
       "device-top",

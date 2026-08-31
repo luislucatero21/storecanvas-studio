@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1022" height="2082" viewBox="0 0 1022 2082">
+  <rect width="1022" height="2082" fill="#f8f5ef"/>
+  <text x="72" y="150" fill="#20294d" font-family="system-ui, sans-serif" font-size="30">9:41</text>
+  <text x="72" y="310" fill="#20294d" font-family="system-ui, sans-serif" font-size="64" font-weight="700">Insights</text>
+  <text x="72" y="370" fill="#5b6480" font-family="system-ui, sans-serif" font-size="30">Patterns worth keeping.</text>
+  <rect x="72" y="510" width="878" height="520" rx="42" fill="#20294d"/>
+  <text x="116" y="600" fill="#aeb8d8" font-family="system-ui, sans-serif" font-size="25">THIS WEEK</text>
+  <text x="116" y="690" fill="#f8f5ef" font-family="system-ui, sans-serif" font-size="48" font-weight="700">+18% momentum</text>
+  <path d="M130 890c96-180 142 45 245-80s152 80 250-90 120 30 235-80" fill="none" stroke="#ffb45c" stroke-width="20" stroke-linecap="round"/>
+  <g fill="#586cf2"><circle cx="130" cy="890" r="13"/><circle cx="375" cy="810" r="13"/><circle cx="625" cy="720" r="13"/><circle cx="860" cy="640" r="13"/></g>
+  <text x="72" y="1190" fill="#20294d" font-family="system-ui, sans-serif" font-size="40" font-weight="700">Signals</text>
+  <g fill="#fff" stroke="#d7d9e3" stroke-width="3"><rect x="72" y="1260" width="878" height="160" rx="34"/><rect x="72" y="1460" width="878" height="160" rx="34"/><rect x="72" y="1660" width="878" height="160" rx="34"/></g>
+  <g fill="#20294d" font-family="system-ui, sans-serif" font-size="32"><text x="120" y="1355">Your best window starts at 9:00</text><text x="120" y="1555">Short sessions add up quickly</text><text x="120" y="1755">Keep the next step small</text></g>
+</svg>

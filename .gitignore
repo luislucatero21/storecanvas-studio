@@ -8,3 +8,9 @@ next-env.d.ts
 exports/
 test-results/
 playwright-report/
+
+# Private/local campaign state and user-provided assets.
+app-store-screenshots.json
+public/screenshots/uploaded/
+public/screenshots/imported/
+public/backgrounds/generated/

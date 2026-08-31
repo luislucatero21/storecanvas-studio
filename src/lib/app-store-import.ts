@@ -117,7 +117,7 @@ function collectEvidence(listing: AppStoreListing): CampaignEvidence[] {
   const add = (id: string, enLabel: string, esLabel: string, enDetail: string, esDetail: string) =>
     evidence.push({ id, label: spanish ? esLabel : enLabel, detail: spanish ? esDetail : enDetail });
 
-  if (hasAny(text, [/\bai\b/, /inteligencia artificial/, /apple intelligence/, /artificial intelligence/])) {
+  if (hasAny(text, [/\bai\b/, /\bia\b/, /inteligencia artificial/, /apple intelligence/, /artificial intelligence/])) {
     add(
       "ai-control",
       "AI with approval",
@@ -243,51 +243,51 @@ function buildPalette(listing: AppStoreListing, colorSignals?: Partial<BrandColo
   };
 }
 
-function spanishCopy(evidence: CampaignEvidence[]): CampaignCopySuggestion[] {
+function spanishCopy(evidence: CampaignEvidence[], appName: string): CampaignCopySuggestion[] {
   const ids = new Set(evidence.map((item) => item.id));
   const items: CampaignCopySuggestion[] = [
-    { label: "TU DÍA, A TU MANERA", headline: "Haz tuyo tu día.", rationale: "Abre con el resultado humano, no con una lista de funciones.", signal: "routine" },
+    { label: "LA IDEA PRINCIPAL", headline: "Haz clara tu próxima acción.", rationale: "Abre con el resultado humano, no con una lista de funciones.", signal: "listing" },
   ];
   if (ids.has("ai-control")) {
     items.push(
       { label: "DE IDEA A ACCIÓN", headline: "De tus ideas a un plan.", rationale: "Presenta la IA como un atajo concreto hacia una rutina.", signal: "ai-control" },
-      { label: "IA BAJO TU CONTROL", headline: "Rutmia propone. Tú decides.", rationale: "Convierte la revisión previa en una diferencia de confianza.", signal: "ai-control" },
+      { label: "IA BAJO TU CONTROL", headline: `${appName} propone. Tú decides.`, rationale: "Convierte la revisión previa en una diferencia de confianza.", signal: "ai-control" },
     );
   }
-  if (ids.has("privacy")) items.push({ label: "PRIVACIDAD PRIMERO", headline: "Tu rutina sigue siendo tuya.", rationale: "Comunica privacidad sin prometer que toda solicitud queda siempre en el dispositivo.", signal: "privacy" });
+  if (ids.has("privacy")) items.push({ label: "PRIVACIDAD PRIMERO", headline: "Tus datos siguen siendo tuyos.", rationale: "Comunica privacidad sin prometer que toda solicitud queda siempre en el dispositivo.", signal: "privacy" });
   items.push(
     { label: "HOY, SIN FRICCIÓN", headline: "Solo lo que toca ahora.", rationale: "Aterriza la promesa en la vista diaria enfocada.", signal: "routine" },
     { label: "VOLVER TAMBIÉN CUENTA", headline: "Retoma sin empezar de cero.", rationale: "Normaliza la recuperación y reduce culpa.", signal: "routine" },
   );
-  if (ids.has("progress")) items.push({ label: "PATRONES, NO PRESIÓN", headline: "Entiende qué sí funciona.", rationale: "Vende el aprendizaje que producen rachas y tendencias.", signal: "progress" });
+  if (ids.has("progress")) items.push({ label: "PATRONES, NO PRESIÓN", headline: "Entiende qué sí funciona.", rationale: "Vende el aprendizaje que producen tendencias y actividad.", signal: "progress" });
   items.push(
     { label: "METAS QUE SE ADAPTAN", headline: "Convierte intención en avance.", rationale: "Une metas medibles con flexibilidad cotidiana.", signal: "routine" },
     { label: "A TU MANERA", headline: "Recordatorios que sí encajan.", rationale: "Cierra el núcleo del producto con control de horarios.", signal: "routine" },
   );
-  if (ids.has("lifetime")) items.push({ label: "UNA COMPRA. SIN CUOTAS.", headline: "Rutmia Pro, de por vida.", rationale: "Termina con una propuesta comercial simple y diferenciada.", signal: "lifetime" });
+  if (ids.has("lifetime")) items.push({ label: "UNA COMPRA. SIN CUOTAS.", headline: `${appName} Pro, de por vida.`, rationale: "Termina con una propuesta comercial simple y diferenciada.", signal: "lifetime" });
   return items;
 }
 
-function englishCopy(evidence: CampaignEvidence[]): CampaignCopySuggestion[] {
+function englishCopy(evidence: CampaignEvidence[], appName: string): CampaignCopySuggestion[] {
   const ids = new Set(evidence.map((item) => item.id));
   const items: CampaignCopySuggestion[] = [
-    { label: "YOUR DAY, YOUR WAY", headline: "Make today yours.", rationale: "Lead with the human outcome instead of a feature list.", signal: "routine" },
+    { label: "THE BIG IDEA", headline: "Make the next step clear.", rationale: "Lead with the human outcome instead of a feature list.", signal: "listing" },
   ];
   if (ids.has("ai-control")) items.push(
     { label: "FROM IDEA TO ACTION", headline: "Turn ideas into a plan.", rationale: "Make AI a concrete shortcut to a workable routine.", signal: "ai-control" },
     { label: "AI, UNDER YOUR CONTROL", headline: "It proposes. You decide.", rationale: "Use review-before-change as a trust differentiator.", signal: "ai-control" },
   );
-  if (ids.has("privacy")) items.push({ label: "PRIVACY FIRST", headline: "Your routine stays yours.", rationale: "State the privacy benefit without overstating local-only processing.", signal: "privacy" });
+  if (ids.has("privacy")) items.push({ label: "PRIVACY FIRST", headline: "Your data stays yours.", rationale: "State the privacy benefit without overstating local-only processing.", signal: "privacy" });
   items.push(
     { label: "TODAY, WITHOUT FRICTION", headline: "Only what matters now.", rationale: "Ground the promise in the focused daily view.", signal: "routine" },
     { label: "COMING BACK COUNTS", headline: "Resume without restarting.", rationale: "Normalize recovery and remove guilt.", signal: "routine" },
   );
-  if (ids.has("progress")) items.push({ label: "PATTERNS, NOT PRESSURE", headline: "See what actually works.", rationale: "Sell the insight behind streaks and trends.", signal: "progress" });
+  if (ids.has("progress")) items.push({ label: "PATTERNS, NOT PRESSURE", headline: "See what actually works.", rationale: "Sell the insight behind trends and activity.", signal: "progress" });
   items.push(
     { label: "GOALS THAT ADAPT", headline: "Turn intention into progress.", rationale: "Connect measurable goals to a flexible day.", signal: "routine" },
     { label: "ON YOUR TERMS", headline: "Reminders that fit.", rationale: "Close the product core with scheduling control.", signal: "routine" },
   );
-  if (ids.has("lifetime")) items.push({ label: "ONE PURCHASE. NO DUES.", headline: "Rutmia Pro, for life.", rationale: "End on a simple commercial differentiator.", signal: "lifetime" });
+  if (ids.has("lifetime")) items.push({ label: "ONE PURCHASE. NO DUES.", headline: `${appName} Pro, for life.`, rationale: "End on a simple commercial differentiator.", signal: "lifetime" });
   return items;
 }
 
@@ -296,23 +296,23 @@ type ScreenshotIntent = "hero" | "ai-plan" | "focus" | "recovery" | "reflection"
 function screenshotIntent(rawUrl: string): ScreenshotIntent | undefined {
   const filename = decodeURIComponent(rawUrl).toLowerCase();
   if (/de-por-vida|lifetime|one-time/.test(filename)) return "lifetime";
-  if (/recordatorio|reminder/.test(filename)) return "reminders";
-  if (/metas-con-tus-palabras|goal.*words|ai-proposal|coach/.test(filename)) return "ai-plan";
-  if (/enfoque|focus/.test(filename)) return "focus";
-  if (/recupera|recovery|resume|continua/.test(filename)) return "recovery";
-  if (/sientes|reflection|reflexi/.test(filename)) return "reflection";
-  if (/mira-como-avanzas|insight|trend|estadistic/.test(filename)) return "progress";
-  if (/metas-en-progreso|goals|goal-progress/.test(filename)) return "goals";
-  if (/rutina-en-un-lugar|routine-in-one|all-in-one/.test(filename)) return "privacy";
-  if (/rutinas-que-duran|home|today|inicio/.test(filename)) return "hero";
+  if (/recordatorio|reminder|notification|schedule/.test(filename)) return "reminders";
+  if (/ai|assistant|coach|plan|prompt/.test(filename)) return "ai-plan";
+  if (/focus|timer|session|concentr/.test(filename)) return "focus";
+  if (/recovery|resume|continue|recover/.test(filename)) return "recovery";
+  if (/reflection|journal|mood|check-in/.test(filename)) return "reflection";
+  if (/insight|trend|analytics|progress|statistics/.test(filename)) return "progress";
+  if (/goal|target|objective/.test(filename)) return "goals";
+  if (/privacy|security|local|data/.test(filename)) return "privacy";
+  if (/home|today|overview|dashboard|welcome/.test(filename)) return "hero";
   return undefined;
 }
 
-function copyForIntent(intent: ScreenshotIntent, spanish: boolean): CampaignCopySuggestion {
+function copyForIntent(intent: ScreenshotIntent, spanish: boolean, appName: string): CampaignCopySuggestion {
   const catalog: Record<ScreenshotIntent, { es: [string, string, string]; en: [string, string, string] }> = {
     hero: {
-      es: ["TU DÍA, A TU MANERA", "Haz tuyo tu día.", "Abre con el resultado humano que demuestra la vista Hoy."],
-      en: ["YOUR DAY, YOUR WAY", "Make today yours.", "Lead with the human outcome proven by the Today view."],
+      es: ["LA IDEA PRINCIPAL", "Haz clara tu próxima acción.", "Abre con el resultado humano que demuestra la pantalla principal."],
+      en: ["THE BIG IDEA", "Make the next step clear.", "Lead with the human outcome proven by the main screen."],
     },
     "ai-plan": {
       es: ["IA QUE PROPONE. TÚ DECIDES.", "De tus ideas a un plan.", "La captura demuestra tanto la propuesta de IA como la revisión previa."],
@@ -339,16 +339,16 @@ function copyForIntent(intent: ScreenshotIntent, spanish: boolean): CampaignCopy
       en: ["PATTERNS, NOT PRESSURE", "See what actually works.", "Trends and streaks sell learning, not surveillance."],
     },
     privacy: {
-      es: ["PRIVACIDAD PRIMERO", "Tu rutina sigue siendo tuya.", "El beat de rutina completa sostiene la promesa de propiedad sin exagerar el procesamiento local."],
-      en: ["PRIVACY FIRST", "Your routine stays yours.", "The complete-routine beat supports ownership without overstating local processing."],
+      es: ["PRIVACIDAD PRIMERO", "Tus datos siguen siendo tuyos.", "El beat de privacidad sostiene la promesa de propiedad sin exagerar el procesamiento local."],
+      en: ["PRIVACY FIRST", "Your data stays yours.", "The privacy beat supports ownership without overstating local processing."],
     },
     reminders: {
       es: ["A TU MANERA", "Recordatorios que sí encajan.", "La pantalla de ajustes demuestra control de horarios."],
       en: ["ON YOUR TERMS", "Reminders that fit.", "The settings screen proves scheduling control."],
     },
     lifetime: {
-      es: ["UNA COMPRA. SIN CUOTAS.", "Rutmia Pro, de por vida.", "Cierra con una propuesta comercial simple y diferenciada."],
-      en: ["ONE PURCHASE. NO DUES.", "Rutmia Pro, for life.", "End on a simple commercial differentiator."],
+      es: ["UNA COMPRA. SIN CUOTAS.", `${appName} Pro, de por vida.`, "Cierra con una propuesta comercial simple y diferenciada."],
+      en: ["ONE PURCHASE. NO DUES.", `${appName} Pro, for life.`, "End on a simple commercial differentiator."],
     },
   };
   const [label, headline, rationale] = spanish ? catalog[intent].es : catalog[intent].en;
@@ -360,13 +360,13 @@ function screenshotLedCopy(listing: AppStoreListing) {
   const recognized = intents.filter(Boolean).length;
   if (recognized < Math.min(3, listing.screenshotUrls.length)) return undefined;
   const spanish = listing.locale.startsWith("es");
-  return intents.map((intent) => intent ? copyForIntent(intent, spanish) : undefined);
+  return intents.map((intent) => intent ? copyForIntent(intent, spanish, listing.name) : undefined);
 }
 
 function fillCopy(items: CampaignCopySuggestion[], count: number, listing: AppStoreListing) {
   const fallback = listing.locale.startsWith("es")
-    ? { label: "TODO EN UN SOLO RITMO", headline: "Una rutina que va contigo.", rationale: "Recupera la promesa central sin añadir una afirmación nueva.", signal: "listing" }
-    : { label: "ONE COMPLETE RHYTHM", headline: "A routine that moves with you.", rationale: "Return to the central promise without adding a new claim.", signal: "listing" };
+    ? { label: "LA IDEA PRINCIPAL", headline: "Una propuesta que va contigo.", rationale: "Recupera la promesa central sin añadir una afirmación nueva.", signal: "listing" }
+    : { label: "THE BIG IDEA", headline: "A promise that moves with you.", rationale: "Return to the central promise without adding a new claim.", signal: "listing" };
   return Array.from({ length: count }, (_, index) => items[index] || { ...fallback });
 }
 
@@ -391,7 +391,7 @@ export function buildCampaignImportProposal(
     recommendedPaletteId: "custom",
   };
   const palette = buildPalette(listing, options.colorSignals);
-  const rawCopy = listing.locale.startsWith("es") ? spanishCopy(evidence) : englishCopy(evidence);
+  const rawCopy = listing.locale.startsWith("es") ? spanishCopy(evidence, listing.name) : englishCopy(evidence, listing.name);
   const screenshotCopy = screenshotLedCopy(listing);
   const slideCount = Math.max(1, options.slideCount || listing.screenshotUrls.length || 6);
   return {
@@ -407,8 +407,8 @@ export function buildCampaignImportProposal(
       listing,
     ),
     summary: listing.locale.startsWith("es")
-      ? `${listing.name} se presenta como un sistema diario tranquilo: la IA propone, la persona decide y la privacidad permanece explícita.`
-      : `${listing.name} becomes a calm daily system: AI proposes, the person decides, and privacy stays explicit.`,
+      ? `${listing.name} se presenta con una dirección basada en ${evidence.slice(0, 3).map((item) => item.label.toLowerCase()).join(", ") || "su propuesta principal"}.`
+      : `${listing.name} gets a direction built around ${evidence.slice(0, 3).map((item) => item.label.toLowerCase()).join(", ") || "its clearest product promise"}.`,
     screenshotPolicy: "reference-only",
     screenshotRationale: listing.locale.startsWith("es")
       ? "Las capturas publicadas ya contienen titulares y dispositivos. Se usan como evidencia visual para evitar una pantalla dentro de otra."

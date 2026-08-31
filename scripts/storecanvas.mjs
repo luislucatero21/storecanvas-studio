@@ -4,7 +4,7 @@ import process from "node:process";
 import { chromium } from "@playwright/test";
 
 const root = process.cwd();
-const projectFile = path.join(root, "app-store-screenshots.json");
+const projectFile = path.resolve(root, process.env.STORECANVAS_PROJECT_FILE || "example-project.json");
 const baseUrl = process.env.STORECANVAS_URL || "http://127.0.0.1:3100";
 const executablePath = process.env.PLAYWRIGHT_EXECUTABLE_PATH;
 

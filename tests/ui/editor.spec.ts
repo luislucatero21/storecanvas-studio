@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import baseline from "../../app-store-screenshots.json";
+import baseline from "../../example-project.json";
 import { buildCampaignImportProposal, type AppStoreListing } from "../../src/lib/app-store-import";
 
 test.describe("StoreCanvas editor", () => {
@@ -15,13 +15,13 @@ test.describe("StoreCanvas editor", () => {
     await page.request.post("/api/project", { data: baseline });
   });
 
-  test("loads the Rutmia campaign and exposes the core editing workflow", async ({ page }) => {
+  test("loads the example campaign and exposes the core editing workflow", async ({ page }) => {
     await page.goto("/");
     const firstSlide = baseline.slidesByDevice.iphone[0];
     const initialLocale = baseline.locale as keyof typeof firstSlide.label;
 
     await expect(page.getByRole("heading", { name: "Screens" })).toBeVisible();
-    await expect(page.getByRole("textbox", { name: "App name" })).toHaveValue("Rutmia");
+    await expect(page.getByRole("textbox", { name: "App name" })).toHaveValue("Example app");
     await expect(page.getByRole("button", { name: "Connected", exact: true })).toBeVisible();
     await expect(page.getByRole("main").getByText(firstSlide.label[initialLocale]).first()).toBeVisible();
     await expect(page.getByRole("main").getByText(firstSlide.headline[initialLocale]).first()).toBeVisible();
@@ -34,9 +34,9 @@ test.describe("StoreCanvas editor", () => {
     await page.getByRole("combobox", { name: "Locale" }).click();
     await page.getByRole("option", { name: "ES-MX" }).click();
 
-    await expect(page.getByRole("main").getByText("Haz tuyo tu día.").first()).toBeVisible();
+    await expect(page.getByRole("main").getByText("Haz espacio para lo importante.").first()).toBeVisible();
     await expect(page.getByLabel("Locale")).toContainText("ES-MX");
-    await expect(page.getByLabel("Headline")).toHaveValue("Haz tuyo tu día.");
+    await expect(page.getByLabel("Headline")).toHaveValue("Haz espacio para lo importante.");
   });
 
   test("adds an editable text layer and keeps the export action available", async ({ page }) => {
@@ -64,9 +64,9 @@ test.describe("StoreCanvas editor", () => {
 
     try {
       await page.goto(`${baseURL}/render?device=iphone&locale=es-MX&size=1320x2868`);
-      const firstSlide = page.locator('[data-slide-id="rutmia-1-route"]');
-      await expect(firstSlide.getByText("TU DÍA, A TU MANERA")).toBeVisible();
-      await expect(firstSlide.getByText("Haz tuyo tu día.")).toBeVisible();
+      const firstSlide = page.locator('[data-slide-id="demo-1-route"]');
+      await expect(firstSlide.getByText("UNA FORMA MÁS CLARA DE AVANZAR")).toBeVisible();
+      await expect(firstSlide.getByText("Haz espacio para lo importante.")).toBeVisible();
     } finally {
       await context.close();
     }
@@ -115,7 +115,7 @@ test.describe("StoreCanvas editor", () => {
   test("renders iPhone 17 Pro Max anatomy while editorial copy stays face-forward", async ({ page }) => {
     await page.goto("/render?device=iphone&locale=es-MX&size=1320x2868");
 
-    const firstSlide = page.locator('[data-slide-id="rutmia-1-route"]');
+    const firstSlide = page.locator('[data-slide-id="demo-1-route"]');
     const frame = firstSlide.locator('[data-device-model="iphone-17-pro-max"]').first();
     await expect(frame.locator('[data-hardware-feature="dynamic-island"]')).toBeVisible();
     await expect(frame.locator("[data-hardware-button]")).toHaveCount(5);
@@ -172,35 +172,35 @@ test.describe("StoreCanvas editor", () => {
     }).toBe(2);
   });
 
-  test("preloads Rutmia with connected art, independent phones and message continuity", async ({ page }) => {
+  test("preloads the example with connected art, independent phones and message continuity", async ({ page }) => {
     await page.goto("/render?device=iphone&locale=es-MX&size=1320x2868");
 
-    const captureStart = page.locator('[data-slide-id="rutmia-4-recovery"]');
-    const messageStart = page.locator('[data-slide-id="rutmia-8-routine"]');
+    const captureStart = page.locator('[data-slide-id="demo-4-recovery"]');
+    const messageStart = page.locator('[data-slide-id="demo-8-routine"]');
     await expect(captureStart).toHaveAttribute("data-render-mode", "connected");
-    await expect(captureStart.locator('[data-connected-artwork="rutmia-dawn-ribbon"]')).toHaveCount(1);
-    await expect(captureStart.locator('[data-device-slot="rutmia-recovery-continuity"]')).toHaveCount(1);
-    await expect(page.locator('[data-slide-id="rutmia-5-reflection"] [data-device-slot="rutmia-reflection-independent"]')).toHaveCount(1);
+    await expect(captureStart.locator('[data-connected-artwork="demo-dawn-ribbon"]')).toHaveCount(1);
+    await expect(captureStart.locator('[data-device-slot="demo-recovery-continuity"]')).toHaveCount(1);
+    await expect(page.locator('[data-slide-id="demo-5-reflection"] [data-device-slot="demo-reflection-independent"]')).toHaveCount(1);
     await expect(messageStart.locator('[data-caption-span="2"]')).toHaveCount(1);
     await expect(page.locator('[data-device-angle="tilt-left"]').first()).toHaveAttribute("data-device-rig", "optical");
   });
 
-  test("applies contrast to each slot of a shared Rutmia caption", async ({ page }) => {
+  test("applies contrast to each slot of a shared example caption", async ({ page }) => {
     await page.goto("/render?device=iphone&locale=es-MX&size=1320x2868");
 
     const headline = page
-      .locator('[data-slide-id="rutmia-8-routine"] [data-caption-headline]')
-      .filter({ hasText: "Tu rutina sigue siendo tuya." });
+      .locator('[data-slide-id="demo-8-routine"] [data-caption-headline]')
+      .filter({ hasText: "Una idea clara." });
     await expect(headline).toHaveCount(1);
     await expect(headline).toHaveAttribute("data-caption-contrast", "per-slot");
-    await expect(headline).toHaveAttribute("data-caption-segment-colors", "#161D3C,#F8FBFF");
+    await expect(headline).toHaveAttribute("data-caption-segment-colors", "#F8F5EF,#1B2030");
     await expect(headline).toHaveCSS("background-clip", "text");
 
     const continuationHeadline = page
-      .locator('[data-slide-id="rutmia-9-reminders"] [data-caption-headline]')
-      .filter({ hasText: "Tu rutina sigue siendo tuya." });
+      .locator('[data-slide-id="demo-9-reminders"] [data-caption-headline]')
+      .filter({ hasText: "Una idea clara." });
     await expect(continuationHeadline).toHaveCount(1);
-    await expect(continuationHeadline).toHaveAttribute("data-caption-segment-colors", "#161D3C,#F8FBFF");
+    await expect(continuationHeadline).toHaveAttribute("data-caption-segment-colors", "#F8F5EF,#1B2030");
   });
 
   test("moves a shared caption by the pointer delta without jumping on drop", async ({ page }) => {
@@ -293,7 +293,7 @@ test.describe("StoreCanvas editor", () => {
     await expect(page.getByLabel("Headline")).toHaveValue("One promise everywhere.");
   });
 
-  test("changes Rutmia's campaign style without replacing its captures", async ({ page }) => {
+  test("changes the sample's campaign style without replacing its captures", async ({ page }) => {
     await page.goto("/");
 
     await page.getByRole("button", { name: "Campaign wardrobe" }).click();
@@ -307,37 +307,37 @@ test.describe("StoreCanvas editor", () => {
     }).toBe("afterglow-rhythm");
 
     await page.getByRole("tab", { name: "Palettes" }).click();
-    await page.getByRole("button", { name: "Apply palette Rutmia afterglow" }).click();
+    await page.getByRole("button", { name: "Apply palette Afterglow pulse" }).click();
 
     await expect.poll(async () => {
       const saved = await page.request.get("/api/project");
       const body = await saved.json();
       return body.state.paletteId;
-    }).toBe("rutmia-afterglow");
+    }).toBe("afterglow-pulse");
 
     const response = await page.request.get("/api/project");
     const body = await response.json();
-    expect(body.state.paletteId).toBe("rutmia-afterglow");
+    expect(body.state.paletteId).toBe("afterglow-pulse");
     expect(body.state.slidesByDevice.iphone[0]).toMatchObject({
-      screenshot: "/screenshots/apple/iphone/{locale}/home.png",
-      assetRef: "capture:home-dashboard",
+      screenshot: "/screenshots/demo/overview.svg",
+      assetRef: "capture:overview",
     });
   });
 
   test("reviews an App Store URL and applies a custom campaign without nesting published composites", async ({ page }) => {
     const listing: AppStoreListing = {
-      sourceUrl: "https://apps.apple.com/mx/app/rutmia/id6757990035",
-      appId: "6757990035",
+      sourceUrl: "https://apps.apple.com/mx/app/demo/id1234567890",
+      appId: "1234567890",
       country: "mx",
       locale: "es-MX",
-      name: "Rutmia",
-      description: "PLANEA CON RUTMIA AI. Tú apruebas cada cambio. PRIVACIDAD PRIMERO. Hábitos, metas, rachas, tendencias, recordatorios y una compra Pro de por vida.",
+      name: "Example app",
+      description: "PLANEA CON IA. Tú apruebas cada cambio. PRIVACIDAD PRIMERO. Metas, tendencias, recordatorios y una compra Pro de por vida.",
       genre: "Productivity",
       version: "1.6.1",
       artworkUrl: "https://is1-ssl.mzstatic.com/icon.jpg",
-      screenshotUrls: ["https://is1-ssl.mzstatic.com/store-01.jpg", "https://is1-ssl.mzstatic.com/store-02.jpg"],
-      localArtworkPath: "/app-icon.png",
-      localScreenshotPaths: ["/screenshots/imported/apple-6757990035/store-01.jpg", "/screenshots/imported/apple-6757990035/store-02.jpg"],
+      screenshotUrls: ["https://is1-ssl.mzstatic.com/store-01-overview.jpg", "https://is1-ssl.mzstatic.com/store-02-ai-plan.jpg"],
+      localArtworkPath: "/app-icon.svg",
+      localScreenshotPaths: ["/screenshots/imported/apple-1234567890/store-01.jpg", "/screenshots/imported/apple-1234567890/store-02.jpg"],
     };
     const proposal = buildCampaignImportProposal(listing, {
       colorSignals: { surface: "#EAF5FF", ink: "#11143B", primary: "#18BDEB", accent: "#FF9E35" },
@@ -349,13 +349,15 @@ test.describe("StoreCanvas editor", () => {
     });
     await page.goto("/");
     await page.getByRole("button", { name: "Build campaign from App Store" }).click();
-    await expect(page.getByRole("textbox", { name: "App Store URL" })).toHaveValue(listing.sourceUrl);
+    const listingUrl = page.getByRole("textbox", { name: "App Store URL" });
+    await expect(listingUrl).toHaveValue("");
+    await listingUrl.fill(listing.sourceUrl);
     await page.getByRole("button", { name: "Analyze listing" }).click();
 
     const importer = page.getByRole("dialog", { name: "Build from an App Store listing" });
-    await expect(importer.getByText("Rutmia · Afterglow")).toBeVisible();
-    await expect(importer.getByText("Rutmia sky rhythm")).toBeVisible();
-    await expect(importer.getByText("IA con aprobación")).toBeVisible();
+    await expect(importer.getByText("Example app · Afterglow")).toBeVisible();
+    await expect(importer.getByText("Example app sky rhythm")).toBeVisible();
+    await expect(importer.getByText("IA con aprobación", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Use published App Store screenshots as device captures" })).toHaveAttribute("aria-pressed", "false");
     await page.getByRole("button", { name: "Apply custom campaign" }).click();
 
@@ -370,15 +372,15 @@ test.describe("StoreCanvas editor", () => {
         screenshot: body.state.slidesByDevice.iphone[0].screenshot,
       };
     }).toEqual({
-      templateId: "app-store-6757990035-afterglow-rhythm",
-      paletteName: "Rutmia sky rhythm",
+      templateId: "app-store-1234567890-afterglow-rhythm",
+      paletteName: "Example app sky rhythm",
       primary: "#18BDEB",
-      headline: "Haz tuyo tu día.",
+      headline: "Haz clara tu próxima acción.",
       screenshot: baseline.slidesByDevice.iphone[0].screenshot,
     });
   });
 
-  test("tunes campaign colors directly without replacing Rutmia's captures", async ({ page }) => {
+  test("tunes campaign colors without replacing the sample's captures", async ({ page }) => {
     await page.goto("/");
 
     await page.getByRole("button", { name: "Campaign wardrobe" }).click();
@@ -396,12 +398,12 @@ test.describe("StoreCanvas editor", () => {
     const body = await response.json();
     expect(body.state.paletteId).toBe("custom");
     expect(body.state.slidesByDevice.iphone[0]).toMatchObject({
-      screenshot: "/screenshots/apple/iphone/{locale}/home.png",
-      assetRef: "capture:home-dashboard",
+      screenshot: "/screenshots/demo/overview.svg",
+      assetRef: "capture:overview",
     });
   });
 
-  test("renders Rutmia's native iPad campaign at App Store size", async ({ page }) => {
+  test("renders the example's native iPad campaign at App Store size", async ({ page }) => {
     await page.goto("/render?device=ipad&locale=en-US&size=2064x2752");
 
     const render = page.locator('[data-render-valid="true"]');
@@ -420,12 +422,12 @@ test.describe("StoreCanvas editor", () => {
     await expect(page.getByText("never saved in StoreCanvas")).toBeVisible();
   });
 
-  test("reviews AI copy before applying it without changing Rutmia's capture", async ({ page }) => {
+  test("reviews AI copy before applying it without changing the sample's capture", async ({ page }) => {
     await page.route("**/api/ai/improve", async (route) => {
       const request = route.request().postDataJSON();
       expect(request).toMatchObject({
         provider: "openai",
-        appName: "Rutmia",
+        appName: "Example app",
         locale: "en-US",
       });
       expect(JSON.stringify(request)).not.toContain("/screenshots/");
@@ -437,7 +439,7 @@ test.describe("StoreCanvas editor", () => {
             summary: "Lead with ownership, then let the product prove it.",
             slides: [
               {
-                id: "rutmia-1-route",
+                id: "demo-1-route",
                 label: "YOUR DAY, YOUR WAY",
                 headline: "Make today yours.",
                 rationale: "It is short, outcome-led and easy to read at thumbnail size.",
@@ -466,8 +468,8 @@ test.describe("StoreCanvas editor", () => {
     const body = await response.json();
     expect(body.state.slidesByDevice.iphone[0]).toMatchObject({
       headline: { "en-US": "Make today yours." },
-      screenshot: "/screenshots/apple/iphone/{locale}/home.png",
-      assetRef: "capture:home-dashboard",
+      screenshot: "/screenshots/demo/overview.svg",
+      assetRef: "capture:overview",
     });
   });
 });
