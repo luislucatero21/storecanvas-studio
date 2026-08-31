@@ -23,10 +23,39 @@ import { setCopyLinking, writeLinkedCopy } from "@/lib/copy-sync";
 import { applyDeviceAngle, createDeviceSlot, setDeviceSlotLinking, setDeviceSlotSpan } from "@/lib/device-presentation";
 import { exportFileName, exportPath, slugify } from "@/lib/export-naming";
 import { captionSegmentColors, captionTextGradient } from "@/lib/caption-contrast";
+import { getElementTransform } from "@/components/editor/slide-canvas";
 import { ProjectStateSchema } from "@/lib/schema";
 import { validateProject } from "@/lib/validation";
 
 describe("StoreCanvas project contracts", () => {
+  it("resolves a shared caption width once when its position is customized", () => {
+    const sharedSlide = {
+      ...DEFAULT_PROJECT.slidesByDevice.iphone[0],
+      captionSpan: 2 as const,
+    };
+    const expectedWidth = 1320 * 0.84 + 1320;
+    const defaultTransform = getElementTransform(sharedSlide, "iphone", "portrait", "caption");
+
+    expect(defaultTransform?.width).toBeCloseTo(expectedWidth);
+
+    const savedTransform = {
+      x: 320,
+      y: 260,
+      width: 1900,
+      height: 480,
+      rotation: 0,
+      zIndex: 4,
+    };
+    const customized = getElementTransform(
+      { ...sharedSlide, transforms: { caption: savedTransform } },
+      "iphone",
+      "portrait",
+      "caption",
+    );
+
+    expect(customized).toMatchObject(savedTransform);
+  });
+
   it("assigns shared-caption text contrast per connected slot", () => {
     const colors = captionSegmentColors(
       { fg: "#161D3C", fgAlt: "#F8FBFF" },

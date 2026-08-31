@@ -203,6 +203,41 @@ test.describe("StoreCanvas editor", () => {
     await expect(continuationHeadline).toHaveAttribute("data-caption-segment-colors", "#161D3C,#F8FBFF");
   });
 
+  test("moves a shared caption by the pointer delta without jumping on drop", async ({ page }) => {
+    const dragProject = JSON.parse(JSON.stringify(baseline));
+    dragProject.slidesByDevice.iphone[7] = {
+      ...dragProject.slidesByDevice.iphone[7],
+      transforms: undefined,
+      constraints: undefined,
+    };
+    await page.request.post("/api/project", { data: dragProject });
+    await page.goto("/");
+    await page.getByRole("button", { name: /Screen 8 ·/ }).click();
+    await page.waitForTimeout(650);
+
+    const caption = page.locator('.store-canvas-well [data-caption-span="2"]');
+    const editable = caption.locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " rnd-editable ")]');
+    await expect(editable).toHaveCount(1);
+    const initial = await editable.boundingBox();
+    expect(initial).not.toBeNull();
+
+    const delta = { x: 36, y: 18 };
+    const start = { x: initial!.x + 18, y: initial!.y + initial!.height * 0.68 };
+    await page.mouse.move(start.x, start.y);
+    await page.mouse.down();
+    await page.mouse.move(start.x + delta.x, start.y + delta.y, { steps: 6 });
+    await page.mouse.up();
+    await page.waitForTimeout(250);
+
+    const after = await editable.boundingBox();
+    expect(after).not.toBeNull();
+    const actualDelta = { x: after!.x - initial!.x, y: after!.y - initial!.y };
+    expect(Math.abs(actualDelta.x - delta.x), `x moved ${actualDelta.x}px; expected ${delta.x}px`).toBeLessThan(4);
+    expect(Math.abs(actualDelta.y - delta.y), `y moved ${actualDelta.y}px; expected ${delta.y}px`).toBeLessThan(4);
+    expect(Math.abs(after!.width - initial!.width), "shared caption width changed after drag").toBeLessThan(2);
+    expect(Math.abs(after!.height - initial!.height), "shared caption height changed after drag").toBeLessThan(2);
+  });
+
   test("template palette and placement overrides remain opt-in", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Campaign wardrobe" }).click();

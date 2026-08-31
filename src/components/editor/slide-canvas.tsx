@@ -502,6 +502,18 @@ function getSlideGeometry(slide: Slide, device: Device, orientation: Orientation
   return { cW, cH, Frame, frameAspect, defaults };
 }
 
+function defaultsForCaptionSpan(slide: Slide, defaults: LayoutRects, cW: number): LayoutRects {
+  const span = slide.captionSpan || 1;
+  if (span <= 1 || !defaults.caption) return defaults;
+  return {
+    ...defaults,
+    caption: {
+      ...defaults.caption,
+      width: defaults.caption.width + cW * (span - 1),
+    },
+  };
+}
+
 export function getElementTransform(
   slide: Slide,
   device: Device,
@@ -542,7 +554,8 @@ export function getElementTransform(
     });
   }
   const { cW, cH, defaults } = getSlideGeometry(slide, device, orientation);
-  const rect = rectFor(id as BuiltInElementId, slide, defaults);
+  const layoutDefaults = id === "caption" ? defaultsForCaptionSpan(slide, defaults, cW) : defaults;
+  const rect = rectFor(id as BuiltInElementId, slide, layoutDefaults);
   if (!rect) return undefined;
   const saved = slide.transforms?.[id as BuiltInElementId];
   const base = {
@@ -1010,10 +1023,7 @@ function SlideElements({
     captionSpan > 1 && captionSegmentInverted && captionSegmentInverted.length > 1
       ? captionSegmentColors(theme, captionSegmentInverted.slice(0, captionSpan))
       : undefined;
-  const baseCaptionRect = resolvedRectFor("caption", slide, device, orientation, locale, defaults);
-  const captionRect = baseCaptionRect && (slide.captionSpan || 1) > 1
-    ? { ...baseCaptionRect, width: baseCaptionRect.width + cW * ((slide.captionSpan || 1) - 1) }
-    : baseCaptionRect;
+  const captionRect = resolvedRectFor("caption", slide, device, orientation, locale, defaults);
   const deviceRect = resolvedRectFor("device", slide, device, orientation, locale, defaults);
   const secondaryRect = resolvedRectFor(
     "deviceSecondary",
@@ -1341,6 +1351,16 @@ function DeviceRig({
 // always drag the element back onto the canvas.
 const MIN_VISIBLE_FRAC = 0.1;
 
+type PointerPoint = { x: number; y: number };
+
+function pointerPoint(event: MouseEvent | TouchEvent): PointerPoint | null {
+  if ("touches" in event) {
+    const touch = event.touches[0] || event.changedTouches[0];
+    return touch ? { x: touch.clientX, y: touch.clientY } : null;
+  }
+  return { x: event.clientX, y: event.clientY };
+}
+
 function clampRect(
   r: { x: number; y: number; width: number; height: number },
   boundsW: number,
@@ -1395,6 +1415,11 @@ function Movable({
   onSelect?: () => void;
 }) {
   const rotationRef = React.useRef(rotation);
+  const dragStartRef = React.useRef<{
+    point: PointerPoint;
+    position: PointerPoint;
+    scale: number;
+  } | null>(null);
   React.useEffect(() => {
     rotationRef.current = rotation;
   }, [rotation]);
@@ -1486,11 +1511,36 @@ function Movable({
       lockAspectRatio={lockAspectRatio}
       position={{ x: display.x, y: display.y }}
       size={{ width: display.width, height: display.height }}
-      onDragStart={() => onSelect?.()}
+      onDragStart={(event) => {
+        onSelect?.();
+        const point = pointerPoint(event);
+        dragStartRef.current = point
+          ? {
+              point,
+              position: { x: display.x, y: display.y },
+              scale: Math.max(0.01, previewScale),
+            }
+          : null;
+      }}
       onResizeStart={() => onSelect?.()}
-      onDragStop={(_e, d) => {
+      onDragStop={(event, d) => {
+        const dragStart = dragStartRef.current;
+        dragStartRef.current = null;
+        const point = pointerPoint(event);
+        const scale = dragStart?.scale ?? Math.max(0.01, previewScale);
+        const delta = dragStart && point
+          ? {
+              x: (point.x - dragStart.point.x) / scale,
+              y: (point.y - dragStart.point.y) / scale,
+            }
+          : { x: d.x - display.x, y: d.y - display.y };
         const next = clampRect(
-          { x: d.x, y: d.y, width: display.width, height: display.height },
+          {
+            x: (dragStart?.position.x ?? display.x) + delta.x,
+            y: (dragStart?.position.y ?? display.y) + delta.y,
+            width: display.width,
+            height: display.height,
+          },
           boundsW,
           boundsH,
           allowOverflow,
