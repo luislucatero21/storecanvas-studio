@@ -12,6 +12,20 @@ const TransformSchema = z.object({
   zIndex: z.number().finite().optional(),
 }).passthrough();
 const SlotSpanSchema = z.union([z.literal(1), z.literal(2), z.literal(3)]);
+const CampaignTemplateSchema = z.object({
+  id: z.string().trim().min(1),
+  name: z.string().trim().min(1),
+  eyebrow: z.string(),
+  description: z.string(),
+  signature: z.string(),
+  recommendedPaletteId: z.string().trim().min(1),
+  layouts: z.array(LayoutSchema).min(1),
+  invertedIndices: z.array(z.number().int().nonnegative()),
+  connectedPairs: z.array(z.object({
+    startIndex: z.number().int().nonnegative(),
+    span: SlotSpanSchema,
+  })),
+});
 const DeviceModelSchema = z.enum(["iphone-17-pro-max", "iphone-14-pro-max", "iphone-13-pro-max"]);
 const DevicePresentationSchema = z.object({
   preset: z.enum(["flat", "tilt-left", "tilt-right", "low-angle", "high-angle", "custom"]),
@@ -96,7 +110,17 @@ export const ProjectStateSchema = z.object({
   appName: z.string().trim().min(1),
   themeId: z.string().trim().min(1),
   templateId: z.string().trim().min(1).optional(),
+  customTemplate: CampaignTemplateSchema.optional(),
   paletteId: z.string().trim().min(1).optional(),
+  customPaletteName: z.string().trim().min(1).optional(),
+  campaignSource: z.object({
+    provider: z.literal("app-store"),
+    appId: z.string().trim().min(1),
+    sourceUrl: z.string().url(),
+    country: z.string().trim().length(2),
+    appVersion: z.string().optional(),
+    screenshotPolicy: z.enum(["reference-only", "capture-ready"]),
+  }).optional(),
   copySync: z.object({
     enabled: z.boolean(),
     sourceDevice: DeviceSchema,

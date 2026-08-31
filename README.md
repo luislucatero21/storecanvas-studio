@@ -15,6 +15,7 @@ Open `http://localhost:3000` and edit the campaign. Changes autosave to `app-sto
 
 - **Connected canvas editor** (`src/components/editor/`) — every screen sits on one horizontal canvas, so phones, captions, and other elements can be dragged across screen boundaries and exported as split crops when Connected mode is enabled.
 - **Campaign wardrobe** — twelve composition templates and twelve AA-checked palettes can be applied without replacing screenshot files, semantic capture IDs, localized copy, or custom text layers. Templates automatically reflow connected artwork; replacing the palette or manual placement is explicitly opt-in. The Tune panel adjusts six core color tokens with a live preview and contrast score.
+- **App Store listing import** — paste a public `apps.apple.com` URL to generate a project-owned template, brand palette and evidence-backed campaign narrative from Apple metadata, the app icon and current published screenshots. Every decision is reviewed before applying. Published marketing composites remain reference-only by default so StoreCanvas never creates a screen-inside-a-screen accidentally.
 - **AI polish** — review copy suggestions from a personal OpenAI or OpenRouter key before applying them. Keys are held only in the dialog session and never written to the project file. The request contains app/copy context only—never capture files or their paths.
 - **Screen controls** — drag-to-reorder screens, click-to-edit text, screenshot drop targets, per-screen layout switcher, layer ordering, hide/lock controls, and responsive anchors.
 - **Device frames** (`src/components/editor/device-frames.tsx`) — selectable iPhone hardware models with their own cutout and controls, plus iPad, Android phone, Android tablet (portrait + landscape), and feature graphic.
@@ -67,7 +68,7 @@ pnpm test:ui    # Playwright UI tests
 pnpm test:all
 ```
 
-The suites cover the Rutmia load path, locale editing, text layers, 3D iPhone/Android rendering, independent and opt-in-linked device slots, connected artwork upload/generation, template artwork reflow and opt-in overrides, cross-screen messages, linked cross-device copy, exact-size iPhone/iPad output, palette contrast, AI review, and hide/lock interactions.
+The suites cover the Rutmia load path, App Store URL validation and listing-derived campaigns, locale editing, text layers, 3D iPhone/Android rendering, independent and opt-in-linked device slots, connected artwork upload/generation, template artwork reflow and opt-in overrides, cross-screen messages, linked cross-device copy, exact-size iPhone/iPad output, palette contrast, AI review, and hide/lock interactions.
 
 ## AI providers
 

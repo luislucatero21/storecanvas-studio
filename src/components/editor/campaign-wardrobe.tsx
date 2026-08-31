@@ -24,7 +24,9 @@ import { cn } from "@/lib/utils";
 type Props = {
   device: Device;
   templateId?: string;
+  customTemplate?: CampaignTemplate;
   paletteId?: string;
+  customPaletteName?: string;
   colors?: BrandTokens["colors"];
   disabled?: boolean;
   onTemplateChange: (templateId: string, options?: TemplateApplyOptions) => void;
@@ -35,7 +37,9 @@ type Props = {
 export function CampaignWardrobe({
   device,
   templateId,
+  customTemplate,
   paletteId,
+  customPaletteName,
   colors,
   disabled,
   onTemplateChange,
@@ -45,9 +49,13 @@ export function CampaignWardrobe({
   const [open, setOpen] = React.useState(false);
   const [useRecommendedPalette, setUseRecommendedPalette] = React.useState(false);
   const [resetCustomizations, setResetCustomizations] = React.useState(false);
-  const activeTemplate = campaignTemplateById(templateId) || CAMPAIGN_TEMPLATES[0];
+  const templates = React.useMemo(
+    () => customTemplate ? [customTemplate, ...CAMPAIGN_TEMPLATES.filter((item) => item.id !== customTemplate.id)] : CAMPAIGN_TEMPLATES,
+    [customTemplate],
+  );
+  const activeTemplate = (customTemplate?.id === templateId ? customTemplate : campaignTemplateById(templateId)) || CAMPAIGN_TEMPLATES[0];
   const activePalette = paletteById(paletteId) || PALETTE_PRESETS[0];
-  const activePaletteName = paletteId === "custom" ? "Custom colors" : activePalette.name;
+  const activePaletteName = paletteId === "custom" ? customPaletteName || "Custom colors" : activePalette.name;
   const tuneColors = React.useMemo(
     () => ({ ...activePalette.colors, ...colors }),
     [activePalette, colors],
@@ -115,10 +123,11 @@ export function CampaignWardrobe({
               <p className="sm:col-span-2 text-[10px] leading-relaxed text-muted-foreground">Connected artwork automatically moves to this template’s designed two-screen seams. Both overrides above are opt-in.</p>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
-              {CAMPAIGN_TEMPLATES.map((template) => (
+              {templates.map((template) => (
                 <TemplateChoice
                   key={template.id}
                   template={template}
+                  customColors={template.id === customTemplate?.id ? colors : undefined}
                   selected={template.id === activeTemplate.id}
                   disabled={disabled}
                   onSelect={() => onTemplateChange(template.id, { applyRecommendedPalette: useRecommendedPalette, resetCustomizations, reflowConnectedArtwork: true })}
@@ -263,16 +272,21 @@ function contrastRatio(first: string, second: string) {
 
 function TemplateChoice({
   template,
+  customColors,
   selected,
   disabled,
   onSelect,
 }: {
   template: CampaignTemplate;
+  customColors?: BrandTokens["colors"];
   selected: boolean;
   disabled?: boolean;
   onSelect: () => void;
 }) {
-  const palette = paletteById(template.recommendedPaletteId) || PALETTE_PRESETS[0];
+  const basePalette = paletteById(template.recommendedPaletteId) || PALETTE_PRESETS[0];
+  const palette = customColors
+    ? { ...basePalette, id: "custom", name: "Custom", colors: { ...basePalette.colors, ...customColors } }
+    : basePalette;
   return (
     <button
       type="button"

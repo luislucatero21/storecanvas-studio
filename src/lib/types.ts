@@ -225,14 +225,29 @@ export type TemplateApplyOptions = {
   reflowConnectedArtwork?: boolean;
 };
 
+export type CampaignSource = {
+  provider: "app-store";
+  appId: string;
+  sourceUrl: string;
+  country: string;
+  appVersion?: string;
+  screenshotPolicy: "reference-only" | "capture-ready";
+};
+
 export type ProjectState = {
   schemaVersion?: number;
   appName: string;
   themeId: string;
   /** Composition preset applied to the current campaign deck. */
   templateId?: string;
+  /** Project-owned template created from an imported store listing. */
+  customTemplate?: CampaignTemplate;
   /** Named palette that produced the brand color overrides. */
   paletteId?: string;
+  /** Human-readable name for a project-owned color system. */
+  customPaletteName?: string;
+  /** Provenance for the latest generated campaign direction. */
+  campaignSource?: CampaignSource;
   copySync?: {
     enabled: boolean;
     sourceDevice: Device;

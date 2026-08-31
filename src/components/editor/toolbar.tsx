@@ -34,9 +34,11 @@ import {
 } from "@/lib/constants";
 import { detectPlatform } from "@/lib/defaults";
 import type { AiProposal } from "@/lib/ai";
-import type { BrandTokens, Device, Orientation, Slide, TemplateApplyOptions } from "@/lib/types";
+import type { CampaignImportOptions, CampaignImportProposal } from "@/lib/app-store-import";
+import type { BrandTokens, CampaignTemplate, Device, Orientation, Slide, TemplateApplyOptions } from "@/lib/types";
 import type { ValidationResult } from "@/lib/validation";
 import { AiPolish } from "./ai-polish";
+import { AppStoreImporter } from "./app-store-importer";
 import { CampaignWardrobe } from "./campaign-wardrobe";
 
 type Props = {
@@ -62,11 +64,15 @@ type Props = {
   saveError: string | null;
   busy: boolean;
   templateId?: string;
+  customTemplate?: CampaignTemplate;
   paletteId?: string;
+  customPaletteName?: string;
+  campaignSourceUrl?: string;
   brandColors?: BrandTokens["colors"];
   onTemplateChange: (templateId: string, options?: TemplateApplyOptions) => void;
   onPaletteChange: (paletteId: string) => void;
   onCustomColorsChange: (colors: NonNullable<BrandTokens["colors"]>) => void;
+  onApplyCampaignImport: (proposal: CampaignImportProposal, options: CampaignImportOptions) => void;
   onApplyAiProposal: (proposal: AiProposal) => void;
   validation: ValidationResult;
 };
@@ -217,10 +223,18 @@ export function Toolbar(props: Props) {
         <span className="hidden 2xl:inline">{props.copyLinked ? "Copy linked" : "Link copy"}</span>
       </Button>
 
+      <AppStoreImporter
+        appName={props.appName}
+        currentSourceUrl={props.campaignSourceUrl}
+        disabled={props.busy}
+        onApply={props.onApplyCampaignImport}
+      />
       <CampaignWardrobe
         device={props.device}
         templateId={props.templateId}
+        customTemplate={props.customTemplate}
         paletteId={props.paletteId}
+        customPaletteName={props.customPaletteName}
         colors={props.brandColors}
         disabled={props.busy}
         onTemplateChange={props.onTemplateChange}

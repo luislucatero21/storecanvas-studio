@@ -1,9 +1,59 @@
 {
   "schemaVersion": 6,
   "appName": "Rutmia",
-  "themeId": "warm-editorial",
-  "templateId": "quiet-luxury",
-  "paletteId": "parchment-signal",
+  "themeId": "clean-light",
+  "templateId": "app-store-6757990035-afterglow-rhythm",
+  "customTemplate": {
+    "id": "app-store-6757990035-afterglow-rhythm",
+    "name": "Rutmia · Afterglow",
+    "eyebrow": "Generada desde App Store",
+    "description": "Una dirección propia para Rutmia, derivada de su propuesta, capturas y ritmo de producto.",
+    "signature": "Alterna superficies de marca mientras la historia pasa de intención a control y prueba.",
+    "recommendedPaletteId": "custom",
+    "layouts": [
+      "hero",
+      "device-top",
+      "device-bottom",
+      "two-devices",
+      "device-top",
+      "device-bottom",
+      "device-top",
+      "device-bottom",
+      "two-devices",
+      "no-device"
+    ],
+    "invertedIndices": [
+      1,
+      4,
+      6,
+      8
+    ],
+    "connectedPairs": [
+      {
+        "startIndex": 3,
+        "span": 2
+      },
+      {
+        "startIndex": 7,
+        "span": 2
+      }
+    ]
+  },
+  "paletteId": "custom",
+  "customPaletteName": "Rutmia sky rhythm",
+  "campaignSource": {
+    "provider": "app-store",
+    "appId": "6757990035",
+    "sourceUrl": "https://apps.apple.com/mx/app/rutmia/id6757990035",
+    "country": "mx",
+    "appVersion": "1.6.1",
+    "screenshotPolicy": "reference-only"
+  },
+  "copySync": {
+    "enabled": false,
+    "sourceDevice": "iphone",
+    "matchBy": "copyKey-or-index"
+  },
   "connectedCanvas": true,
   "locales": [
     "en-US",
@@ -19,7 +69,7 @@
         "layout": "hero",
         "label": {
           "en-US": "A ROUTINE THAT MOVES WITH YOU",
-          "es-MX": "UNA RUTINA QUE VA CONTIGO"
+          "es-MX": "TU DÍA, A TU MANERA"
         },
         "headline": {
           "en-US": "Own your day.",
@@ -40,43 +90,43 @@
       },
       {
         "id": "rutmia-2-ai",
-        "layout": "device-bottom",
+        "layout": "device-top",
         "label": {
           "en-US": "FROM THOUGHT TO MOMENTUM",
-          "es-MX": "DE LA IDEA AL IMPULSO"
+          "es-MX": "IA QUE PROPONE. TÚ DECIDES."
         },
         "headline": {
           "en-US": "Turn thoughts into a plan.",
           "es-MX": "De tus ideas a un plan."
         },
         "screenshot": "/screenshots/apple/iphone/{locale}/ai-proposal.png",
-        "assetRef": "capture:coach-suggestions"
-      },
-      {
-        "id": "rutmia-3-focus",
-        "layout": "no-device",
-        "label": {
-          "en-US": "MAKE ROOM FOR DEEP WORK",
-          "es-MX": "HAZ ESPACIO PARA ENFOCARTE"
-        },
-        "headline": {
-          "en-US": "Protect your focus.",
-          "es-MX": "Protege tu enfoque."
-        },
-        "screenshot": "/screenshots/apple/iphone/{locale}/focus-running.png",
-        "assetRef": "capture:focus-running",
+        "assetRef": "capture:coach-suggestions",
         "inverted": true
       },
       {
+        "id": "rutmia-3-focus",
+        "layout": "device-bottom",
+        "label": {
+          "en-US": "MAKE ROOM FOR DEEP WORK",
+          "es-MX": "HOY, SIN FRICCIÓN"
+        },
+        "headline": {
+          "en-US": "Protect your focus.",
+          "es-MX": "Solo lo que toca ahora."
+        },
+        "screenshot": "/screenshots/apple/iphone/{locale}/focus-running.png",
+        "assetRef": "capture:focus-running"
+      },
+      {
         "id": "rutmia-4-recovery",
-        "layout": "device-top",
+        "layout": "device-bottom",
         "label": {
           "en-US": "PROGRESS WITHOUT THE GUILT",
-          "es-MX": "AVANZA SIN CULPA"
+          "es-MX": "VOLVER TAMBIÉN CUENTA"
         },
         "headline": {
           "en-US": "Missed a day? Keep going.",
-          "es-MX": "¿Fallaste un día? Sigue."
+          "es-MX": "Retoma sin empezar de cero."
         },
         "screenshot": "/screenshots/apple/iphone/{locale}/recovery-paused.png",
         "assetRef": "capture:recovery-paused",
@@ -86,10 +136,10 @@
             "screenshot": "/screenshots/apple/iphone/{locale}/recovery-paused.png",
             "assetRef": "capture:recovery-paused",
             "transform": {
-              "x": 126,
-              "y": 186,
-              "width": 735,
-              "height": 1497,
+              "x": 439.0612178499796,
+              "y": 610.3469306034386,
+              "width": 778,
+              "height": 1585,
               "rotation": -1.5,
               "zIndex": 5
             },
@@ -127,14 +177,14 @@
       },
       {
         "id": "rutmia-5-reflection",
-        "layout": "device-bottom",
+        "layout": "device-top",
         "label": {
           "en-US": "THE HUMAN SIDE OF PROGRESS",
-          "es-MX": "EL LADO HUMANO DEL AVANCE"
+          "es-MX": "PROGRESO HUMANO"
         },
         "headline": {
           "en-US": "Make space to notice.",
-          "es-MX": "Date espacio para notar."
+          "es-MX": "Tu energía también importa."
         },
         "screenshot": "/screenshots/apple/iphone/{locale}/reflection-insights.png",
         "screenshotSecondary": "/screenshots/apple/iphone/{locale}/insights.png",
@@ -146,10 +196,10 @@
             "screenshot": "/screenshots/apple/iphone/{locale}/reflection-insights.png",
             "assetRef": "capture:daily-reflection",
             "transform": {
-              "x": 438,
-              "y": 1080,
-              "width": 735,
-              "height": 1497,
+              "x": 223.38772139228422,
+              "y": -207.67347136692808,
+              "width": 761,
+              "height": 1551,
               "rotation": 1.5,
               "zIndex": 5
             },
@@ -165,6 +215,7 @@
             "linkedTransforms": false
           }
         ],
+        "inverted": true,
         "hiddenElements": [
           "device"
         ]
@@ -174,40 +225,40 @@
         "layout": "device-bottom",
         "label": {
           "en-US": "SMALL STEPS. REAL MOMENTUM.",
-          "es-MX": "PASOS PEQUEÑOS. AVANCE REAL."
+          "es-MX": "METAS QUE SE ADAPTAN"
         },
         "headline": {
           "en-US": "Make progress feel real.",
-          "es-MX": "Haz real tu avance."
+          "es-MX": "Convierte intención en avance."
         },
         "screenshot": "/screenshots/apple/iphone/{locale}/goals.png",
-        "assetRef": "capture:goals",
-        "inverted": true
+        "assetRef": "capture:goals"
       },
       {
         "id": "rutmia-7-insights",
-        "layout": "no-device",
+        "layout": "device-top",
         "label": {
           "en-US": "YOUR PATTERNS, MADE VISIBLE",
-          "es-MX": "TUS PATRONES, A LA VISTA"
+          "es-MX": "PATRONES, NO PRESIÓN"
         },
         "headline": {
           "en-US": "See what is working.",
-          "es-MX": "Descubre qué funciona."
+          "es-MX": "Entiende qué sí funciona."
         },
         "screenshot": "/screenshots/apple/iphone/{locale}/insights.png",
-        "assetRef": "capture:insights"
+        "assetRef": "capture:insights",
+        "inverted": true
       },
       {
         "id": "rutmia-8-routine",
         "layout": "device-bottom",
         "label": {
           "en-US": "ONE STORY              EVERY SCREEN",
-          "es-MX": "UNA HISTORIA                        CADA PANTALLA"
+          "es-MX": "PRIVACIDAD PRIMERO"
         },
         "headline": {
           "en-US": "Your routine.              Your rhythm.",
-          "es-MX": "Tu rutina.              Tu ritmo."
+          "es-MX": "Tu rutina sigue siendo tuya."
         },
         "screenshot": "/screenshots/apple/iphone/{locale}/home.png",
         "assetRef": "capture:home-dashboard",
@@ -215,14 +266,14 @@
       },
       {
         "id": "rutmia-9-reminders",
-        "layout": "device-top",
+        "layout": "device-bottom",
         "label": {
           "en-US": "GENTLE BY DEFAULT",
-          "es-MX": "AMABLE POR DISEÑO"
+          "es-MX": "A TU MANERA"
         },
         "headline": {
           "en-US": "Stay gently on track.",
-          "es-MX": "Sigue tu ritmo."
+          "es-MX": "Recordatorios que sí encajan."
         },
         "screenshot": "/screenshots/apple/iphone/{locale}/settings.png",
         "assetRef": "capture:settings",
@@ -236,11 +287,11 @@
         "layout": "no-device",
         "label": {
           "en-US": "NO MONTHLY BILL",
-          "es-MX": "SIN PAGOS MENSUALES"
+          "es-MX": "UNA COMPRA. SIN CUOTAS."
         },
         "headline": {
           "en-US": "Your whole routine. Yours.",
-          "es-MX": "Tu rutina. Tuya."
+          "es-MX": "Rutmia Pro, de por vida."
         },
         "screenshot": "/screenshots/apple/iphone/{locale}/goals.png",
         "assetRef": "capture:goals"
@@ -252,12 +303,12 @@
         "id": "rutmia-ipad-1-home",
         "layout": "hero",
         "label": {
-          "en-US": "BUILT FOR THE BIG SCREEN",
-          "es-MX": "DISEÑADA PARA LA GRAN PANTALLA"
+          "en-US": "A ROUTINE THAT MOVES WITH YOU",
+          "es-MX": "TU DÍA, A TU MANERA"
         },
         "headline": {
-          "en-US": "See your whole day.",
-          "es-MX": "Ve todo tu día."
+          "en-US": "Own your day.",
+          "es-MX": "Haz tuyo tu día."
         },
         "screenshot": "/screenshots/apple/ipad/{locale}/home.png",
         "assetRef": "capture:ipad-home"
@@ -266,12 +317,12 @@
         "id": "rutmia-ipad-2-coach",
         "layout": "device-top",
         "label": {
-          "en-US": "CALM COACHING, MORE CONTEXT",
-          "es-MX": "GUÍA TRANQUILA, MÁS CONTEXTO"
+          "en-US": "FROM THOUGHT TO MOMENTUM",
+          "es-MX": "DE IDEA A ACCIÓN"
         },
         "headline": {
-          "en-US": "Plan with a little help.",
-          "es-MX": "Planea con un poco de ayuda."
+          "en-US": "Turn thoughts into a plan.",
+          "es-MX": "De tus ideas a un plan."
         },
         "screenshot": "/screenshots/apple/ipad/{locale}/coach.png",
         "assetRef": "capture:ipad-coach",
@@ -281,12 +332,12 @@
         "id": "rutmia-ipad-3-goals",
         "layout": "device-bottom",
         "label": {
-          "en-US": "GOALS THAT STAY VISIBLE",
-          "es-MX": "METAS SIEMPRE A LA VISTA"
+          "en-US": "MAKE ROOM FOR DEEP WORK",
+          "es-MX": "IA BAJO TU CONTROL"
         },
         "headline": {
-          "en-US": "Keep the bigger picture close.",
-          "es-MX": "Mantén cerca el panorama completo."
+          "en-US": "Protect your focus.",
+          "es-MX": "Rutmia propone. Tú decides."
         },
         "screenshot": "/screenshots/apple/ipad/{locale}/goals.png",
         "assetRef": "capture:ipad-goals"
@@ -295,12 +346,12 @@
         "id": "rutmia-ipad-4-insights",
         "layout": "two-devices",
         "label": {
-          "en-US": "PATTERNS, NOT PRESSURE",
-          "es-MX": "PATRONES, NO PRESIÓN"
+          "en-US": "PROGRESS WITHOUT THE GUILT",
+          "es-MX": "PRIVACIDAD PRIMERO"
         },
         "headline": {
-          "en-US": "Notice what is working.",
-          "es-MX": "Descubre lo que sí funciona."
+          "en-US": "Missed a day? Keep going.",
+          "es-MX": "Tu rutina sigue siendo tuya."
         },
         "screenshot": "/screenshots/apple/ipad/{locale}/insights.png",
         "screenshotSecondary": "/screenshots/apple/ipad/{locale}/settings.png",
@@ -311,12 +362,12 @@
         "id": "rutmia-ipad-5-settings",
         "layout": "device-top",
         "label": {
-          "en-US": "YOUR ROUTINE, YOUR RULES",
-          "es-MX": "TU RUTINA, TUS REGLAS"
+          "en-US": "THE HUMAN SIDE OF PROGRESS",
+          "es-MX": "HOY, SIN FRICCIÓN"
         },
         "headline": {
-          "en-US": "Private and flexible by design.",
-          "es-MX": "Privada y flexible por diseño."
+          "en-US": "Make space to notice.",
+          "es-MX": "Solo lo que toca ahora."
         },
         "screenshot": "/screenshots/apple/ipad/{locale}/settings.png",
         "assetRef": "capture:ipad-settings",
@@ -326,12 +377,12 @@
         "id": "rutmia-ipad-6-lifetime",
         "layout": "device-bottom",
         "label": {
-          "en-US": "ONE PURCHASE, NO SUBSCRIPTION",
-          "es-MX": "UN PAGO, SIN SUSCRIPCIÓN"
+          "en-US": "SMALL STEPS. REAL MOMENTUM.",
+          "es-MX": "VOLVER TAMBIÉN CUENTA"
         },
         "headline": {
-          "en-US": "Make the routine yours.",
-          "es-MX": "Haz tuya la rutina."
+          "en-US": "Make progress feel real.",
+          "es-MX": "Retoma sin empezar de cero."
         },
         "screenshot": "/screenshots/apple/ipad/{locale}/lifetime.png",
         "assetRef": "capture:ipad-lifetime"
@@ -341,7 +392,7 @@
     "android-10": [],
     "feature-graphic": []
   },
-  "appIcon": "/app-icon.png",
+  "appIcon": "/screenshots/imported/apple-6757990035/icon.jpg",
   "assets": {
     "capture:home-dashboard": {
       "id": "capture:home-dashboard",
@@ -563,13 +614,13 @@
   },
   "brand": {
     "colors": {
-      "primary": "#C75C48",
-      "accent": "#E56750",
-      "surface": "#F3E9DE",
-      "surfaceAlt": "#2B2421",
-      "ink": "#2B2421",
-      "inkAlt": "#FFF7EF",
-      "muted": "#7F6A5F"
+      "primary": "#37ADE6",
+      "accent": "#EDA23B",
+      "surface": "#AAEAFB",
+      "surfaceAlt": "#161D3C",
+      "ink": "#161D3C",
+      "inkAlt": "#F8FBFF",
+      "muted": "#5D7F98"
     },
     "typography": {
       "display": {

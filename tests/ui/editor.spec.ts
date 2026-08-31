@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import baseline from "../../app-store-screenshots.json";
+import { buildCampaignImportProposal, type AppStoreListing } from "../../src/lib/app-store-import";
 
 test.describe("StoreCanvas editor", () => {
   test.describe.configure({ mode: "serial" });
@@ -64,7 +65,7 @@ test.describe("StoreCanvas editor", () => {
     try {
       await page.goto(`${baseURL}/render?device=iphone&locale=es-MX&size=1320x2868`);
       const firstSlide = page.locator('[data-slide-id="rutmia-1-route"]');
-      await expect(firstSlide.getByText("UNA RUTINA QUE VA CONTIGO")).toBeVisible();
+      await expect(firstSlide.getByText("TU DÍA, A TU MANERA")).toBeVisible();
       await expect(firstSlide.getByText("Haz tuyo tu día.")).toBeVisible();
     } finally {
       await context.close();
@@ -213,7 +214,7 @@ test.describe("StoreCanvas editor", () => {
       });
     });
     await page.goto("/");
-    await page.getByRole("button", { name: /Screen 4 · Device top/ }).click();
+    await page.getByRole("button", { name: /Screen 4 ·/ }).click();
     await page.getByRole("combobox", { name: "Artwork image provider" }).click();
     await page.getByRole("option", { name: "OpenAI" }).click();
     await page.getByRole("textbox", { name: "Artwork OpenAI API key" }).fill("sk-artwork-ui-test");
@@ -267,6 +268,60 @@ test.describe("StoreCanvas editor", () => {
     expect(body.state.slidesByDevice.iphone[0]).toMatchObject({
       screenshot: "/screenshots/apple/iphone/{locale}/home.png",
       assetRef: "capture:home-dashboard",
+    });
+  });
+
+  test("reviews an App Store URL and applies a custom campaign without nesting published composites", async ({ page }) => {
+    const listing: AppStoreListing = {
+      sourceUrl: "https://apps.apple.com/mx/app/rutmia/id6757990035",
+      appId: "6757990035",
+      country: "mx",
+      locale: "es-MX",
+      name: "Rutmia",
+      description: "PLANEA CON RUTMIA AI. Tú apruebas cada cambio. PRIVACIDAD PRIMERO. Hábitos, metas, rachas, tendencias, recordatorios y una compra Pro de por vida.",
+      genre: "Productivity",
+      version: "1.6.1",
+      artworkUrl: "https://is1-ssl.mzstatic.com/icon.jpg",
+      screenshotUrls: ["https://is1-ssl.mzstatic.com/store-01.jpg", "https://is1-ssl.mzstatic.com/store-02.jpg"],
+      localArtworkPath: "/app-icon.png",
+      localScreenshotPaths: ["/screenshots/imported/apple-6757990035/store-01.jpg", "/screenshots/imported/apple-6757990035/store-02.jpg"],
+    };
+    const proposal = buildCampaignImportProposal(listing, {
+      colorSignals: { surface: "#EAF5FF", ink: "#11143B", primary: "#18BDEB", accent: "#FF9E35" },
+      slideCount: baseline.slidesByDevice.iphone.length,
+    });
+    await page.route("**/api/import/app-store", async (route) => {
+      expect(route.request().postDataJSON()).toEqual({ url: listing.sourceUrl });
+      await route.fulfill({ contentType: "application/json", body: JSON.stringify({ ok: true, listing, proposal }) });
+    });
+    await page.goto("/");
+    await page.getByRole("button", { name: "Build campaign from App Store" }).click();
+    await expect(page.getByRole("textbox", { name: "App Store URL" })).toHaveValue(listing.sourceUrl);
+    await page.getByRole("button", { name: "Analyze listing" }).click();
+
+    const importer = page.getByRole("dialog", { name: "Build from an App Store listing" });
+    await expect(importer.getByText("Rutmia · Afterglow")).toBeVisible();
+    await expect(importer.getByText("Rutmia sky rhythm")).toBeVisible();
+    await expect(importer.getByText("IA con aprobación")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Use published App Store screenshots as device captures" })).toHaveAttribute("aria-pressed", "false");
+    await page.getByRole("button", { name: "Apply custom campaign" }).click();
+
+    await expect.poll(async () => {
+      const response = await page.request.get("/api/project");
+      const body = await response.json();
+      return {
+        templateId: body.state.templateId,
+        paletteName: body.state.customPaletteName,
+        primary: body.state.brand.colors.primary,
+        headline: body.state.slidesByDevice.iphone[0].headline["es-MX"],
+        screenshot: body.state.slidesByDevice.iphone[0].screenshot,
+      };
+    }).toEqual({
+      templateId: "app-store-6757990035-afterglow-rhythm",
+      paletteName: "Rutmia sky rhythm",
+      primary: "#18BDEB",
+      headline: "Haz tuyo tu día.",
+      screenshot: baseline.slidesByDevice.iphone[0].screenshot,
     });
   });
 

@@ -423,6 +423,17 @@ export function applyCampaignTemplate(
   const template = campaignTemplateById(templateId);
   if (!template) return project;
 
+  return applyCampaignTemplateDefinition(project, template, device, options);
+}
+
+/** Recompose a deck with either a built-in or project-owned template. */
+export function applyCampaignTemplateDefinition(
+  project: ProjectState,
+  template: CampaignTemplate,
+  device: Device = project.device,
+  options: TemplateApplyOptions = {},
+): ProjectState {
+
   const slides = project.slidesByDevice[device] || [];
   let recomposed = slides.map((slide, index) => {
     const preserved = options.resetCustomizations

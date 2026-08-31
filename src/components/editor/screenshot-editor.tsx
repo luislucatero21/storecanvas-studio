@@ -19,9 +19,11 @@ import { useProject } from "@/lib/storage";
 import { validateProject } from "@/lib/validation";
 import { applyBrandTokens } from "@/lib/theme";
 import { applyAiProposal } from "@/lib/ai";
+import { applyCampaignImport } from "@/lib/app-store-import";
 import { setCopyLinking, writeLinkedCopy } from "@/lib/copy-sync";
 import {
   applyCampaignTemplate,
+  applyCampaignTemplateDefinition,
   applyCustomColors,
   applyPalette,
   campaignTemplateById,
@@ -646,12 +648,17 @@ export function ScreenshotEditor() {
         saveError={saveError}
         busy={busy}
         templateId={state.templateId}
+        customTemplate={state.customTemplate}
         paletteId={state.paletteId}
+        customPaletteName={state.customPaletteName}
+        campaignSourceUrl={state.campaignSource?.sourceUrl}
         copyLinked={state.copySync?.enabled === true}
         brandColors={state.brand?.colors}
         onTemplateChange={(templateId, options) => {
-          const template = campaignTemplateById(templateId);
-          setState((project) => applyCampaignTemplate(project, templateId, project.device, options));
+          const template = state.customTemplate?.id === templateId ? state.customTemplate : campaignTemplateById(templateId);
+          setState((project) => project.customTemplate?.id === templateId
+            ? applyCampaignTemplateDefinition(project, project.customTemplate, project.device, options)
+            : applyCampaignTemplate(project, templateId, project.device, options));
           toast.success(`${template?.name || "Template"} applied`, {
             description: options?.resetCustomizations
               ? "The template rebuilt manual placement and reflowed connected artwork."
@@ -669,6 +676,12 @@ export function ScreenshotEditor() {
           setState((project) => applyCustomColors(project, colors));
           toast.success("Custom colors applied", {
             description: "Screenshots, layouts, typography and localized copy stayed in place.",
+          });
+        }}
+        onApplyCampaignImport={(proposal, options) => {
+          setState((project) => applyCampaignImport(project, proposal, options));
+          toast.success(`${proposal.listing.name} campaign applied`, {
+            description: "The generated template, palette and copy remain editable; published composites stayed reference-only unless selected.",
           });
         }}
         onCopyLinkChange={(enabled) => {
