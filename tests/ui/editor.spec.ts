@@ -11,6 +11,27 @@ function firstDeviceEditor(page: Page) {
   return page.locator(".rnd-editable").filter({ has: page.locator("[data-device-model]") }).first();
 }
 
+async function waitForStableBox(locator: ReturnType<Page["locator"]>) {
+  let previous: { x: number; y: number; width: number; height: number } | null = null;
+  await expect
+    .poll(
+      async () => {
+        const box = await locator.boundingBox();
+        if (!box) return "missing";
+        const current = { x: box.x, y: box.y, width: box.width, height: box.height };
+        const stable = previous &&
+          Math.abs(current.x - previous.x) < 0.25 &&
+          Math.abs(current.y - previous.y) < 0.25 &&
+          Math.abs(current.width - previous.width) < 0.25 &&
+          Math.abs(current.height - previous.height) < 0.25;
+        previous = current;
+        return stable ? "stable" : "moving";
+      },
+      { timeout: 5_000, intervals: [100, 150, 250] },
+    )
+    .toBe("stable");
+}
+
 test.describe("StoreCanvas editor", () => {
   test.describe.configure({ mode: "serial" });
 
@@ -305,6 +326,7 @@ test.describe("StoreCanvas editor", () => {
       .filter({ hasText: "One clear idea." });
     const editable = caption.locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " rnd-editable ")]');
     await expect(editable).toHaveCount(1);
+    await waitForStableBox(editable);
     const initial = await editable.boundingBox();
     expect(initial).not.toBeNull();
 
@@ -314,7 +336,7 @@ test.describe("StoreCanvas editor", () => {
     await page.mouse.down();
     await page.mouse.move(start.x + delta.x, start.y + delta.y, { steps: 6 });
     await page.mouse.up();
-    await page.waitForTimeout(250);
+    await waitForStableBox(editable);
 
     const after = await editable.boundingBox();
     expect(after).not.toBeNull();
