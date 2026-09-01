@@ -28,6 +28,7 @@ import { ProjectStateSchema } from "@/lib/schema";
 import { validateProject } from "@/lib/validation";
 import { isReadOnlyRuntime } from "@/lib/runtime";
 import {
+  CHECKED_IN_EXAMPLE_PROJECT,
   isLocalPrivateProjectAvailable,
   isProjectFileConfigured,
   projectFilePath,
@@ -155,6 +156,11 @@ describe("StoreCanvas project contracts", () => {
     const result = ProjectStateSchema.safeParse(JSON.parse(readFileSync(resolve("example-project.json"), "utf8")));
 
     expect(result.success).toBe(true);
+    expect(CHECKED_IN_EXAMPLE_PROJECT).toMatchObject({
+      appName: "Example app",
+      connectedCanvas: true,
+      slidesByDevice: { iphone: expect.arrayContaining([expect.objectContaining({ id: "demo-1-route" })]) },
+    });
   });
 
   it("recomposes a campaign without losing semantic captures, copy or custom text", () => {

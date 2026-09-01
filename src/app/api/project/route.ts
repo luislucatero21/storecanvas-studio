@@ -2,6 +2,7 @@ import { promises as fs } from "node:fs";
 import { NextResponse } from "next/server";
 import { ProjectStateSchema } from "@/lib/schema";
 import {
+  CHECKED_IN_EXAMPLE_PROJECT,
   isLocalPrivateProjectAvailable,
   isProjectFileConfigured,
   projectFilePath,
@@ -42,7 +43,7 @@ export async function GET() {
     if (code === "ENOENT") {
       return NextResponse.json({
         ok: true,
-        state: null,
+        state: source() === "demo-file" ? CHECKED_IN_EXAMPLE_PROJECT : null,
         persisted: !isReadOnlyRuntime() && isProjectFileConfigured() ? "file" : "browser",
         source: source(),
       });

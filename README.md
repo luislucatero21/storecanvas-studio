@@ -8,7 +8,7 @@
 
 StoreCanvas is a free, open-source, local-first studio for turning real mobile-app captures into App Store and Google Play campaign assets. Compose a sequence where one visual idea can continue into the next frame, then export deterministic, store-sized images without giving your project to a hosted design platform.
 
-**[Open the live Vercel demo](https://storecanvas-studio-7mizuftdo-luislucatero21s-projects.vercel.app)** · **[Read the architecture](docs/architecture.md)** · **[Contribute](CONTRIBUTING.md)**
+**[Open the live Vercel demo](https://storecanvas-studio.vercel.app/)** · **[Read the architecture](docs/architecture.md)** · **[Contribute](CONTRIBUTING.md)**
 
 The public demo starts from a neutral, checked-in example. Your local projects, screenshots, generated backgrounds, and browser edits are not uploaded automatically.
 
