@@ -28,6 +28,8 @@ import { getElementTransform } from "@/components/editor/slide-canvas";
 import { ProjectStateSchema } from "@/lib/schema";
 import { validateProject } from "@/lib/validation";
 import { isReadOnlyRuntime } from "@/lib/runtime";
+import { hasExpandedLocalArtwork } from "@/lib/storage";
+import type { ProjectState } from "@/lib/types";
 import {
   CHECKED_IN_EXAMPLE_PROJECT,
   isLocalPrivateProjectAvailable,
@@ -64,6 +66,39 @@ describe("StoreCanvas project contracts", () => {
     expect(isLocalPrivateProjectAvailable(root, { VERCEL: "1" }, exists)).toBe(false);
     expect(projectFilePath(root, { VERCEL: "1" }, exists)).toBe(resolve(root, "example-project.json"));
     expect(isLocalPrivateProjectAvailable(root, { STORECANVAS_PROJECT_FILE: "private.json" }, exists)).toBe(false);
+  });
+
+  it("refreshes a cached imported campaign when its local artwork expands", () => {
+    const campaignSource: ProjectState["campaignSource"] = {
+      provider: "app-store",
+      appId: "6757990035",
+      sourceUrl: "https://apps.apple.com/mx/app/rutmia/id6757990035",
+      country: "mx",
+      screenshotPolicy: "reference-only",
+    };
+    const cached: ProjectState = { ...CHECKED_IN_EXAMPLE_PROJECT, campaignSource };
+    const fileSlide = cached.slidesByDevice.iphone[0];
+    const file: ProjectState = {
+      ...cached,
+      slidesByDevice: {
+        ...cached.slidesByDevice,
+        iphone: [
+          {
+            ...fileSlide,
+            connectedArtworks: fileSlide.connectedArtworks?.map((artwork) => ({
+              ...artwork,
+              spanSlots: 10,
+              transform: { ...artwork.transform, width: 13200 },
+            })),
+          },
+          ...cached.slidesByDevice.iphone.slice(1),
+        ],
+      },
+    };
+
+    expect(hasExpandedLocalArtwork(cached, file)).toBe(true);
+    expect(hasExpandedLocalArtwork(file, file)).toBe(false);
+    expect(hasExpandedLocalArtwork({ ...cached, campaignSource: undefined }, file)).toBe(false);
   });
 
   it("keeps local projects portable and switches the active record predictably", () => {

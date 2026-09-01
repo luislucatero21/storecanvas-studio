@@ -23,9 +23,10 @@ function source() {
   return "demo-file" as const;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const preferFile = new URL(request.url).searchParams.get("prefer") === "file";
   const browserOnly = !isReadOnlyRuntime() && !isProjectFileConfigured();
-  const localProject = browserOnly ? getLocalProject() : null;
+  const localProject = browserOnly && !preferFile ? getLocalProject() : null;
   if (localProject) {
     return NextResponse.json({ ok: true, state: localProject, persisted: "browser", source: "browser" });
   }

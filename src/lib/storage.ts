@@ -289,7 +289,9 @@ async function loadFromFile(): Promise<
 > {
   if (typeof window === "undefined") return { ok: false, error: "Window is not available" };
   try {
-    const resp = await fetch("/api/project", { cache: "no-store" });
+    // Ask the local server for the file even when an older browser project is
+    // still cached. The normal endpoint intentionally prefers browser state.
+    const resp = await fetch("/api/project?prefer=file", { cache: "no-store" });
     if (!resp.ok) return { ok: false, error: `HTTP ${resp.status}` };
     const json = (await resp.json()) as {
       ok: boolean;
@@ -310,6 +312,26 @@ function isStarterOrDemoProject(state: ProjectState | undefined) {
   return state.appName === DEFAULT_PROJECT.appName
     || state.appName === "Example app"
     || state.slidesByDevice.iphone?.[0]?.id?.startsWith("demo-");
+}
+
+/**
+ * Detect a local file update that expands an existing imported campaign. This
+ * is intentionally narrow: ordinary browser edits remain the source of truth,
+ * while a regenerated local panorama can upgrade a stale cached 2-screen span
+ * without overwriting unrelated work on every reload.
+ */
+export function hasExpandedLocalArtwork(cached: ProjectState | undefined, file: ProjectState | null) {
+  if (!cached || !file || !cached.campaignSource || !file.campaignSource) return false;
+  if (cached.campaignSource.appId !== file.campaignSource.appId) return false;
+  return Object.entries(file.slidesByDevice).some(([device, fileSlides]) => {
+    const cachedSlides = cached.slidesByDevice[device as keyof ProjectState["slidesByDevice"]] || [];
+    return fileSlides.some((fileSlide, index) =>
+      (fileSlide.connectedArtworks || []).some((fileArtwork) => {
+        const cachedArtwork = cachedSlides[index]?.connectedArtworks?.find((candidate) => candidate.id === fileArtwork.id);
+        return !!cachedArtwork && fileArtwork.spanSlots > (cachedArtwork.spanSlots || 2);
+      }),
+    );
+  });
 }
 
 function saveToLocalStorage(
@@ -400,7 +422,8 @@ export function useProject() {
         : null;
       const shouldAutoLoadLocalProject = !!autoLocalState
         && (!active || isStarterOrDemoProject(cached || active.state));
-      const shouldUseFileProject = !!configuredFileState || shouldAutoLoadLocalProject;
+      const shouldRefreshExpandedLocalArtwork = hasExpandedLocalArtwork(cached || active?.state, autoLocalState);
+      const shouldUseFileProject = !!configuredFileState || shouldAutoLoadLocalProject || shouldRefreshExpandedLocalArtwork;
       let nextState = shouldUseFileProject
         ? (configuredFileState || autoLocalState)!
         : cached || (fromFile.ok ? fromFile.state : null) || DEFAULT_PROJECT;

@@ -91,7 +91,7 @@ test.describe("StoreCanvas editor", () => {
         screenshotPolicy: "reference-only" as const,
       },
     };
-    await page.route("**/api/project", async (route) => {
+    await page.route("**/api/project*", async (route) => {
       if (route.request().method() !== "GET") {
         await route.continue();
         return;
@@ -107,6 +107,51 @@ test.describe("StoreCanvas editor", () => {
     await expect(page.getByRole("button", { name: "Project menu" })).toContainText("Local campaign");
   });
 
+  test("refreshes a stale local Rutmia panorama from the project file", async ({ page }) => {
+    const cached = JSON.parse(JSON.stringify(baseline));
+    cached.appName = "Rutmia";
+    cached.campaignSource = {
+      provider: "app-store",
+      appId: "6757990035",
+      sourceUrl: "https://apps.apple.com/mx/app/rutmia/id6757990035",
+      country: "mx",
+      screenshotPolicy: "reference-only",
+    };
+    cached.slidesByDevice.iphone[0].connectedArtworks[0].spanSlots = 2;
+    cached.slidesByDevice.iphone[0].connectedArtworks[0].transform.width = 2640;
+
+    const expanded = JSON.parse(JSON.stringify(cached));
+    expanded.slidesByDevice.iphone[0].connectedArtworks[0].spanSlots = 10;
+    expanded.slidesByDevice.iphone[0].connectedArtworks[0].transform.width = 13200;
+
+    await page.goto("/");
+    const projectMenu = page.getByRole("button", { name: "Project menu" });
+    await projectMenu.click();
+    await page.getByLabel("Import project JSON").setInputFiles({
+      name: "rutmia-cached.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify(cached)),
+    });
+    await expect(page.getByLabel("App name")).toHaveValue("Rutmia");
+
+    await page.route("**/api/project*", async (route) => {
+      if (route.request().method() !== "GET") {
+        await route.continue();
+        return;
+      }
+      if (!route.request().url().includes("prefer=file")) {
+        await route.continue();
+        return;
+      }
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true, state: expanded, persisted: "browser", source: "local-private-file" }),
+      });
+    });
+    await page.reload();
+    await expect(page.locator('.store-canvas-well [data-connected-artwork="demo-opening-orbit"]').first()).toHaveAttribute("data-artwork-span", "10");
+  });
+
   test("configured project files override a stale browser project on reload", async ({ page }) => {
     await page.goto("/");
     const projectMenu = page.getByRole("button", { name: "Project menu" });
@@ -119,7 +164,7 @@ test.describe("StoreCanvas editor", () => {
     await expect(page.getByLabel("App name")).toHaveValue("Cached campaign");
 
     const configuredCampaign = { ...baseline, appName: "Configured campaign" };
-    await page.route("**/api/project", async (route) => {
+    await page.route("**/api/project*", async (route) => {
       if (route.request().method() !== "GET") {
         await route.continue();
         return;
