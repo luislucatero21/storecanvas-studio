@@ -159,7 +159,7 @@ pnpm build
 pnpm audit --audit-level high
 ```
 
-CI runs dependency audit, typecheck, 57 unit tests, Playwright browser tests, and a production build on pushes and pull requests to `main`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution workflow and [docs/OPEN_SOURCE_AUDIT.md](docs/OPEN_SOURCE_AUDIT.md) for the current audit snapshot.
+CI runs dependency audit, typecheck, 58 unit tests, Playwright browser tests, and a production build on pushes and pull requests to `main`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution workflow and [docs/OPEN_SOURCE_AUDIT.md](docs/OPEN_SOURCE_AUDIT.md) for the current audit snapshot.
 
 ## Project map
 

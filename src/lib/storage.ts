@@ -326,11 +326,33 @@ async function loadFromFile(preferFile = false): Promise<
   }
 }
 
+function hasProjectContent(state: ProjectState) {
+  if (state.appIcon?.trim() || Object.keys(state.assets || {}).length > 0) return true;
+  return Object.values(state.slidesByDevice).some((slides) => slides.some((slide) => (
+    Boolean(slide.screenshot?.trim())
+    || Boolean(slide.screenshotSecondary?.trim())
+    || Boolean(slide.deviceSlots?.length)
+    || Boolean(slide.connectedArtworks?.length)
+    || Boolean(slide.textElements?.length)
+    || Boolean(slide.transforms && Object.keys(slide.transforms).length > 0)
+    || Boolean(slide.presentations && Object.keys(slide.presentations).length > 0)
+  )));
+}
+
 function isStarterOrDemoProject(state: ProjectState | undefined) {
-  if (!state || state.campaignSource) return false;
+  if (!state || state.campaignSource || hasProjectContent(state)) return false;
   return state.appName === DEFAULT_PROJECT.appName
     || state.appName === "Example app"
     || state.slidesByDevice.iphone?.[0]?.id?.startsWith("demo-");
+}
+
+/**
+ * A Vercel origin has no private project file. Replace only its untouched
+ * starter cache with the checked-in campaign so an older visit cannot hide
+ * the public demo; real browser projects remain owned by the user.
+ */
+export function shouldUseCheckedInDemo(state: ProjectState | undefined, source: string | undefined) {
+  return source === "demo-file" && isStarterOrDemoProject(state);
 }
 
 /**
@@ -429,7 +451,8 @@ export function useProject() {
   // or demo project. An explicitly configured project file is authoritative;
   // this lets a local preview switch to the file even when an older project
   // remains in the browser cache. Vercel and ordinary local-first sessions
-  // continue to prefer their browser project.
+  // continue to prefer a real browser project; only an untouched starter
+  // cache is refreshed by the checked-in demo below.
   useEffect(() => {
     let cancelled = false;
     const localLibrary = loadProjectLibrary();
@@ -457,10 +480,15 @@ export function useProject() {
       const configuredFileState = localFileResponse.ok && localFileResponse.source === "configured-file"
         ? localFileResponse.state
         : null;
+      const shouldUseDemoProject = localFileResponse.ok
+        && shouldUseCheckedInDemo(cachedState, localFileResponse.source);
       const shouldAutoLoadLocalProject = !!autoLocalState
         && (!active || isStarterOrDemoProject(cachedState));
       const shouldRefreshExpandedLocalArtwork = hasExpandedLocalArtwork(cached || active?.state, autoLocalState);
-      const shouldUseFileProject = !!configuredFileState || shouldAutoLoadLocalProject || shouldRefreshExpandedLocalArtwork;
+      const shouldUseFileProject = !!configuredFileState
+        || shouldAutoLoadLocalProject
+        || shouldRefreshExpandedLocalArtwork
+        || shouldUseDemoProject;
       let nextState = shouldUseFileProject
         ? (configuredFileState || autoLocalState)!
         : cached || (fromFile.ok ? fromFile.state : null) || DEFAULT_PROJECT;

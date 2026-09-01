@@ -30,7 +30,7 @@ import { getElementTransform } from "@/components/editor/slide-canvas";
 import { ProjectStateSchema } from "@/lib/schema";
 import { validateProject } from "@/lib/validation";
 import { isReadOnlyRuntime } from "@/lib/runtime";
-import { hasExpandedLocalArtwork } from "@/lib/storage";
+import { hasExpandedLocalArtwork, shouldUseCheckedInDemo } from "@/lib/storage";
 import type { ProjectState } from "@/lib/types";
 import {
   CHECKED_IN_EXAMPLE_PROJECT,
@@ -68,6 +68,21 @@ describe("StoreCanvas project contracts", () => {
     expect(isLocalPrivateProjectAvailable(root, { VERCEL: "1" }, exists)).toBe(false);
     expect(projectFilePath(root, { VERCEL: "1" }, exists)).toBe(resolve(root, "example-project.json"));
     expect(isLocalPrivateProjectAvailable(root, { STORECANVAS_PROJECT_FILE: "private.json" }, exists)).toBe(false);
+  });
+
+  it("refreshes only an untouched starter cache with the public checked-in demo", () => {
+    expect(shouldUseCheckedInDemo(DEFAULT_PROJECT, "demo-file")).toBe(true);
+    expect(shouldUseCheckedInDemo(DEFAULT_PROJECT, "browser")).toBe(false);
+    expect(shouldUseCheckedInDemo({
+      ...DEFAULT_PROJECT,
+      slidesByDevice: {
+        ...DEFAULT_PROJECT.slidesByDevice,
+        iphone: [
+          { ...DEFAULT_PROJECT.slidesByDevice.iphone[0], screenshot: "/private/capture.png" },
+          ...DEFAULT_PROJECT.slidesByDevice.iphone.slice(1),
+        ],
+      },
+    }, "demo-file")).toBe(false);
   });
 
   it("refreshes a cached imported campaign when its local artwork expands", () => {
