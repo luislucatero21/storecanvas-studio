@@ -1,6 +1,8 @@
 node_modules
 .next
 out
+.vercel
+coverage
 .DS_Store
 *.tsbuildinfo
 next-env.d.ts
@@ -8,6 +10,10 @@ next-env.d.ts
 exports/
 test-results/
 playwright-report/
+
+# Next.js 16 writes local agent hints while running `next dev`.
+AGENTS.md
+CLAUDE.md
 
 # Private/local campaign state and user-provided assets.
 app-store-screenshots.json

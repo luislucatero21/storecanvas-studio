@@ -1,0 +1,59 @@
+name: Bug report
+description: Report a reproducible problem in the editor, renderer, or local-first storage.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to make StoreCanvas better. Please remove private screenshots, campaign JSON, API keys, and personal data before submitting.
+  - type: input
+    id: summary
+    attributes:
+      label: What went wrong?
+      description: Give the problem a short, specific title.
+      placeholder: Shared caption jumps when moved across connected screens
+    validations:
+      required: true
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: Where did it happen?
+      options:
+        - Local development
+        - Vercel deployment
+        - Both
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Include the smallest project shape or sequence of actions that shows the problem.
+      placeholder: |
+        1. Open the example project
+        2. Select the connected caption
+        3. Drag it from the first screen to the second
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
+      description: Tell us what you expected and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include OS, browser, Node.js version, and commit or package version if known.
+      placeholder: macOS 15 · Chrome 140 · Node 20 · main
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed private captures, project files, API keys, and personal data from this report.
+          required: true

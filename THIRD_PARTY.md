@@ -1,6 +1,6 @@
 # Third-party open-source software
 
-StoreCanvas uses the following direct open-source dependencies. Their source, license text and notices remain governed by each upstream project. The lockfiles include the complete transitive dependency graph.
+StoreCanvas uses the following direct open-source dependencies and project tools. Their source, license text and notices remain governed by each upstream project. The lockfile includes the complete transitive dependency graph.
 
 | Dependency | Used for | License | Upstream |
 | --- | --- | --- | --- |
@@ -27,5 +27,9 @@ StoreCanvas uses the following direct open-source dependencies. Their source, li
 | PostCSS / Autoprefixer | CSS processing | MIT | [postcss/postcss](https://github.com/postcss/postcss), [postcss/autoprefixer](https://github.com/postcss/autoprefixer) |
 | TypeScript | Static typing | Apache-2.0 | [microsoft/TypeScript](https://github.com/microsoft/TypeScript) |
 | DefinitelyTyped | Node and React type definitions | MIT | [DefinitelyTyped/DefinitelyTyped](https://github.com/DefinitelyTyped/DefinitelyTyped) |
+| pnpm | Reproducible package installation | MIT | [pnpm/pnpm](https://github.com/pnpm/pnpm) |
+| Node.js | Local and Vercel JavaScript runtime | MIT | [nodejs/node](https://github.com/nodejs/node) |
+| GitHub Actions | CI orchestration (`checkout`, `setup-node`, `pnpm/action-setup`) | MIT | [actions/checkout](https://github.com/actions/checkout), [actions/setup-node](https://github.com/actions/setup-node), [pnpm/action-setup](https://github.com/pnpm/action-setup) |
+| DM Sans / Fraunces | UI and campaign typography via `next/font/google` | OFL-1.1 | [google/fonts](https://github.com/google/fonts) |
 
 The demo SVGs in `public/` are authored for this repository and are covered by the repository MIT License. App Store metadata, screenshots, product names and logos imported by a user are not bundled by StoreCanvas and may have separate rights or terms.

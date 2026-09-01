@@ -1,0 +1,34 @@
+name: Feature request
+description: Suggest a focused improvement to the open-source editor or renderer.
+title: "[Feature]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        StoreCanvas is local-first and free by design. Please describe the user outcome first, and keep proposals compatible with local files or browser storage whenever possible.
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+      description: What are you trying to accomplish, and why is the current workflow not enough?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the smallest useful version of the feature. Include how it should behave on Vercel if relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What workarounds or other tools did you try?
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Project boundaries
+      options:
+        - label: This proposal does not require a hosted database, account system, or monetization flow.
+        - label: I understand that imported App Store assets need appropriate reuse rights.

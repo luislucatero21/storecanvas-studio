@@ -1,95 +1,128 @@
 # StoreCanvas
 
-StoreCanvas is a local-first studio for turning real app captures into App Store and Google Play campaign assets. It combines a connected canvas, independent device slots, editable copy, reusable templates, palettes, hardware-aware iPhone frames, deterministic exports and optional App Store metadata import.
+[![CI](https://github.com/luislucatero21/storecanvas-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/luislucatero21/storecanvas-studio/actions/workflows/ci.yml)
+[![Live demo](https://img.shields.io/badge/demo-Vercel-000000?logo=vercel&logoColor=white)](https://storecanvas-studio-7mizuftdo-luislucatero21s-projects.vercel.app)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-The repository includes a neutral, shareable demo project. Your own campaign files and downloaded assets stay local by default.
+## Build store screenshots that read like a product story
+
+StoreCanvas is a free, open-source, local-first studio for turning real mobile-app captures into App Store and Google Play campaign assets. Compose a sequence where one visual idea can continue into the next frame, then export deterministic, store-sized images without giving your project to a hosted design platform.
+
+**[Open the live Vercel demo](https://storecanvas-studio-7mizuftdo-luislucatero21s-projects.vercel.app)** · **[Read the architecture](docs/architecture.md)** · **[Contribute](CONTRIBUTING.md)**
+
+The public demo starts from a neutral, checked-in example. Your local projects, screenshots, generated backgrounds, and browser edits are not uploaded automatically.
+
+## Why StoreCanvas?
+
+Most screenshot tools treat each frame as a separate poster. StoreCanvas treats the campaign as a visual sequence:
+
+| | StoreCanvas approach |
+| --- | --- |
+| **Story** | Connected captions and artwork can span two or three adjacent screens while keeping each slot editable. |
+| **Real product UI** | Use your actual captures inside hardware-aware iPhone, iPad, and Android frames. |
+| **Precision** | Device slots are independent by default; shared transforms and copy continuity are explicit opt-ins. |
+| **Ownership** | Projects live in browser storage or an explicitly configured local JSON file. Vercel stays read-only and needs no remote database. |
+| **No lock-in** | Export PNGs or a JSON backup. Optional AI uses a key you provide for the current session; StoreCanvas has no accounts, plans, checkout, or usage meter. |
 
 ## Quick start
 
+Requirements: Node.js `>=20.9.0` and pnpm `11.9.0`.
+
 ```bash
-pnpm install   # bun install also works
-pnpm dev       # http://localhost:3000
+pnpm install
+pnpm dev
 ```
 
-Open `http://localhost:3000`. If the ignored `app-store-screenshots.json` exists in the local checkout, the editor discovers it and loads it automatically on first use; otherwise it loads `example-project.json` as a read-only seed. Changes are autosaved to the browser-local project library.
+Open [http://localhost:3000](http://localhost:3000). If the ignored `app-store-screenshots.json` exists in the local checkout, the editor discovers it and loads it automatically on first use. Otherwise, it loads `example-project.json` as a safe seed. Changes are autosaved to the browser-local project library.
 
-To work on a private project without adding it to Git, create `.env.local`:
+For a clean checkout, the first UI-test run also needs Chromium:
+
+```bash
+pnpm exec playwright install chromium
+```
+
+### Local projects and Vercel
+
+Use the visible **Project** selector to create campaigns, switch between local projects, import a JSON backup, or download a backup. In local development, the ignored `app-store-screenshots.json` is auto-discovered without an import step. To also write edits back to a specific local file, create `.env.local`:
 
 ```bash
 STORECANVAS_PROJECT_FILE=app-store-screenshots.json
 ```
 
-`app-store-screenshots.json`, uploaded screenshots, generated backgrounds and exports are ignored by Git. This keeps private app captures out of an open-source checkout while preserving the existing local file. Automatic discovery is a read-only bootstrap: browser storage keeps edits, while the environment variable above opts into writing changes back to the file.
+The private filename, uploaded screenshots, generated backgrounds, and exports are ignored by Git. The checked-in example is never overwritten by default. A Vercel page cannot read a developer's `localhost` filesystem, so moving a project between origins requires a one-time JSON import; after that, browser storage restores it on that origin.
 
-The checked-in demo is never overwritten by default. Configure `STORECANVAS_PROJECT_FILE` only when you want local file sync for a private campaign or CLI render.
+## Build a campaign
 
-## Features
+1. Choose or create a project from **Project**.
+2. Add real captures by dropping files into the inspector, choosing a checked-in fixture, or importing public App Store metadata.
+3. Select a template and palette. Manual placement, custom tokens, and connected artwork remain untouched unless the corresponding reset/reflow option is enabled.
+4. Arrange copy, device slots, hardware model, camera angle, crop, visibility, and locking on the canvas.
+5. Export the selected locale/device deck or use the CLI for repeatable render jobs.
 
-- Connected or isolated screen composition with crops that remain exact at export time.
-- Captions and artwork that span two or three screens.
-- Independent device slots by default, with explicit opt-in transform linking.
-- iPhone 17 Pro Max, iPhone 14 Pro Max and iPhone 13 Pro Max hardware frames with Dynamic Island/cutout and physical controls.
-- Flat, optical tilt, low-angle, high-angle and custom camera controls.
-- Twelve campaign templates and twelve accessible palette presets, with separate opt-in controls for recommended colors and placement resets.
-- Direct brand-token customization, per-slide text layers, responsive constraints, hiding/locking and undo/redo.
-- App Store URL import that derives a project-owned template, palette and copy suggestions from listing metadata and screenshot signals. Published composites remain reference-only unless the user explicitly enables them as captures.
-- Optional connected-artwork generation through OpenAI or OpenRouter using a key supplied for the current dialog session. StoreCanvas never runs a hosted usage meter, stores keys, or charges for usage.
-- Deterministic Playwright rendering for exact storefront sizes.
+## What is included
 
-## Working with assets
+- Connected or isolated canvas composition with exact export-time crops.
+- Captions and artwork that span two or three screens with per-slot contrast controls.
+- Independent device slots, plus explicit opt-in transform linking when repeated captures should move together.
+- iPhone 17 Pro Max, iPhone 14 Pro Max, and iPhone 13 Pro Max frames with Dynamic Island/cutout and physical controls.
+- Flat, optical-tilt, low-angle, high-angle, and custom camera controls.
+- Ten campaign templates and twelve palette presets, with custom brand tokens and accessible contrast guidance.
+- Per-slide text layers, responsive constraints, hiding/locking, undo/redo, multiple locales, and JSON backups.
+- App Store URL import that creates a project-owned template, palette, and copy direction from listing metadata and screenshot color signals. Published composites stay reference-only unless the user opts into using them as captures.
+- Optional bring-your-own-key copy polish through OpenAI or OpenRouter, plus connected-artwork generation through OpenAI. Keys remain in memory for the current dialog session.
+- Deterministic Playwright rendering for exact storefront sizes and a CLI that can render every configured locale/device deck.
 
-Drop captures into the inspector or reference static files under `public/screenshots/`. The included demo uses small, self-authored SVG screens under `public/screenshots/demo/` and a text-free connected ribbon under `public/backgrounds/demo-ribbon.svg`.
+## Privacy and asset rights
 
-For a private campaign, keep downloaded or generated assets under the ignored upload/import directories. Only redistribute assets for which you have the necessary rights. App Store listing metadata and published screenshots are third-party content; StoreCanvas does not grant permission to reuse them.
+StoreCanvas does not operate a hosted project database, account system, telemetry pipeline, billing flow, or usage meter. Local browser storage is the canonical library; local file sync is explicit; Vercel writes are disabled. AI requests go only to the provider selected by the user and may have that provider's own cost or terms.
 
-## Rendering
+The repository contains only neutral, self-authored demo SVGs. App Store metadata, screenshots, app icons, logos, and downloaded/generated assets may belong to someone else. Only redistribute assets for which you have permission, and keep private campaign material in ignored paths.
 
-Start the dev server and run:
+## Rendering from the command line
+
+Start the dev server, then run:
 
 ```bash
 pnpm storecanvas render --device iphone --locale en-US --output exports/rendered
 ```
 
-Use `--all` to render every configured locale and device deck with screens. Set `STORECANVAS_URL` when the server is not at the default address. The renderer reads the same `STORECANVAS_PROJECT_FILE` setting as the editor.
+Use `--all` to render every configured locale and device deck with screens. Set `STORECANVAS_URL` when the server is not at `http://127.0.0.1:3100`. The renderer reads the same `STORECANVAS_PROJECT_FILE` setting as the editor.
 
-## AI providers
-
-AI copy polish and connected artwork are optional bring-your-own-key helpers. Keys stay in memory for the current dialog session and are sent only to the selected OpenAI-compatible provider; they are never written to a project file or StoreCanvas storage. Provider usage may have its own third-party cost, but StoreCanvas has no plans, checkout, account billing, or hosted usage meter.
-
-## Local-first deployment
-
-The editor uses browser local storage as its canonical project library. This keeps projects, imported captures, generated data URLs and edits available without a remote database. The local `/api/project` endpoint remains a convenience for git-trackable development files; on Vercel it becomes read-only and autosaves stay in the current browser. Use the visible **Project** selector to create projects, switch between campaigns, import a private `app-store-screenshots.json`, or download a backup JSON. A Vercel page can restore projects already saved in that same browser origin, but browser security does not allow it to read a `localhost` file automatically; moving a file between origins requires a one-time import.
-
-## Tests
+## Development and quality gates
 
 ```bash
 pnpm typecheck
 pnpm test       # Vitest unit tests
 pnpm test:ui    # Playwright UI tests
 pnpm test:all
+pnpm build
+pnpm audit --audit-level high
 ```
 
-The suites cover schema/migration contracts, palette contrast, template reflow, shared-caption contrast and dragging, independent and linked device slots, App Store import validation, AI key handling, exact-size rendering and the main editor workflows.
+CI runs dependency audit, typecheck, 42 unit tests, Playwright browser tests, and a production build on pushes and pull requests to `main`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution workflow and [docs/OPEN_SOURCE_AUDIT.md](docs/OPEN_SOURCE_AUDIT.md) for the current audit snapshot.
 
-## Project structure
+## Project map
 
 | Path | Purpose |
-|------|---------|
+| --- | --- |
 | `example-project.json` | Safe, checked-in demo campaign |
 | `src/lib/defaults.ts` | Blank fallback/reset state |
-| `src/lib/project-file.ts` | Configurable project-file resolution |
-| `src/components/editor/` | Editor UI, canvas, frames and inspectors |
+| `src/lib/project-file.ts` | Configurable and auto-discovered local project resolution |
+| `src/components/editor/` | Editor UI, canvas, frames, project selector, and inspectors |
 | `src/lib/campaign-presets.ts` | Templates and palette presets |
 | `src/app/render/` | Server-rendered deterministic export surface |
 | `scripts/storecanvas.mjs` | Playwright export CLI |
 | `tests/` | Unit and UI regression suites |
 
-## Open-source attribution
+## Open-source docs
 
-StoreCanvas is released under the MIT License. Direct open-source dependencies and their upstream repositories are listed in [THIRD_PARTY.md](THIRD_PARTY.md), including React, Next.js, Radix UI, dnd-kit, Playwright, Vitest, Sharp, Lucide and the other libraries used by this project.
+- [Contributing](CONTRIBUTING.md) · [Code of Conduct](CODE_OF_CONDUCT.md) · [Support](SUPPORT.md)
+- [Security policy](SECURITY.md) · [Architecture](docs/architecture.md) · [Roadmap](ROADMAP.md)
+- [Changelog](CHANGELOG.md) · [Open-source audit](docs/OPEN_SOURCE_AUDIT.md) · [Citation](CITATION.cff)
+- [Third-party open-source attribution](THIRD_PARTY.md)
+
+StoreCanvas is not affiliated with Apple, Google, Vercel, OpenAI, or any app whose assets a user imports.
 
 ## License
 
-Copyright (c) 2026 Luis Lucatero.
-
-Source code and the included demo assets are available under the [MIT License](LICENSE).
+Copyright (c) 2026 Luis Lucatero. Source code and the included demo assets are available under the [MIT License](LICENSE).

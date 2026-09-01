@@ -55,13 +55,13 @@ test.describe("StoreCanvas editor", () => {
   });
 
   test("auto-loads the local private campaign discovered by the local server", async ({ page }) => {
-    const rutmia = {
+    const localCampaign = {
       ...baseline,
-      appName: "Rutmia",
+      appName: "Local campaign",
       campaignSource: {
         provider: "app-store" as const,
-        appId: "6757990035",
-        sourceUrl: "https://apps.apple.com/mx/app/rutmia/id6757990035",
+        appId: "1234567890",
+        sourceUrl: "https://apps.apple.com/mx/app/demo/id1234567890",
         country: "mx",
         screenshotPolicy: "reference-only" as const,
       },
@@ -73,13 +73,13 @@ test.describe("StoreCanvas editor", () => {
       }
       await route.fulfill({
         contentType: "application/json",
-        body: JSON.stringify({ ok: true, state: rutmia, persisted: "browser", source: "local-private-file" }),
+        body: JSON.stringify({ ok: true, state: localCampaign, persisted: "browser", source: "local-private-file" }),
       });
     });
     await page.goto("/");
 
-    await expect(page.getByLabel("App name")).toHaveValue("Rutmia");
-    await expect(page.getByRole("button", { name: "Project menu" })).toContainText("Rutmia");
+    await expect(page.getByLabel("App name")).toHaveValue("Local campaign");
+    await expect(page.getByRole("button", { name: "Project menu" })).toContainText("Local campaign");
   });
 
   test("restores the active local project after reload without importing again", async ({ page }) => {
@@ -88,16 +88,16 @@ test.describe("StoreCanvas editor", () => {
     await projectMenu.click();
 
     await page.getByLabel("Import project JSON").setInputFiles({
-      name: "rutmia-local.json",
+      name: "local-campaign.json",
       mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify({ ...baseline, appName: "Rutmia" })),
+      buffer: Buffer.from(JSON.stringify({ ...baseline, appName: "Local campaign" })),
     });
-    await expect(projectMenu).toContainText("Rutmia");
+    await expect(projectMenu).toContainText("Local campaign");
     await page.waitForTimeout(800);
     await page.reload();
 
-    await expect(page.getByLabel("App name")).toHaveValue("Rutmia");
-    await expect(page.getByRole("button", { name: "Project menu" })).toContainText("Rutmia");
+    await expect(page.getByLabel("App name")).toHaveValue("Local campaign");
+    await expect(page.getByRole("button", { name: "Project menu" })).toContainText("Local campaign");
   });
 
   test("switches locale and edits the active headline", async ({ page }) => {

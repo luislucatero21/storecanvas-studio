@@ -1223,6 +1223,8 @@ function SlideElements({
     const id = toArtworkElementId(artwork.id);
     const source = resolveAssetPath(artwork.assetRef, locale, assets, artwork.image);
     if (isHidden(id) || !source) return null;
+    const renderedSource = img(source);
+    if (!renderedSource) return null;
     const rect = getElementTransform(slide, device, orientation, id, locale) || artwork.transform;
     const rotation = rect.rotation ?? 0;
     const zIndex = rect.zIndex ?? 1;
@@ -1243,7 +1245,7 @@ function SlideElements({
         allowOverflow={allowCrossScreen}
       >
         <img
-          src={img(source)}
+          src={renderedSource}
           alt=""
           draggable={false}
           data-connected-artwork={artwork.id}
