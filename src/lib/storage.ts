@@ -486,12 +486,15 @@ export function useProject() {
       const shouldAutoLoadLocalProject = !!autoLocalState
         && (!active || isStarterOrDemoProject(cachedState));
       const shouldRefreshExpandedLocalArtwork = hasExpandedLocalArtwork(cached || active?.state, autoLocalState);
-      const shouldUseFileProject = !!configuredFileState
+      const selectedFileState = configuredFileState
+        || autoLocalState
+        || (shouldUseDemoProject && localFileResponse.ok ? localFileResponse.state : null);
+      const shouldUseFileProject = !!selectedFileState
         || shouldAutoLoadLocalProject
         || shouldRefreshExpandedLocalArtwork
         || shouldUseDemoProject;
       let nextState = shouldUseFileProject
-        ? (configuredFileState || autoLocalState)!
+        ? selectedFileState!
         : cached || (fromFile.ok ? fromFile.state : null) || DEFAULT_PROJECT;
       let nextLibrary = localLibrary;
       let activeProjectId = active?.id || localLibrary.activeProjectId;
