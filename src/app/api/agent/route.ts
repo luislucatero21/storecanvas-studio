@@ -8,6 +8,7 @@ import {
 import {
   applyAgentTemplate,
   assertConnectedArtworkRange,
+  removeAgentElement,
   resolveAgentPalette,
   resolveAgentTemplate,
   summarizeProject,
@@ -41,6 +42,7 @@ const ActionSchema = z.enum([
   "inspect",
   "validate",
   "apply-template",
+  "remove-element",
   "generate-background",
 ]);
 
@@ -114,6 +116,7 @@ function catalog() {
       inspect: true,
       validate: true,
       applyTemplate: true,
+      removeElement: true,
       generateBackground: true,
       maxArtworkSlots: 10,
     },
@@ -162,6 +165,37 @@ export async function POST(request: Request) {
 
   const device = deviceOf(body.device, project.device);
   if (isError(device)) return errorResponse(device.error);
+
+  if (action === "remove-element") {
+    const elementId = stringOf(body.elementId, "elementId", true);
+    if (isError(elementId)) return errorResponse(elementId.error);
+    if (!elementId) return errorResponse("elementId is required");
+    let screenIndex: number | undefined;
+    if (body.screenIndex !== undefined) {
+      const parsed = integerOf(body.screenIndex, 0, "screenIndex");
+      if (isError(parsed)) return errorResponse(parsed.error);
+      screenIndex = parsed;
+    }
+    try {
+      const result = removeAgentElement(project, {
+        device,
+        elementId,
+        screenIndex,
+      });
+      return noStoreJson({
+        ok: true,
+        action,
+        elementId,
+        device,
+        screenIndex: result.screenIndex,
+        state: result.state,
+        summary: summarizeProject(result.state),
+      });
+    } catch (error) {
+      return errorResponse(error instanceof Error ? error.message : "Could not remove element.");
+    }
+  }
+
   const templateId = stringOf(body.templateId, "templateId", action === "apply-template");
   if (isError(templateId)) return errorResponse(templateId.error);
   const requiredTemplateId = typeof templateId === "string" ? templateId : undefined;

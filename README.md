@@ -56,7 +56,7 @@ The private filename, uploaded screenshots, generated backgrounds, and exports a
 1. Choose or create a project from **Project**.
 2. Add real captures by dropping files into the inspector, choosing a checked-in fixture, or importing public App Store metadata.
 3. Select a template and palette. Manual placement, custom tokens, and connected artwork remain untouched unless the corresponding reset/reflow option is enabled.
-4. Arrange copy, device slots, hardware model, camera angle, crop, visibility, and locking on the canvas.
+4. Arrange copy, device slots, hardware model, camera angle, crop, visibility, and locking on the canvas. Select any layer and press **Delete** (or **Backspace**) to remove it; built-in layout layers are hidden reversibly and custom layers can be restored with **Undo**.
 5. Use the **sizes** control beside the device selector to choose export targets. New iPhone and iPad projects start with Apple's global target only; additional sizes are opt-in and saved per device.
 6. Export the selected locale/device deck or use the CLI for repeatable render jobs. When a supported phone, iPad, or tablet deck is empty, it receives an independent copy of the iPhone story, including adapted device paths and connected artwork bounds. iPad keeps all ten slots; Android phone/tablet decks mirror the first eight because Google Play's export limit is eight screenshots.
 
@@ -73,7 +73,7 @@ Select **Connected** in the toolbar, then click those thumbnails to inspect each
 
 ## What is included
 
-- Connected or isolated canvas composition with exact export-time crops.
+- Connected or isolated canvas composition with exact export-time crops, a responsive dock that can hide or swap the Screens and Settings panels, and keyboard-first layer deletion.
 - Captions and artwork that span up to ten screens with per-slot contrast controls and light/dark surface guidance.
 - Independent device slots, plus explicit opt-in transform linking when repeated captures should move together.
 - iPhone 17 Pro Max, iPhone 14 Pro Max, and iPhone 13 Pro Max frames with Dynamic Island/cutout and physical controls.
@@ -150,6 +150,7 @@ Useful automation commands:
 | `inspect --json` | Summarize the selected project and every connected artwork span; with the app running, also expands empty iPad/Android decks using the editor defaults. |
 | `validate --json` | Run schema and export-readiness checks; exits non-zero on errors. |
 | `apply-template --template <id>` | Recompose one device deck with optional palette/reset flags. |
+| `remove-element --element <id>` | Remove a text/artwork/extra slot, or hide a built-in layer; use `--screen` to target a screen. |
 | `generate-background --slots <1-10>` | Generate and attach one connected artwork to adjacent slots. |
 | `render --all` | Export all configured device/locale decks through Playwright. |
 
@@ -177,7 +178,7 @@ CI runs dependency audit, typecheck, unit tests, Playwright browser tests, and a
 | `src/lib/project-file.ts` | Configurable and auto-discovered local project resolution |
 | `src/components/editor/` | Editor UI, canvas, frames, project selector, and inspectors |
 | `src/lib/campaign-presets.ts` | Templates and palette presets |
-| `src/lib/agent-workflow.ts` | Shared agent operations for templates, spans, summaries and generated artwork |
+| `src/lib/agent-workflow.ts` | Shared agent operations for templates, spans, summaries, layer removal and generated artwork |
 | `src/app/render/` | Server-rendered deterministic export surface |
 | `src/app/api/agent/route.ts` | Local JSON bridge for terminal/MCP-style agent integrations |
 | `scripts/storecanvas.mjs` | Agent and Playwright export CLI |

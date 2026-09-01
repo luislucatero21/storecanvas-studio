@@ -51,4 +51,28 @@ describe("StoreCanvas agent CLI", () => {
       dryRun: true,
     });
   });
+
+  it("plans a canvas layer removal without writing the project", async () => {
+    const { stdout } = await runCli(
+      "remove-element",
+      "--project",
+      "example-project.json",
+      "--device",
+      "iphone",
+      "--screen",
+      "1",
+      "--element",
+      "caption",
+      "--dry-run",
+      "--json",
+    );
+    const payload = JSON.parse(stdout);
+
+    expect(payload).toMatchObject({
+      command: "remove-element",
+      action: "hidden",
+      screen: 1,
+      dryRun: true,
+    });
+  });
 });

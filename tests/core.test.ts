@@ -36,7 +36,14 @@ import {
   preferredTypographyColor,
   typographyForRole,
 } from "@/lib/typography";
-import { hasExpandedLocalArtwork, shouldUseCheckedInDemo } from "@/lib/storage";
+import { hasExpandedLocalArtwork, mergeExpandedLocalArtwork, shouldUseCheckedInDemo } from "@/lib/storage";
+import {
+  DEFAULT_EDITOR_LAYOUT,
+  normalizeEditorLayout,
+  readEditorLayout,
+  writeEditorLayout,
+} from "@/lib/editor-layout";
+import { removeElementFromSlide, restoreElementOnSlide } from "@/lib/element-mutations";
 import type { ProjectState } from "@/lib/types";
 import {
   CHECKED_IN_EXAMPLE_PROJECT,
@@ -138,6 +145,138 @@ describe("StoreCanvas project contracts", () => {
     expect(hasExpandedLocalArtwork(cached, renamedArtworkFile)).toBe(true);
     expect(hasExpandedLocalArtwork(file, file)).toBe(false);
     expect(hasExpandedLocalArtwork({ ...cached, campaignSource: undefined }, file)).toBe(false);
+  });
+
+  it("merges a refreshed panorama without reverting browser typography or placement", () => {
+    const campaignSource: ProjectState["campaignSource"] = {
+      provider: "app-store",
+      appId: "1234567890",
+      sourceUrl: "https://apps.apple.com/mx/app/example/id1234567890",
+      country: "mx",
+      screenshotPolicy: "reference-only",
+    };
+    const cachedSlide = {
+      ...CHECKED_IN_EXAMPLE_PROJECT.slidesByDevice.iphone[0],
+      campaignSource,
+      headline: { "en-US": "My saved headline" },
+      transforms: { caption: { x: 72, y: 160, width: 1800, height: 460, rotation: 3, zIndex: 7 } },
+      textElements: [{
+        id: "saved-note",
+        text: { "en-US": "Saved locally" },
+        transform: { x: 120, y: 240, width: 500, height: 80 },
+        color: "#123456",
+      }],
+      connectedArtworks: [{
+        id: "old-panorama",
+        image: "/backgrounds/old.png",
+        assetRef: "image:panorama",
+        spanSlots: 2 as const,
+        transform: { x: 0, y: 0, width: 2640, height: 2868 },
+      }, {
+        id: "saved-decoration",
+        image: "/backgrounds/decorative.png",
+        spanSlots: 1 as const,
+        transform: { x: 40, y: 40, width: 600, height: 400 },
+      }],
+    };
+    const cached: ProjectState = {
+      ...CHECKED_IN_EXAMPLE_PROJECT,
+      campaignSource,
+      slidesByDevice: {
+        ...CHECKED_IN_EXAMPLE_PROJECT.slidesByDevice,
+        iphone: [cachedSlide, ...CHECKED_IN_EXAMPLE_PROJECT.slidesByDevice.iphone.slice(1)],
+      },
+    };
+    const file: ProjectState = {
+      ...cached,
+      slidesByDevice: {
+        ...cached.slidesByDevice,
+        iphone: [{
+          ...cachedSlide,
+          headline: { "en-US": "File headline should not win" },
+          connectedArtworks: [{
+            id: "new-panorama",
+            image: "/backgrounds/new.png",
+            assetRef: "image:panorama",
+            spanSlots: 10 as const,
+            transform: { x: 0, y: 0, width: 13200, height: 2868 },
+          }],
+        }, ...cached.slidesByDevice.iphone.slice(1)],
+      },
+    };
+
+    const merged = mergeExpandedLocalArtwork(cached, file)!;
+    expect(merged.slidesByDevice.iphone[0]).toMatchObject({
+      headline: { "en-US": "My saved headline" },
+      transforms: cachedSlide.transforms,
+      textElements: cachedSlide.textElements,
+    });
+    expect(merged.slidesByDevice.iphone[0].connectedArtworks).toHaveLength(2);
+    expect(merged.slidesByDevice.iphone[0].connectedArtworks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "saved-decoration", spanSlots: 1 }),
+      expect.objectContaining({ id: "new-panorama", spanSlots: 10, image: "/backgrounds/new.png" }),
+    ]));
+  });
+
+  it("keeps editor panel preferences separate, normalized and recoverable", () => {
+    const values = new Map<string, string>();
+    const storage = {
+      getItem: (key: string) => values.get(key) || null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    };
+    const preferences = {
+      panelOrder: "settings-left" as const,
+      screensVisible: false,
+      settingsVisible: true,
+    };
+
+    writeEditorLayout(storage, preferences);
+
+    expect(readEditorLayout(storage)).toEqual(preferences);
+    expect(normalizeEditorLayout({ panelOrder: "unknown", screensVisible: false })).toEqual({
+      ...DEFAULT_EDITOR_LAYOUT,
+      screensVisible: false,
+    });
+    expect(readEditorLayout({ getItem: () => "not json" })).toEqual(DEFAULT_EDITOR_LAYOUT);
+  });
+
+  it("removes and restores canvas layers without losing their exact properties", () => {
+    const source = DEFAULT_PROJECT.slidesByDevice.iphone[0];
+    const slide = {
+      ...source,
+      textElements: [{
+        id: "proof",
+        text: { "en-US": "Private by design" },
+        transform: { x: 80, y: 120, width: 420, height: 80, rotation: 7, zIndex: 12 },
+        fontFamily: "space-grotesk",
+        fontSize: 72,
+        color: "#123456",
+      }],
+      connectedArtworks: [{
+        id: "signal",
+        image: "/backgrounds/signal.png",
+        spanSlots: 2 as const,
+        transform: { x: 0, y: 0, width: 2640, height: 2868, rotation: 0, zIndex: 1 },
+      }],
+    };
+
+    const textMutation = removeElementFromSlide(slide, "text:proof");
+    expect(textMutation.action).toBe("removed");
+    expect(textMutation.slide.textElements).toBeUndefined();
+    const restored = restoreElementOnSlide(textMutation.slide, textMutation.removed!);
+    expect(restored.textElements?.[0]).toMatchObject({
+      id: "proof",
+      fontFamily: "space-grotesk",
+      color: "#123456",
+      transform: { rotation: 7, zIndex: 12 },
+    });
+
+    const artworkMutation = removeElementFromSlide(slide, "artwork:signal");
+    expect(artworkMutation.slide.connectedArtworks).toBeUndefined();
+
+    const builtInMutation = removeElementFromSlide(slide, "caption");
+    expect(builtInMutation.action).toBe("hidden");
+    expect(builtInMutation.slide.hiddenElements).toContain("caption");
   });
 
   it("keeps local projects portable and switches the active record predictably", () => {

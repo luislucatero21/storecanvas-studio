@@ -15,6 +15,7 @@ import {
   Link2,
   LockKeyhole,
   Plus,
+  PanelRightClose,
   SlidersHorizontal,
   RotateCw,
   Trash2,
@@ -105,6 +106,7 @@ type Props = {
   connectedCanvas?: boolean;
   deckInverted?: readonly boolean[];
   activeSlideIndex?: number;
+  onClosePanel?: () => void;
 };
 
 const ELEMENT_LABEL: Record<BuiltInElementId, string> = {
@@ -130,6 +132,7 @@ export function Inspector({
   connectedCanvas = true,
   deckInverted = [],
   activeSlideIndex = 0,
+  onClosePanel,
 }: Props) {
   const isFeatureGraphic = device === "feature-graphic" || slide.layout === "feature-graphic";
   const isNoDevice = slide.layout === "no-device";
@@ -207,14 +210,29 @@ export function Inspector({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="border-b p-3">
-        <div className="flex items-baseline justify-between gap-2">
-          <h2 className="store-panel-title text-sm font-semibold">Screen settings</h2>
-          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-            editing · {locale.toUpperCase()}
-          </span>
+      <div className="flex items-start justify-between gap-2 border-b p-3">
+        <div className="min-w-0">
+          <div className="flex items-baseline justify-between gap-2">
+            <h2 className="store-panel-title text-sm font-semibold">Screen settings</h2>
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              editing · {locale.toUpperCase()}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground">{LAYOUT_HINT[layoutValue]}</p>
         </div>
-        <p className="text-xs text-muted-foreground">{LAYOUT_HINT[layoutValue]}</p>
+        {onClosePanel ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 shrink-0"
+            aria-label="Hide Settings panel"
+            title="Hide Settings panel"
+            onClick={onClosePanel}
+          >
+            <PanelRightClose className="h-4 w-4" />
+          </Button>
+        ) : null}
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto p-3">

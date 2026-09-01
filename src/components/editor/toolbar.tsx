@@ -35,6 +35,7 @@ import {
 import { detectPlatform } from "@/lib/defaults";
 import type { AiProposal } from "@/lib/ai";
 import type { CampaignImportOptions, CampaignImportProposal } from "@/lib/app-store-import";
+import type { EditorLayoutPreferences } from "@/lib/editor-layout";
 import type { AccentMode, BrandTokens, CampaignTemplate, Device, Orientation, Slide, TemplateApplyOptions, Theme, TypographyTokens } from "@/lib/types";
 import type { ValidationResult } from "@/lib/validation";
 import { AiPolish } from "./ai-polish";
@@ -42,6 +43,7 @@ import { AppStoreImporter } from "./app-store-importer";
 import { CampaignWardrobe } from "./campaign-wardrobe";
 import { ProjectSwitcher } from "./project-switcher";
 import { ExportSizePicker } from "./export-size-picker";
+import { WorkspaceControls } from "./workspace-controls";
 import type { LocalProjectSummary } from "@/lib/project-library";
 import type { ProjectState } from "@/lib/types";
 
@@ -95,6 +97,8 @@ type Props = {
   onApplyCampaignImport: (proposal: CampaignImportProposal, options: CampaignImportOptions) => void;
   onApplyAiProposal: (proposal: AiProposal) => void;
   validation: ValidationResult;
+  editorLayout: EditorLayoutPreferences;
+  onEditorLayoutChange: (patch: Partial<EditorLayoutPreferences>) => void;
 };
 
 export function Toolbar(props: Props) {
@@ -160,6 +164,12 @@ export function Toolbar(props: Props) {
         <UnfoldHorizontal className="h-3.5 w-3.5" />
         {props.connectedCanvas ? "Connected" : "Isolated"}
       </Button>
+
+      <WorkspaceControls
+        layout={props.editorLayout}
+        onChange={props.onEditorLayoutChange}
+        disabled={props.busy}
+      />
 
       <span aria-hidden className="mx-1 hidden h-5 w-px bg-border md:block" />
 

@@ -3,6 +3,7 @@ import { POST, GET } from "@/app/api/agent/route";
 import {
   applyAgentTemplate,
   assertConnectedArtworkRange,
+  removeAgentElement,
   summarizeProject,
   tonePatternForProject,
   upsertGeneratedArtwork,
@@ -18,6 +19,7 @@ describe("StoreCanvas agent workflow", () => {
     expect(response.status).toBe(200);
     expect(payload.ok).toBe(true);
     expect(payload.capabilities.maxArtworkSlots).toBe(10);
+    expect(payload.capabilities.removeElement).toBe(true);
     expect(payload.templates.some((template: { id: string }) => template.id === "afterglow-rhythm")).toBe(true);
     expect(payload.palettes.some((palette: { id: string }) => palette.id === "afterglow-pulse")).toBe(true);
   });
@@ -121,5 +123,47 @@ describe("StoreCanvas agent workflow", () => {
     expect(() => assertConnectedArtworkRange(DEFAULT_PROJECT, "iphone", 1, 10)).toThrow(
       "exceeds the iphone deck",
     );
+  });
+
+  it("removes user layers and hides layout-owned layers through the agent contract", async () => {
+    const project = {
+      ...DEFAULT_PROJECT,
+      slidesByDevice: {
+        ...DEFAULT_PROJECT.slidesByDevice,
+        iphone: [{
+          ...DEFAULT_PROJECT.slidesByDevice.iphone[0],
+          textElements: [{
+            id: "privacy-note",
+            text: { "en-US": "Private by design" },
+            transform: { x: 80, y: 120, width: 420, height: 80 },
+          }],
+        }],
+      },
+    };
+    const removed = removeAgentElement(project, {
+      device: "iphone",
+      elementId: "text:privacy-note",
+      screenIndex: 0,
+    });
+
+    expect(removed.action).toBe("removed");
+    expect(removed.state.slidesByDevice.iphone[0].textElements).toBeUndefined();
+
+    const response = await POST(new Request("http://localhost/api/agent", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        action: "remove-element",
+        project,
+        device: "iphone",
+        elementId: "caption",
+        screenIndex: 0,
+      }),
+    }));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.action).toBe("remove-element");
+    expect(payload.state.slidesByDevice.iphone[0].hiddenElements).toContain("caption");
   });
 });

@@ -162,6 +162,85 @@
   background: hsl(var(--card) / 0.64);
 }
 
+/* The editor is a three-surface workbench. Keep both side panels fluid so a
+ * narrow desktop window gives the canvas the space it actually has instead of
+ * clipping the panel content behind a fixed width. */
+.editor-workspace {
+  container-type: inline-size;
+}
+
+.editor-panel,
+.editor-canvas {
+  min-width: 0;
+  min-height: 0;
+}
+
+.editor-canvas {
+  flex: 1 1 0%;
+}
+
+@media (min-width: 768px) {
+  .editor-panel {
+    flex: 0 1 auto;
+    width: auto;
+    border-top-width: 0;
+    border-bottom-width: 0;
+  }
+
+  .editor-panel-screens {
+    flex-basis: clamp(196px, 20vw, 300px);
+  }
+
+  .editor-panel-settings {
+    flex-basis: clamp(236px, 23vw, 360px);
+  }
+
+  .editor-workspace[data-panel-order="screens-left"] .editor-panel-screens {
+    border-right-width: 1px;
+    border-left-width: 0;
+  }
+
+  .editor-workspace[data-panel-order="screens-left"] .editor-panel-settings {
+    border-left-width: 1px;
+    border-right-width: 0;
+  }
+
+  .editor-workspace[data-panel-order="settings-left"] .editor-panel-settings {
+    border-right-width: 1px;
+    border-left-width: 0;
+  }
+
+  .editor-workspace[data-panel-order="settings-left"] .editor-panel-screens {
+    border-left-width: 1px;
+    border-right-width: 0;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  .editor-panel-screens {
+    flex-basis: clamp(184px, 22vw, 252px);
+  }
+
+  .editor-panel-settings {
+    flex-basis: clamp(224px, 27vw, 312px);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 900px) {
+  .editor-panel-screens {
+    flex-basis: 190px;
+  }
+
+  .editor-panel-settings {
+    flex-basis: 230px;
+  }
+}
+
+.store-toolbar,
+.store-toolbar > * {
+  min-width: 0;
+}
+
 .store-panel-title {
   font-family: var(--font-fraunces), Georgia, serif;
   letter-spacing: -0.02em;

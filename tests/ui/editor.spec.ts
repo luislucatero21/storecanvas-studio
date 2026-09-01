@@ -93,6 +93,49 @@ test.describe("StoreCanvas editor", () => {
     }
   });
 
+  test("keeps both panels inside a small desktop window and lets the user dock them", async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 800 });
+    await page.goto("/");
+
+    const workspace = page.locator(".editor-workspace");
+    await expect(workspace.locator('[data-editor-panel="screens"]')).toBeVisible();
+    await expect(workspace.locator('[data-editor-panel="settings"]')).toBeVisible();
+    const initialLayout = await page.evaluate(() => {
+      const workspace = document.querySelector<HTMLElement>(".editor-workspace");
+      const screens = document.querySelector<HTMLElement>('[data-editor-panel="screens"]');
+      const settings = document.querySelector<HTMLElement>('[data-editor-panel="settings"]');
+      const canvas = document.querySelector<HTMLElement>("[data-editor-canvas]");
+      return {
+        overflow: document.documentElement.scrollWidth > window.innerWidth,
+        workspaceWidth: workspace?.getBoundingClientRect().width || 0,
+        screensWidth: screens?.getBoundingClientRect().width || 0,
+        settingsWidth: settings?.getBoundingClientRect().width || 0,
+        canvasWidth: canvas?.getBoundingClientRect().width || 0,
+      };
+    });
+    expect(initialLayout.overflow).toBe(false);
+    expect(initialLayout.workspaceWidth).toBeGreaterThan(0);
+    expect(initialLayout.screensWidth).toBeGreaterThan(150);
+    expect(initialLayout.settingsWidth).toBeGreaterThan(190);
+    expect(initialLayout.canvasWidth).toBeGreaterThan(0);
+
+    await page.getByRole("button", { name: "Workspace panels" }).click();
+    await page.getByRole("menuitemcheckbox", { name: "Settings panel" }).click();
+    await expect(workspace.locator('[data-editor-panel="settings"]')).toBeHidden();
+
+    await page.getByRole("button", { name: "Workspace panels" }).click();
+    await page.getByRole("menuitemcheckbox", { name: "Settings panel" }).click();
+    await page.getByRole("button", { name: "Workspace panels" }).click();
+    await page.getByRole("menuitem", { name: /Settings left · Screens right/ }).click();
+    await expect(workspace).toHaveAttribute("data-panel-order", "settings-left");
+    const reordered = await page.evaluate(() => {
+      const screens = document.querySelector<HTMLElement>('[data-editor-panel="screens"]');
+      const settings = document.querySelector<HTMLElement>('[data-editor-panel="settings"]');
+      return { screensLeft: screens?.getBoundingClientRect().left || 0, settingsLeft: settings?.getBoundingClientRect().left || 0 };
+    });
+    expect(reordered.settingsLeft).toBeLessThan(reordered.screensLeft);
+  });
+
   test("imports a private project and switches local campaigns from the visible selector", async ({ page }) => {
     await page.goto("/");
     const projectMenu = page.getByRole("button", { name: "Project menu" });
@@ -251,6 +294,67 @@ test.describe("StoreCanvas editor", () => {
     await page.getByRole("button", { name: /^Text$/ }).click();
     await expect(page.getByRole("main").getByText("New text").first()).toBeVisible();
     await expect(page.getByRole("button", { name: "Export bundle" })).toBeEnabled();
+  });
+
+  test("deletes a selected canvas layer with the Delete key and offers undo", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: /^Text$/ }).click();
+
+    const text = page.getByRole("main").getByText("New text").first();
+    const editable = text.locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " rnd-editable ")]');
+    await expect(editable).toHaveCount(1);
+    await text.click();
+    const moveHandle = editable.getByRole("button", { name: "Move text" });
+    await expect(moveHandle).toBeVisible();
+    await moveHandle.click();
+    await page.keyboard.press("Delete");
+
+    await expect(page.getByRole("main").getByText("New text")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Undo" })).toBeVisible();
+    await expect.poll(async () => {
+      const response = await page.request.get("/api/project");
+      const body = await response.json();
+      return body.state.slidesByDevice.iphone[0].textElements?.length || 0;
+    }).toBe(0);
+  });
+
+  test("restores text typography, color and position after reopening the project", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: /^Text$/ }).click();
+    const text = page.getByRole("main").getByText("New text").first();
+    const editable = text.locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " rnd-editable ")]');
+    await text.click();
+    const moveHandle = editable.getByRole("button", { name: "Move text" });
+    const handleBox = await moveHandle.boundingBox();
+    expect(handleBox).not.toBeNull();
+    const start = { x: handleBox!.x + handleBox!.width / 2, y: handleBox!.y + handleBox!.height / 2 };
+    await page.mouse.move(start.x, start.y);
+    await page.mouse.down();
+    await page.mouse.move(start.x + 24, start.y + 14, { steps: 5 });
+    await page.mouse.up();
+    await waitForStableBox(editable);
+    await page.getByLabel("Text size").fill("88");
+    await page.getByLabel("Text color").fill("#123456");
+
+    await expect.poll(async () => {
+      const response = await page.request.get("/api/project");
+      const body = await response.json();
+      return body.state.slidesByDevice.iphone[0].textElements?.[0];
+    }).toMatchObject({ fontSize: 88, color: "#123456" });
+    const before = await (await page.request.get("/api/project")).json();
+    const beforeElement = before.state.slidesByDevice.iphone[0].textElements[0];
+
+    await page.reload();
+    await expect(page.getByRole("main").getByText("New text").first()).toBeVisible();
+    const reopened = page.getByRole("main").getByText("New text").first();
+    await reopened.click();
+    await expect(page.getByLabel("Text size")).toHaveValue("88");
+    await expect(page.getByLabel("Text color")).toHaveValue("#123456");
+    await expect.poll(async () => {
+      const response = await page.request.get("/api/project");
+      const body = await response.json();
+      return body.state.slidesByDevice.iphone[0].textElements?.[0].transform;
+    }).toEqual(beforeElement.transform);
   });
 
   test("defaults to Apple's global export size and lets the user opt into more targets", async ({ page }) => {

@@ -134,7 +134,7 @@ export function PreviewStage({
     >
       <div
         ref={scrollerRef}
-        className="h-full w-full overscroll-contain overflow-auto p-4 sm:p-8 md:p-12"
+        className="h-full w-full overscroll-contain overflow-auto p-3 sm:p-6 lg:p-8 xl:p-12"
         onPointerDownCapture={cancelAutoPan}
       >
         <div

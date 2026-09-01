@@ -22,6 +22,18 @@ import { applyAiProposal } from "@/lib/ai";
 import { applyCampaignImport } from "@/lib/app-store-import";
 import { setCopyLinking, writeLinkedCopy } from "@/lib/copy-sync";
 import {
+  DEFAULT_EDITOR_LAYOUT,
+  normalizeEditorLayout,
+  readEditorLayout,
+  writeEditorLayout,
+  type EditorLayoutPreferences,
+} from "@/lib/editor-layout";
+import {
+  removeElementFromSlide,
+  restoreElementOnSlide,
+  type RemovedElement,
+} from "@/lib/element-mutations";
+import {
   applyCampaignTemplate,
   applyCampaignTemplateDefinition,
   applyCustomColors,
@@ -30,6 +42,7 @@ import {
   paletteById,
 } from "@/lib/campaign-presets";
 import type {
+  AssetLibrary,
   BuiltInElementId,
   Device,
   ElementId,
@@ -68,6 +81,7 @@ export function ScreenshotEditor() {
   const [exporting, setExporting] = React.useState<string | null>(null);
   const [ready, setReady] = React.useState(false);
   const [mobilePanel, setMobilePanel] = React.useState<MobileEditorPanel>("canvas");
+  const [editorLayout, setEditorLayout] = React.useState<EditorLayoutPreferences>(DEFAULT_EDITOR_LAYOUT);
   const [exportLocaleOverride, setExportLocaleOverride] = React.useState<string | null>(null);
   const [exportSlideIndex, setExportSlideIndex] = React.useState(0);
   const exportRef = React.useRef<HTMLDivElement | null>(null);
@@ -83,6 +97,20 @@ export function ScreenshotEditor() {
   const theme = applyBrandTokens(themeById(state.themeId), state.brand);
   const assetLibrary = React.useMemo(() => buildAssetLibrary(state), [state]);
   const validation = React.useMemo(() => validateProject(state, { strict: true }), [state]);
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      setEditorLayout(readEditorLayout(window.localStorage));
+    }
+  }, []);
+
+  const updateEditorLayout = React.useCallback((patch: Partial<EditorLayoutPreferences>) => {
+    setEditorLayout((previous) => {
+      const next = normalizeEditorLayout({ ...previous, ...patch });
+      if (typeof window !== "undefined") writeEditorLayout(window.localStorage, next);
+      return next;
+    });
+  }, []);
 
   React.useEffect(() => {
     if (selectedElement && selectedElement.slideId !== activeSlide?.id) {
@@ -226,6 +254,61 @@ export function ScreenshotEditor() {
     },
     [setState, state.device, state.slidesByDevice],
   );
+
+  const deleteSelectedElement = React.useCallback(() => {
+    const selection = selectedElement;
+    if (!selection) return false;
+    const device = state.device;
+    const slide = currentSlides.find((candidate) => candidate.id === selection.slideId);
+    if (!slide) return false;
+    const mutation = removeElementFromSlide(slide, selection.elementId);
+    if (!mutation.changed || !mutation.removed) return false;
+
+    setState((prev) => ({
+      ...prev,
+      slidesByDevice: {
+        ...prev.slidesByDevice,
+        [device]: (prev.slidesByDevice[device] || []).map((candidate) => {
+          if (candidate.id !== selection.slideId) return candidate;
+          const next = removeElementFromSlide(candidate, selection.elementId);
+          return next.changed ? next.slide : candidate;
+        }),
+      },
+    }));
+    setSelectedElement(null);
+
+    const name = isTextElementId(selection.elementId)
+      ? "Text"
+      : isArtworkElementId(selection.elementId)
+        ? "Connected artwork"
+        : isDeviceSlotElementId(selection.elementId)
+          ? "Extra device"
+          : "Element";
+    toast(mutation.action === "hidden" ? `${name} hidden` : `${name} deleted`, {
+      description:
+        mutation.action === "hidden"
+          ? "Layout-owned elements are hidden so the composition stays reversible."
+          : "The layer was removed from this screen.",
+      action: {
+        label: "Undo",
+        onClick: () => {
+          setState((prev) => ({
+            ...prev,
+            slidesByDevice: {
+              ...prev.slidesByDevice,
+              [device]: (prev.slidesByDevice[device] || []).map((candidate) =>
+                candidate.id === selection.slideId
+                  ? restoreElementOnSlide(candidate, mutation.removed as RemovedElement)
+                  : candidate,
+              ),
+            },
+          }));
+        },
+      },
+      duration: 6000,
+    });
+    return true;
+  }, [currentSlides, selectedElement, setState, state.device]);
 
   const addSlide = React.useCallback(
     (slide: Slide) => {
@@ -390,6 +473,18 @@ export function ScreenshotEditor() {
       // redo, selection, and deletion behavior.
       if (inEditable) return;
 
+      if (
+        (e.key === "Backspace" || e.key === "Delete") &&
+        !e.metaKey &&
+        !e.ctrlKey &&
+        !e.altKey &&
+        selectedElement
+      ) {
+        e.preventDefault();
+        deleteSelectedElement();
+        return;
+      }
+
       if ((e.metaKey || e.ctrlKey) && (e.key === "z" || e.key === "Z")) {
         e.preventDefault();
         if (e.shiftKey) redo();
@@ -425,7 +520,7 @@ export function ScreenshotEditor() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [activeSlide, currentSlides, duplicateSlide, deleteSlide, exporting, undo, redo]);
+  }, [activeSlide, currentSlides, deleteSelectedElement, duplicateSlide, deleteSlide, exporting, redo, selectedElement, undo]);
 
   // ---------- Export ----------
 
@@ -752,44 +847,46 @@ export function ScreenshotEditor() {
           });
         }}
         validation={validation}
+        editorLayout={editorLayout}
+        onEditorLayoutChange={updateEditorLayout}
       />
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
+      <div
+        className="editor-workspace flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden md:flex-row"
+        data-panel-order={editorLayout.panelOrder}
+      >
         <MobileEditorNav activePanel={mobilePanel} onChange={setMobilePanel} />
 
-        <aside
-          className={`${mobilePanel === "screens" ? "flex" : "hidden"} store-sidebar min-h-0 w-full min-w-0 flex-1 shrink-0 overflow-hidden border-b md:flex md:h-auto md:w-72 md:flex-none md:border-b-0 md:border-r`}
-        >
-          <Sidebar
-            slides={currentSlides}
-            activeId={activeSlide?.id || null}
-            device={state.device}
-            orientation={state.orientation}
-            theme={theme}
-            locale={state.locale}
-            appName={state.appName}
-            appIcon={state.appIcon}
-            assets={assetLibrary}
-            connectedCanvas={state.connectedCanvas}
-            disabled={busy}
-            onReorder={reorderSlides}
-            onSelect={(id) => {
-              setActiveSlideId(id);
-              setMobilePanel("canvas");
-            }}
-            onDelete={deleteSlide}
-            onDuplicate={duplicateSlide}
-            onAdd={addSlide}
-          />
-        </aside>
-
-        <main
-          className={`${mobilePanel === "canvas" ? "flex" : "hidden"} min-h-0 min-w-0 flex-1 items-stretch overflow-hidden md:flex`}
-        >
-          {activeSlide && currentSlides.length > 0 ? (
-            <PreviewStage
+        {editorLayout.panelOrder === "screens-left" ? (
+          <>
+            <ScreensPanel
+              mobilePanel={mobilePanel}
+              visible={editorLayout.screensVisible}
+              onClose={() => updateEditorLayout({ screensVisible: false })}
               slides={currentSlides}
-              activeSlideId={activeSlide.id}
+              activeSlide={activeSlide}
+              device={state.device}
+              orientation={state.orientation}
+              theme={theme}
+              locale={state.locale}
+              appName={state.appName}
+              appIcon={state.appIcon}
+              assets={assetLibrary}
+              connectedCanvas={state.connectedCanvas}
+              disabled={busy}
+              onReorder={reorderSlides}
+              onSelect={(id) => {
+                setActiveSlideId(id);
+                setMobilePanel("canvas");
+              }}
+              onDelete={deleteSlide}
+              onDuplicate={duplicateSlide}
+              onAdd={addSlide}
+            />
+            <CanvasPanel
+              mobilePanel={mobilePanel}
+              slides={currentSlides}
+              activeSlide={activeSlide}
               device={state.device}
               orientation={state.orientation}
               theme={theme}
@@ -806,49 +903,97 @@ export function ScreenshotEditor() {
               onElementChange={patchElementTransform}
               onSelectElement={setSelectedElement}
             />
-          ) : (
-            <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center text-sm text-muted-foreground">
-              <p className="font-medium text-foreground">No screen selected</p>
-              <p>Add a screen on the left to get started.</p>
-            </div>
-          )}
-        </main>
-
-        <aside
-          className={`${mobilePanel === "settings" ? "flex" : "hidden"} store-sidebar min-h-0 w-full min-w-0 flex-1 shrink-0 overflow-hidden border-t md:flex md:h-auto md:w-80 md:flex-none md:border-l md:border-t-0`}
-        >
-          {activeSlide ? (
-            <Inspector
-              slide={activeSlide}
+            <SettingsPanel
+              mobilePanel={mobilePanel}
+              visible={editorLayout.settingsVisible}
+              onClose={() => updateEditorLayout({ settingsVisible: false })}
+              activeSlide={activeSlide}
               device={state.device}
               orientation={state.orientation}
               locale={state.locale}
-              selectedElementId={
-                selectedElement?.slideId === activeSlide.id ? selectedElement.elementId : null
-              }
-              onChange={(patch) => patchSlide(activeSlide.id, patch)}
-              onLocalizedChange={(key, value) => patchLocalized(activeSlide, key, value)}
-              assets={assetLibrary}
-              onAssetLibraryChange={(assets) => setState((p) => ({ ...p, assets }))}
+              selectedElement={selectedElement}
+              assetLibrary={assetLibrary}
               maxArtworkSpan={maxArtworkSpan}
               artworkTonePattern={artworkTonePattern}
               theme={theme}
               connectedCanvas={state.connectedCanvas}
-              deckInverted={currentSlides.map((currentSlide) => !!currentSlide.inverted)}
+              currentSlides={currentSlides}
               activeSlideIndex={activeSlideIndex}
-              onSelectElement={(elementId) =>
-                setSelectedElement(
-                  elementId ? { slideId: activeSlide.id, elementId } : null,
-                )
-              }
+              patchSlide={patchSlide}
+              patchLocalized={patchLocalized}
+              onAssetLibraryChange={(assets) => setState((project) => ({ ...project, assets }))}
+              onSelectElement={setSelectedElement}
             />
-          ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground">
-              <p className="font-medium text-foreground">Nothing to inspect</p>
-              <p className="text-xs">Screen settings will appear here once you add or select one.</p>
-            </div>
-          )}
-        </aside>
+          </>
+        ) : (
+          <>
+            <SettingsPanel
+              mobilePanel={mobilePanel}
+              visible={editorLayout.settingsVisible}
+              onClose={() => updateEditorLayout({ settingsVisible: false })}
+              activeSlide={activeSlide}
+              device={state.device}
+              orientation={state.orientation}
+              locale={state.locale}
+              selectedElement={selectedElement}
+              assetLibrary={assetLibrary}
+              maxArtworkSpan={maxArtworkSpan}
+              artworkTonePattern={artworkTonePattern}
+              theme={theme}
+              connectedCanvas={state.connectedCanvas}
+              currentSlides={currentSlides}
+              activeSlideIndex={activeSlideIndex}
+              patchSlide={patchSlide}
+              patchLocalized={patchLocalized}
+              onAssetLibraryChange={(assets) => setState((project) => ({ ...project, assets }))}
+              onSelectElement={setSelectedElement}
+            />
+            <CanvasPanel
+              mobilePanel={mobilePanel}
+              slides={currentSlides}
+              activeSlide={activeSlide}
+              device={state.device}
+              orientation={state.orientation}
+              theme={theme}
+              locale={state.locale}
+              appName={state.appName}
+              appIcon={state.appIcon}
+              assets={assetLibrary}
+              connectedCanvas={state.connectedCanvas}
+              selectedElement={selectedElement}
+              onActiveSlideChange={setActiveSlideId}
+              onLabelChange={(slide, v) => patchLocalized(slide, "label", v)}
+              onHeadlineChange={(slide, v) => patchLocalized(slide, "headline", v)}
+              onTextElementTextChange={patchTextElementText}
+              onElementChange={patchElementTransform}
+              onSelectElement={setSelectedElement}
+            />
+            <ScreensPanel
+              mobilePanel={mobilePanel}
+              visible={editorLayout.screensVisible}
+              onClose={() => updateEditorLayout({ screensVisible: false })}
+              slides={currentSlides}
+              activeSlide={activeSlide}
+              device={state.device}
+              orientation={state.orientation}
+              theme={theme}
+              locale={state.locale}
+              appName={state.appName}
+              appIcon={state.appIcon}
+              assets={assetLibrary}
+              connectedCanvas={state.connectedCanvas}
+              disabled={busy}
+              onReorder={reorderSlides}
+              onSelect={(id) => {
+                setActiveSlideId(id);
+                setMobilePanel("canvas");
+              }}
+              onDelete={deleteSlide}
+              onDuplicate={duplicateSlide}
+              onAdd={addSlide}
+            />
+          </>
+        )}
       </div>
 
       {/* Off-screen export container — full-resolution canvases for html-to-image. */}
@@ -899,6 +1044,237 @@ export function ScreenshotEditor() {
         )}
       </div>
     </div>
+  );
+}
+
+type ScreensPanelProps = {
+  mobilePanel: MobileEditorPanel;
+  visible: boolean;
+  onClose: () => void;
+  slides: Slide[];
+  activeSlide?: Slide | null;
+  device: Device;
+  orientation: "portrait" | "landscape";
+  theme: ReturnType<typeof applyBrandTokens>;
+  locale: string;
+  appName?: string;
+  appIcon?: string;
+  assets: AssetLibrary;
+  connectedCanvas: boolean;
+  disabled: boolean;
+  onReorder: (next: Slide[]) => void;
+  onSelect: (id: string) => void;
+  onDelete: (id: string) => void;
+  onDuplicate: (id: string) => void;
+  onAdd: (slide: Slide) => void;
+};
+
+function ScreensPanel({
+  mobilePanel,
+  visible,
+  onClose,
+  slides,
+  activeSlide,
+  device,
+  orientation,
+  theme,
+  locale,
+  appName,
+  appIcon,
+  assets,
+  connectedCanvas,
+  disabled,
+  onReorder,
+  onSelect,
+  onDelete,
+  onDuplicate,
+  onAdd,
+}: ScreensPanelProps) {
+  return (
+    <aside
+      data-editor-panel="screens"
+      className={`${mobilePanel === "screens" ? "flex" : "hidden"} ${visible ? "md:flex" : "md:hidden"} editor-panel editor-panel-screens store-sidebar min-h-0 w-full min-w-0 flex-1 shrink-0 overflow-hidden border-b`}
+    >
+      <Sidebar
+        slides={slides}
+        activeId={activeSlide?.id || null}
+        device={device}
+        orientation={orientation}
+        theme={theme}
+        locale={locale}
+        appName={appName}
+        appIcon={appIcon}
+        assets={assets}
+        connectedCanvas={connectedCanvas}
+        disabled={disabled}
+        onReorder={onReorder}
+        onSelect={onSelect}
+        onDelete={onDelete}
+        onDuplicate={onDuplicate}
+        onAdd={onAdd}
+        onClosePanel={onClose}
+      />
+    </aside>
+  );
+}
+
+type CanvasPanelProps = {
+  mobilePanel: MobileEditorPanel;
+  slides: Slide[];
+  activeSlide: Slide | null;
+  device: Device;
+  orientation: "portrait" | "landscape";
+  theme: ReturnType<typeof applyBrandTokens>;
+  locale: string;
+  appName?: string;
+  appIcon?: string;
+  assets: AssetLibrary;
+  connectedCanvas: boolean;
+  selectedElement: SelectedElement | null;
+  onActiveSlideChange: (id: string) => void;
+  onLabelChange: (slide: Slide, value: string) => void;
+  onHeadlineChange: (slide: Slide, value: string) => void;
+  onTextElementTextChange: (slideId: string, id: string, value: string) => void;
+  onElementChange: (slideId: string, id: ElementId, transform: ElementTransform) => void;
+  onSelectElement: (selection: SelectedElement | null) => void;
+};
+
+function CanvasPanel({
+  mobilePanel,
+  slides,
+  activeSlide,
+  device,
+  orientation,
+  theme,
+  locale,
+  appName,
+  appIcon,
+  assets,
+  connectedCanvas,
+  selectedElement,
+  onActiveSlideChange,
+  onLabelChange,
+  onHeadlineChange,
+  onTextElementTextChange,
+  onElementChange,
+  onSelectElement,
+}: CanvasPanelProps) {
+  return (
+    <main
+      data-editor-canvas
+      className={`${mobilePanel === "canvas" ? "flex" : "hidden"} editor-canvas min-h-0 min-w-0 flex-1 items-stretch overflow-hidden md:flex`}
+    >
+      {activeSlide && slides.length > 0 ? (
+        <PreviewStage
+          slides={slides}
+          activeSlideId={activeSlide.id}
+          device={device}
+          orientation={orientation}
+          theme={theme}
+          locale={locale}
+          appName={appName}
+          appIcon={appIcon}
+          assets={assets}
+          connectedCanvas={connectedCanvas}
+          selectedElement={selectedElement}
+          onActiveSlideChange={onActiveSlideChange}
+          onLabelChange={onLabelChange}
+          onHeadlineChange={onHeadlineChange}
+          onTextElementTextChange={onTextElementTextChange}
+          onElementChange={onElementChange}
+          onSelectElement={onSelectElement}
+        />
+      ) : (
+        <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center text-sm text-muted-foreground">
+          <p className="font-medium text-foreground">No screen selected</p>
+          <p>Add a screen on the left to get started.</p>
+        </div>
+      )}
+    </main>
+  );
+}
+
+type SettingsPanelProps = {
+  mobilePanel: MobileEditorPanel;
+  visible: boolean;
+  onClose: () => void;
+  activeSlide: Slide | null;
+  device: Device;
+  orientation: "portrait" | "landscape";
+  locale: string;
+  selectedElement: SelectedElement | null;
+  assetLibrary: AssetLibrary;
+  maxArtworkSpan: number;
+  artworkTonePattern: Array<"light" | "dark">;
+  theme: ReturnType<typeof applyBrandTokens>;
+  connectedCanvas: boolean;
+  currentSlides: Slide[];
+  activeSlideIndex: number;
+  patchSlide: (id: string, patch: Partial<Slide>) => void;
+  patchLocalized: (slide: Slide, key: "label" | "headline", value: string) => void;
+  onAssetLibraryChange: (assets: AssetLibrary) => void;
+  onSelectElement: (selection: SelectedElement | null) => void;
+};
+
+function SettingsPanel({
+  mobilePanel,
+  visible,
+  onClose,
+  activeSlide,
+  device,
+  orientation,
+  locale,
+  selectedElement,
+  assetLibrary,
+  maxArtworkSpan,
+  artworkTonePattern,
+  theme,
+  connectedCanvas,
+  currentSlides,
+  activeSlideIndex,
+  patchSlide,
+  patchLocalized,
+  onAssetLibraryChange,
+  onSelectElement,
+}: SettingsPanelProps) {
+  return (
+    <aside
+      data-editor-panel="settings"
+      className={`${mobilePanel === "settings" ? "flex" : "hidden"} ${visible ? "md:flex" : "md:hidden"} editor-panel editor-panel-settings store-sidebar min-h-0 w-full min-w-0 flex-1 shrink-0 overflow-hidden border-t`}
+    >
+      {activeSlide ? (
+        <Inspector
+          slide={activeSlide}
+          device={device}
+          orientation={orientation}
+          locale={locale}
+          selectedElementId={
+            selectedElement?.slideId === activeSlide.id ? selectedElement.elementId : null
+          }
+          onChange={(patch) => patchSlide(activeSlide.id, patch)}
+          onLocalizedChange={(key, value) => patchLocalized(activeSlide, key, value)}
+          assets={assetLibrary}
+          onAssetLibraryChange={onAssetLibraryChange}
+          maxArtworkSpan={maxArtworkSpan}
+          artworkTonePattern={artworkTonePattern}
+          theme={theme}
+          connectedCanvas={connectedCanvas}
+          deckInverted={currentSlides.map((currentSlide) => !!currentSlide.inverted)}
+          activeSlideIndex={activeSlideIndex}
+          onSelectElement={(elementId) =>
+            onSelectElement(
+              elementId ? { slideId: activeSlide.id, elementId } : null,
+            )
+          }
+          onClosePanel={onClose}
+        />
+      ) : (
+        <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground">
+          <p className="font-medium text-foreground">Nothing to inspect</p>
+          <p className="text-xs">Screen settings will appear here once you add or select one.</p>
+        </div>
+      )}
+    </aside>
   );
 }
 

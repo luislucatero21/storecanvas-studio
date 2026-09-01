@@ -425,6 +425,57 @@ export function hasExpandedLocalArtwork(cached: ProjectState | undefined, file: 
   });
 }
 
+/**
+ * Refresh only a newly expanded local panorama. Browser state remains the
+ * authority for copy, typography, transforms and panel-independent edits.
+ * This narrow merge lets a regenerated local image replace an old two-slot
+ * cache without reverting the user's latest composition.
+ */
+export function mergeExpandedLocalArtwork(
+  cached: ProjectState | undefined,
+  file: ProjectState | null,
+) {
+  if (!cached || !file || !cached.campaignSource || !file.campaignSource) return cached;
+  if (cached.campaignSource.appId !== file.campaignSource.appId) return cached;
+
+  const slidesByDevice = { ...cached.slidesByDevice };
+  for (const [device, fileSlides] of Object.entries(file.slidesByDevice)) {
+    const cachedSlides = cached.slidesByDevice[device as keyof ProjectState["slidesByDevice"]] || [];
+    const cachedMaxSpan = cachedSlides.reduce(
+      (max, slide) => Math.max(max, ...(slide.connectedArtworks || []).map((artwork) => artwork.spanSlots || 1)),
+      1,
+    );
+    const expandedSlides = fileSlides
+      .map((slide, index) => ({ slide, index }))
+      .filter(({ slide }) => (slide.connectedArtworks || []).some((artwork) => (artwork.spanSlots || 1) > cachedMaxSpan));
+    if (!expandedSlides.length) continue;
+
+    slidesByDevice[device as keyof ProjectState["slidesByDevice"]] = cachedSlides.map((slide, index) => {
+      const expanded = fileSlides[index]?.connectedArtworks?.filter(
+        (artwork) => (artwork.spanSlots || 1) > cachedMaxSpan,
+      );
+      if (!expanded?.length) return slide;
+      const expandedIds = new Set(expanded.map((artwork) => artwork.id));
+      const existing = (slide.connectedArtworks || []).filter((artwork) => {
+        if (expandedIds.has(artwork.id)) return false;
+        // A regenerated local image may get a new id. Match its stable asset
+        // reference (or image path) so the stale 2-slot version is replaced,
+        // while unrelated short artworks remain untouched.
+        return !expanded.some((candidate) =>
+          (artwork.assetRef && candidate.assetRef && artwork.assetRef === candidate.assetRef)
+          || artwork.image === candidate.image,
+        );
+      });
+      return {
+        ...slide,
+        connectedArtworks: [...existing, ...expanded],
+      };
+    });
+  }
+
+  return { ...cached, slidesByDevice };
+}
+
 function saveToLocalStorage(
   state: ProjectState,
   library: ProjectLibrary,
@@ -526,9 +577,18 @@ export function useProject() {
         && shouldUseCheckedInDemo(cachedState, localFileResponse.source);
       const shouldAutoLoadLocalProject = !!autoLocalState
         && (!active || isStarterOrDemoProject(cachedState));
-      const shouldRefreshExpandedLocalArtwork = hasExpandedLocalArtwork(cached || active?.state, autoLocalState);
+      const cachedCampaign = cached || active?.state;
+      const shouldRefreshExpandedLocalArtwork = hasExpandedLocalArtwork(cachedCampaign, autoLocalState);
+      const expandedLocalState = shouldRefreshExpandedLocalArtwork
+        ? mergeExpandedLocalArtwork(cachedCampaign, autoLocalState)
+        : null;
+      // A discovered local-private file is an automatic seed, not an
+      // always-authoritative source. Once a campaign has been edited in this
+      // browser, keep those edits on reload; only an explicitly configured
+      // file or a newly expanded panorama may replace cached browser state.
       const selectedFileState = configuredFileState
-        || autoLocalState
+        || (shouldAutoLoadLocalProject ? autoLocalState : null)
+        || expandedLocalState
         || (shouldUseDemoProject && localFileResponse.ok ? localFileResponse.state : null);
       const shouldUseFileProject = !!selectedFileState
         || shouldAutoLoadLocalProject

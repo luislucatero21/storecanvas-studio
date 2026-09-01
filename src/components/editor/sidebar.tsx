@@ -15,7 +15,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { ChevronDown, CircleCheck, Image, Plus } from "lucide-react";
+import { ChevronDown, CircleCheck, Image, PanelLeftClose, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { AssetLibrary, Device, Orientation, Slide, Theme } from "@/lib/types";
 import { newSlide } from "@/lib/defaults";
@@ -38,6 +38,7 @@ type Props = {
   onDelete: (id: string) => void;
   onDuplicate: (id: string) => void;
   onAdd: (slide: Slide) => void;
+  onClosePanel?: () => void;
 };
 
 export function Sidebar({
@@ -57,6 +58,7 @@ export function Sidebar({
   onDelete,
   onDuplicate,
   onAdd,
+  onClosePanel,
 }: Props) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -74,11 +76,26 @@ export function Sidebar({
 
   return (
     <div className="store-sidebar flex h-full flex-col">
-      <div className="border-b p-3">
-        <h2 className="store-panel-title text-sm font-semibold">Screens</h2>
-        <p className="text-xs text-muted-foreground">
-          {slides.length} screen{slides.length === 1 ? "" : "s"} · drag to reorder
-        </p>
+      <div className="flex items-start justify-between gap-2 border-b p-3">
+        <div className="min-w-0">
+          <h2 className="store-panel-title text-sm font-semibold">Screens</h2>
+          <p className="text-xs text-muted-foreground">
+            {slides.length} screen{slides.length === 1 ? "" : "s"} · drag to reorder
+          </p>
+        </div>
+        {onClosePanel ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 shrink-0"
+            aria-label="Hide Screens panel"
+            title="Hide Screens panel"
+            onClick={onClosePanel}
+          >
+            <PanelLeftClose className="h-4 w-4" />
+          </Button>
+        ) : null}
       </div>
 
       <div className="flex-1 overflow-y-auto p-2">

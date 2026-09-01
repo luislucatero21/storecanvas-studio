@@ -1,6 +1,6 @@
 ---
 name: storecanvas-agent
-description: Use the StoreCanvas CLI to inspect campaigns, choose templates and palettes, generate connected AI artwork across 1–10 screenshot slots, validate projects, and render deterministic App Store assets.
+description: Use the StoreCanvas CLI to inspect campaigns, choose templates and palettes, remove canvas layers, generate connected AI artwork across 1–10 screenshot slots, validate projects, and render deterministic App Store assets.
 ---
 
 # StoreCanvas agent workflow
@@ -65,6 +65,20 @@ Important behavior:
 - The provider key is read from `OPENAI_API_KEY` by default, or from the variable named by `--api-key-env`; it is never written to project JSON or output.
 - Generated files are materialized under ignored `public/screenshots/uploaded/` so the result works in the local editor and renderer.
 
+Remove a selected canvas layer from an agent workflow. The editor uses the
+same semantics: user-created text, artwork, and extra device slots are
+removed; layout-owned `caption`, `device`, and `deviceSecondary` layers are
+hidden so the operation remains reversible in the UI. `--screen` is optional
+and one-based; when omitted, the first matching layer in the deck is used:
+
+```bash
+pnpm storecanvas remove-element \
+  --device iphone \
+  --screen 8 \
+  --element text:privacy-note \
+  --json
+```
+
 ## Verify and export
 
 ```bash
@@ -77,7 +91,7 @@ Use `--all` for every configured device and locale. The CLI syncs the selected s
 ## Agent contract
 
 - `GET /api/agent?view=catalog` returns protocol version, capabilities, devices, templates, and palettes.
-- `POST /api/agent` supports `catalog`, `inspect`, `validate`, `apply-template`, and `generate-background`.
+- `POST /api/agent` supports `catalog`, `inspect`, `validate`, `apply-template`, `remove-element`, and `generate-background`.
 - Mutating API calls return a validated `state`; the CLI persists it atomically and refreshes the running local editor when available.
 - The bridge is local-first and stateless. Vercel remains read-only; do not treat it as a project database.
 - Keep private screenshots, app-store imports, generated artwork, API keys, and local project files out of commits.

@@ -1,5 +1,6 @@
 import { getCanvas } from "./canvas";
 import { createConnectedArtwork } from "./connected-artwork";
+import { removeElementFromSlide } from "./element-mutations";
 import {
   applyCampaignTemplate,
   applyCampaignTemplateDefinition,
@@ -7,7 +8,7 @@ import {
   campaignTemplateById,
   paletteById,
 } from "./campaign-presets";
-import type { Device, ProjectState, SlotSpan } from "./types";
+import type { Device, ElementId, ProjectState, SlotSpan } from "./types";
 
 export type AgentTone = "light" | "dark" | "mixed";
 
@@ -25,6 +26,12 @@ export type GeneratedArtworkOptions = {
   image: string;
   artworkId?: string;
   assetRef?: string;
+};
+
+export type RemoveElementOptions = {
+  device: Device;
+  elementId: ElementId | string;
+  screenIndex?: number;
 };
 
 export function resolveAgentTemplate(project: ProjectState, templateId: string) {
@@ -139,6 +146,50 @@ export function upsertGeneratedArtwork(
       [options.device]: nextSlides,
     },
   };
+}
+
+/**
+ * Apply the same reversible canvas deletion semantics from the editor to an
+ * agent request. User-created layers are removed; layout-owned layers are
+ * hidden so an agent cannot accidentally make a slide impossible to restore.
+ */
+export function removeAgentElement(
+  project: ProjectState,
+  options: RemoveElementOptions,
+) {
+  const slides = project.slidesByDevice[options.device] || [];
+  if (slides.length === 0) throw new Error(`The ${options.device} deck has no screens.`);
+  if (options.screenIndex !== undefined && (
+    !Number.isInteger(options.screenIndex)
+    || options.screenIndex < 0
+    || options.screenIndex >= slides.length
+  )) {
+    throw new Error(`screenIndex must be an integer from 0 to ${slides.length - 1}.`);
+  }
+
+  const indexes = options.screenIndex === undefined
+    ? slides.map((_, index) => index)
+    : [options.screenIndex];
+  for (const index of indexes) {
+    const mutation = removeElementFromSlide(slides[index], options.elementId);
+    if (!mutation.changed || !mutation.removed) continue;
+    const nextSlides = slides.map((slide, slideIndex) => slideIndex === index ? mutation.slide : slide);
+    const state: ProjectState = {
+      ...project,
+      slidesByDevice: {
+        ...project.slidesByDevice,
+        [options.device]: nextSlides,
+      },
+    };
+    return {
+      state,
+      action: mutation.action,
+      screenIndex: index,
+      removed: mutation.removed,
+    };
+  }
+
+  throw new Error(`Element ${options.elementId} was not found in the ${options.device} deck.`);
 }
 
 export function replaceArtworkImage(

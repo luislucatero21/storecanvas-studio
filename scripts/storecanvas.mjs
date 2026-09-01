@@ -80,6 +80,7 @@ Usage:
   pnpm storecanvas inspect [--project <file>] [--json]
   pnpm storecanvas validate [--project <file>] [--json]
   pnpm storecanvas apply-template --template <id> [options]
+  pnpm storecanvas remove-element --element <id> [options]
   pnpm storecanvas generate-background --prompt <text> --slots <1-10> [options]
   pnpm storecanvas render [--all] [--device iphone] [--locale en-US] [--output exports/rendered]
 
@@ -96,6 +97,10 @@ Template options:
   --recommended-palette        Apply the template's recommended palette.
   --reset-customizations       Reset manual placement/constraints for that deck.
   --preserve-artwork           Keep connected artwork positions instead of reflowing them.
+
+Canvas options:
+  --element <id>               Layer id, e.g. caption, text:headline, artwork:hero.
+  --screen <1-10>              Screen to edit (one-based); omit to find the first match.
 
 Background options:
   --template <id>              Apply this template before generating the artwork.
@@ -383,6 +388,100 @@ async function applyTemplateCommand() {
   output(result, `${hasFlag("--dry-run") ? "Would apply" : "Applied"} ${templateId} to ${device}${result.backup ? ` · backup ${result.backup}` : ""}`);
 }
 
+function removeElementLocally(project, device, elementId, screenIndex) {
+  const slides = project.slidesByDevice?.[device];
+  if (!Array.isArray(slides) || slides.length === 0) {
+    throw new Error(`The ${device} deck has no screens.`);
+  }
+  if (screenIndex !== undefined && (screenIndex < 0 || screenIndex >= slides.length)) {
+    throw new Error(`--screen must be an integer from 1 to ${slides.length}.`);
+  }
+
+  const indexes = screenIndex === undefined
+    ? slides.map((_, index) => index)
+    : [screenIndex];
+  for (const index of indexes) {
+    const slide = slides[index];
+    if (["caption", "device", "deviceSecondary"].includes(elementId)) {
+      const hidden = Array.isArray(slide.hiddenElements) ? slide.hiddenElements : [];
+      if (hidden.includes(elementId)) continue;
+      const nextSlide = { ...slide, hiddenElements: [...hidden, elementId] };
+      return {
+        state: {
+          ...project,
+          slidesByDevice: {
+            ...project.slidesByDevice,
+            [device]: slides.map((candidate, candidateIndex) => candidateIndex === index ? nextSlide : candidate),
+          },
+        },
+        action: "hidden",
+        screenIndex: index,
+      };
+    }
+
+    const collection = elementId.startsWith("text:")
+      ? "textElements"
+      : elementId.startsWith("artwork:")
+        ? "connectedArtworks"
+        : elementId.startsWith("slot:")
+          ? "deviceSlots"
+          : null;
+    if (!collection) throw new Error(`Unsupported element id: ${elementId}`);
+    const key = elementId.slice(elementId.indexOf(":") + 1);
+    const elements = Array.isArray(slide[collection]) ? slide[collection] : [];
+    if (!elements.some((element) => element.id === key)) continue;
+    const remaining = elements.filter((element) => element.id !== key);
+    const nextSlide = { ...slide, [collection]: remaining.length ? remaining : undefined };
+    return {
+      state: {
+        ...project,
+        slidesByDevice: {
+          ...project.slidesByDevice,
+          [device]: slides.map((candidate, candidateIndex) => candidateIndex === index ? nextSlide : candidate),
+        },
+      },
+      action: "removed",
+      screenIndex: index,
+    };
+  }
+
+  throw new Error(`Element ${elementId} was not found in the ${device} deck.`);
+}
+
+async function removeElementCommand() {
+  const projectFile = resolveProjectFile();
+  const project = await loadProject(projectFile);
+  const elementId = requiredArg("--element", "--element <id> is required");
+  const device = arg("--device", project.device);
+  if (!SUPPORTED_DEVICES.has(device)) throw new Error(`Unsupported device: ${device}`);
+  const rawScreen = arg("--screen");
+  const screenIndex = rawScreen === undefined
+    ? undefined
+    : integerArg("--screen", 1, { min: 1, max: 10 }) - 1;
+  const plan = removeElementLocally(project, device, elementId, screenIndex);
+  const result = {
+    command: "remove-element",
+    projectFile,
+    device,
+    elementId,
+    screen: plan.screenIndex + 1,
+    action: plan.action,
+    dryRun: hasFlag("--dry-run"),
+  };
+  if (!hasFlag("--dry-run")) {
+    const response = await agentRequest("POST", "/api/agent", {
+      action: "remove-element",
+      project,
+      device,
+      elementId,
+      screenIndex: plan.screenIndex,
+    });
+    result.summary = response.summary;
+    Object.assign(result, await persistProject(projectFile, response.state));
+  }
+  output(result, `${result.dryRun ? "Would remove" : "Removed"} ${elementId} on ${device} screen ${result.screen}${result.backup ? ` · backup ${result.backup}` : ""}`);
+}
+
 async function generateBackgroundCommand() {
   const projectFile = resolveProjectFile();
   const project = await loadProject(projectFile);
@@ -552,6 +651,7 @@ async function main() {
   if (command === "inspect") return inspectCommand();
   if (command === "validate") return validateCommand();
   if (command === "apply-template" || command === "template") return applyTemplateCommand();
+  if (command === "remove-element" || command === "delete-element") return removeElementCommand();
   if (command === "generate-background" || command === "background") return generateBackgroundCommand();
   if (command === "render") return renderCommand();
   throw new Error(`Unknown command: ${command}. Run pnpm storecanvas --help.`);
