@@ -75,8 +75,8 @@ export function Sidebar({
   };
 
   return (
-    <div className="store-sidebar flex h-full flex-col">
-      <div className="flex items-start justify-between gap-2 border-b p-3">
+    <div className="store-sidebar flex h-full min-w-0 w-full flex-col">
+      <div className="flex min-w-0 items-start justify-between gap-2 border-b p-3">
         <div className="min-w-0">
           <h2 className="store-panel-title text-sm font-semibold">Screens</h2>
           <p className="text-xs text-muted-foreground">
@@ -98,10 +98,10 @@ export function Sidebar({
         ) : null}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="min-w-0 flex-1 overflow-y-auto p-2">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={slides.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-            <div className="space-y-1.5">
+            <div className="min-w-0 space-y-1.5">
               {slides.map((slide, i) => (
                 <SlideThumb
                   key={slide.id}

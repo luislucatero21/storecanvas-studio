@@ -188,11 +188,15 @@
   }
 
   .editor-panel-screens {
+    flex: 0 1 clamp(196px, 20vw, 300px);
     flex-basis: clamp(196px, 20vw, 300px);
+    max-width: clamp(196px, 20vw, 300px);
   }
 
   .editor-panel-settings {
+    flex: 0 1 clamp(236px, 23vw, 360px);
     flex-basis: clamp(236px, 23vw, 360px);
+    max-width: clamp(236px, 23vw, 360px);
   }
 
   .editor-workspace[data-panel-order="screens-left"] .editor-panel-screens {
@@ -218,21 +222,29 @@
 
 @media (min-width: 768px) and (max-width: 1199px) {
   .editor-panel-screens {
+    flex: 0 1 clamp(184px, 22vw, 252px);
     flex-basis: clamp(184px, 22vw, 252px);
+    max-width: clamp(184px, 22vw, 252px);
   }
 
   .editor-panel-settings {
+    flex: 0 1 clamp(224px, 27vw, 312px);
     flex-basis: clamp(224px, 27vw, 312px);
+    max-width: clamp(224px, 27vw, 312px);
   }
 }
 
 @media (min-width: 768px) and (max-width: 900px) {
   .editor-panel-screens {
+    flex: 0 0 190px;
     flex-basis: 190px;
+    max-width: 190px;
   }
 
   .editor-panel-settings {
+    flex: 0 0 230px;
     flex-basis: 230px;
+    max-width: 230px;
   }
 }
 

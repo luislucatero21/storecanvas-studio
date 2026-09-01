@@ -122,6 +122,25 @@ test.describe("StoreCanvas editor", () => {
     await page.getByRole("button", { name: "Workspace panels" }).click();
     await page.getByRole("menuitemcheckbox", { name: "Settings panel" }).click();
     await expect(workspace.locator('[data-editor-panel="settings"]')).toBeHidden();
+    const singlePanelLayout = await page.evaluate(() => {
+      const screens = document.querySelector<HTMLElement>('[data-editor-panel="screens"]');
+      const canvas = document.querySelector<HTMLElement>("[data-editor-canvas]");
+      const card = screens?.querySelector<HTMLElement>(".group.relative");
+      if (!screens || !canvas || !card) return null;
+      const screensBox = screens.getBoundingClientRect();
+      const cardBox = card.getBoundingClientRect();
+      return {
+        screensWidth: screensBox.width,
+        canvasWidth: canvas.getBoundingClientRect().width,
+        cardsStayInsidePanel: cardBox.left >= screensBox.left && cardBox.right <= screensBox.right + 1,
+        panelHasNoHorizontalOverflow: screens.scrollWidth <= screens.clientWidth + 1,
+      };
+    });
+    expect(singlePanelLayout).not.toBeNull();
+    expect(singlePanelLayout?.screensWidth).toBeLessThan(320);
+    expect(singlePanelLayout?.canvasWidth).toBeGreaterThan(450);
+    expect(singlePanelLayout?.cardsStayInsidePanel).toBe(true);
+    expect(singlePanelLayout?.panelHasNoHorizontalOverflow).toBe(true);
 
     await page.getByRole("button", { name: "Workspace panels" }).click();
     await page.getByRole("menuitemcheckbox", { name: "Settings panel" }).click();

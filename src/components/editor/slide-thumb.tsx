@@ -74,7 +74,7 @@ export function SlideThumb({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "group relative flex items-stretch gap-2 rounded-lg border bg-card p-1.5 transition-all hover:border-foreground/30 hover:bg-accent/10",
+        "group relative flex min-w-0 max-w-full items-stretch gap-2 overflow-hidden rounded-lg border bg-card p-1.5 transition-all hover:border-foreground/30 hover:bg-accent/10",
         active && "border-primary bg-primary/[0.06] ring-1 ring-primary",
       )}
     >
@@ -92,7 +92,7 @@ export function SlideThumb({
         type="button"
         onClick={onSelect}
         aria-label={`Screen ${index + 1} · ${LAYOUT_LABEL[slide.layout]}`}
-        className="flex flex-1 items-center gap-3 overflow-hidden text-left"
+        className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden text-left"
       >
         <div
           aria-hidden
