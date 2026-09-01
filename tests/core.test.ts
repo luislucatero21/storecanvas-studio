@@ -71,8 +71,8 @@ describe("StoreCanvas project contracts", () => {
   it("refreshes a cached imported campaign when its local artwork expands", () => {
     const campaignSource: ProjectState["campaignSource"] = {
       provider: "app-store",
-      appId: "6757990035",
-      sourceUrl: "https://apps.apple.com/mx/app/rutmia/id6757990035",
+      appId: "1234567890",
+      sourceUrl: "https://apps.apple.com/mx/app/example/id1234567890",
       country: "mx",
       screenshotPolicy: "reference-only",
     };

@@ -15,6 +15,10 @@ flowchart LR
   A --> H[Deterministic canvas/export]
   A --> I[Optional App Store import]
   A --> J[Optional BYO-key AI provider]
+  K[Agent CLI] --> L[/api/agent]
+  L --> M[Shared agent workflow]
+  M --> B
+  M --> J
 ```
 
 ## Main layers
@@ -24,7 +28,10 @@ flowchart LR
 - `src/lib/storage.ts` owns browser persistence, project switching, autosave, migration, and undo/redo.
 - `src/lib/project-file.ts` resolves the safe checked-in example or an explicitly configured/auto-discovered local campaign file.
 - `src/app/api/` contains narrow server routes for project convenience, App Store metadata/image proxying, uploads, and optional AI calls.
+- `src/app/api/agent/route.ts` is a stateless JSON bridge for terminal agents. It exposes the live preset catalog and delegates composition/generation to `src/lib/agent-workflow.ts`.
 - `src/app/render/` is a server-rendered export surface used by `scripts/storecanvas.mjs` for exact-size screenshots.
+- `scripts/storecanvas.mjs` is the supported agent CLI. It reads/writes local JSON atomically, creates ignored backups, materializes generated artwork locally, and then renders through the same browser surface.
+- `skills/storecanvas-agent/SKILL.md` gives terminal-capable agents a discoverable workflow and the safety rules for local assets and provider keys.
 - `tests/` contains unit contracts; `tests/ui/` contains browser-level editor and rendering workflows.
 
 ## Persistence matrix
@@ -45,6 +52,7 @@ Imported screenshots and generated image data can live in browser storage or ign
 3. Local project-file discovery checks only the known ignored filename unless the user explicitly configures another path.
 4. AI routes accept a key from the current request and proxy it to the selected provider. StoreCanvas does not put the key in project state or a hosted database.
 5. App Store image imports validate the `https` protocol and Apple image host before downloading.
+6. Agent mutations return a validated project state; the CLI is responsible for the explicit local-file write. The bridge itself does not create accounts, queues, databases, or durable hosted state.
 
 These boundaries are part of the product contract. New server features should document where data lives, whether Vercel can support them, and how a user can remove or export it.
 
@@ -61,6 +69,10 @@ Add device dimensions and export targets in `src/lib/constants.ts`, then add pre
 ### Imports
 
 Keep external parsing and network access in `src/lib/app-store-import.ts` and `src/lib/app-store-server.ts`. Validate hostnames, bound downloads, avoid committing fetched assets, and turn imported composites into reference evidence rather than silently nesting them as captures.
+
+### Agent automation
+
+Use `pnpm storecanvas catalog --json` to discover supported IDs, then `inspect`, `apply-template`, `generate-background`, `validate`, and `render` as needed. `--json` is the stable machine-readable interface; `--dry-run` avoids both project writes and image-provider calls. The CLI uses the local Next.js `/api/agent` bridge so template and palette behavior cannot drift from the editor. A future MCP adapter should call this contract rather than reimplementing project transformations.
 
 ### Tests
 

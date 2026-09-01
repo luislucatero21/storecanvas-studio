@@ -80,7 +80,7 @@ Select **Connected** in the toolbar, then click those thumbnails to inspect each
 - Per-slide text layers, responsive constraints, hiding/locking, undo/redo, multiple locales, and JSON backups.
 - App Store URL import that creates a project-owned template, palette, and copy direction from listing metadata and screenshot color signals. Published composites stay reference-only unless the user opts into using them as captures.
 - Optional bring-your-own-key copy polish through OpenAI or OpenRouter, plus connected-artwork generation through OpenAI. Choose 1–10 covered screens; the API prompt receives the requested span and light/dark tone pattern. Keys remain in memory for the current dialog session.
-- Deterministic Playwright rendering for exact storefront sizes and a CLI that can render every configured locale/device deck.
+- Deterministic Playwright rendering for exact storefront sizes and an agent CLI that can inspect, compose, generate and render every configured locale/device deck.
 
 ## Privacy and asset rights
 
@@ -98,6 +98,54 @@ pnpm storecanvas render --device iphone --locale en-US --output exports/rendered
 
 Use `--all` to render every configured locale and device deck with screens. Set `STORECANVAS_URL` when the server is not at `http://127.0.0.1:3100`. The renderer reads the same `STORECANVAS_PROJECT_FILE` setting as the editor.
 
+## Agent workflow and CLI
+
+StoreCanvas exposes a local, JSON-first automation bridge at `/api/agent` and a zero-config CLI at `pnpm storecanvas`. This is the recommended integration for Codex, Claude, Cursor, or any agent that can run terminal commands: it has no MCP SDK dependency, uses the same project contract as the editor, and can be wrapped by an MCP adapter without duplicating template logic.
+
+Start the editor once, then discover the available IDs before making a composition change:
+
+```bash
+pnpm dev -p 3100
+pnpm storecanvas catalog --json
+pnpm storecanvas inspect --json
+```
+
+Apply a template and optionally its recommended palette. Manual placement and artwork reflow remain explicit flags:
+
+```bash
+pnpm storecanvas apply-template \
+  --template afterglow-rhythm \
+  --device iphone \
+  --recommended-palette \
+  --json
+```
+
+Generate a continuous background across any adjacent range of 1–10 screens. The command applies the selected template first, infers the deck's light/dark rhythm, stores the generated image under an ignored local asset path, and updates the project atomically:
+
+```bash
+OPENAI_API_KEY="$OPENAI_API_KEY" pnpm storecanvas generate-background \
+  --template afterglow-rhythm \
+  --device iphone \
+  --start-slot 1 \
+  --slots 10 \
+  --prompt "A warm dusk horizon with subtle violet and amber motion, quiet negative space for phones and headlines" \
+  --artwork-id rutmia-panorama \
+  --json
+```
+
+Useful automation commands:
+
+| Command | Purpose |
+| --- | --- |
+| `catalog --json` | List supported devices, templates, palettes and capabilities. |
+| `inspect --json` | Summarize the selected project and every connected artwork span. |
+| `validate --json` | Run schema and export-readiness checks; exits non-zero on errors. |
+| `apply-template --template <id>` | Recompose one device deck with optional palette/reset flags. |
+| `generate-background --slots <1-10>` | Generate and attach one connected artwork to adjacent slots. |
+| `render --all` | Export all configured device/locale decks through Playwright. |
+
+All mutating commands create an ignored backup in `exports/backups/`, support `--dry-run`, and try to refresh the running local editor. Use `--project path/to/project.json` to target a file explicitly; otherwise the CLI follows the same local-project priority as the editor. Keep `OPENAI_API_KEY` in the environment (or use `--api-key-env`)—keys never enter project JSON, logs, or generated prompts. Full agent instructions live in [`skills/storecanvas-agent/SKILL.md`](skills/storecanvas-agent/SKILL.md), and the HTTP contract is implemented in [`src/app/api/agent/route.ts`](src/app/api/agent/route.ts).
+
 ## Development and quality gates
 
 ```bash
@@ -109,7 +157,7 @@ pnpm build
 pnpm audit --audit-level high
 ```
 
-CI runs dependency audit, typecheck, 42 unit tests, Playwright browser tests, and a production build on pushes and pull requests to `main`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution workflow and [docs/OPEN_SOURCE_AUDIT.md](docs/OPEN_SOURCE_AUDIT.md) for the current audit snapshot.
+CI runs dependency audit, typecheck, 53 unit tests, Playwright browser tests, and a production build on pushes and pull requests to `main`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution workflow and [docs/OPEN_SOURCE_AUDIT.md](docs/OPEN_SOURCE_AUDIT.md) for the current audit snapshot.
 
 ## Project map
 
@@ -120,8 +168,11 @@ CI runs dependency audit, typecheck, 42 unit tests, Playwright browser tests, an
 | `src/lib/project-file.ts` | Configurable and auto-discovered local project resolution |
 | `src/components/editor/` | Editor UI, canvas, frames, project selector, and inspectors |
 | `src/lib/campaign-presets.ts` | Templates and palette presets |
+| `src/lib/agent-workflow.ts` | Shared agent operations for templates, spans, summaries and generated artwork |
 | `src/app/render/` | Server-rendered deterministic export surface |
-| `scripts/storecanvas.mjs` | Playwright export CLI |
+| `src/app/api/agent/route.ts` | Local JSON bridge for terminal/MCP-style agent integrations |
+| `scripts/storecanvas.mjs` | Agent and Playwright export CLI |
+| `skills/storecanvas-agent/SKILL.md` | Instructions for an AI agent using the CLI safely |
 | `tests/` | Unit and UI regression suites |
 
 ## Open-source docs
@@ -135,7 +186,7 @@ StoreCanvas is not affiliated with Apple, Google, Vercel, OpenAI, or any app who
 
 ### Connected artwork API
 
-`POST /api/ai/image` accepts `spanSlots` from `1` to `10`, plus optional `tone` (`light`, `dark`, or `mixed`) and `tonePattern` (an ordered array of light/dark surfaces). The server adds those constraints to the image prompt, sends the request directly to OpenAI, and saves the returned image only in the local upload path. The API key is request-scoped and never written to project JSON or browser storage.
+`POST /api/ai/image` accepts `spanSlots` from `1` to `10`, plus optional `tone` (`light`, `dark`, or `mixed`) and `tonePattern` (an ordered array of light/dark surfaces). The server adds those constraints to the image prompt, sends the request directly to OpenAI, and saves the returned image only in the local upload path. The API key is request-scoped and never written to project JSON or browser storage. Agents should use `/api/agent` or `pnpm storecanvas generate-background` so the generated path is attached to the project automatically.
 
 ## License
 

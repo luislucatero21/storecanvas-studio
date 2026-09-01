@@ -278,7 +278,7 @@ function loadFromLocalStorage(): ProjectState | null {
   }
 }
 
-async function loadFromFile(): Promise<
+async function loadFromFile(preferFile = false): Promise<
   | {
       ok: true;
       state: ProjectState | null;
@@ -289,9 +289,12 @@ async function loadFromFile(): Promise<
 > {
   if (typeof window === "undefined") return { ok: false, error: "Window is not available" };
   try {
-    // Ask the local server for the file even when an older browser project is
-    // still cached. The normal endpoint intentionally prefers browser state.
-    const resp = await fetch("/api/project?prefer=file", { cache: "no-store" });
+    // The normal endpoint intentionally prefers browser state. A second,
+    // explicit file read is requested only when a cached project gives us a
+    // reason to compare it with a local file; this keeps browser-only projects
+    // deterministic while still refreshing a stale local campaign.
+    const endpoint = preferFile ? "/api/project?prefer=file" : "/api/project";
+    const resp = await fetch(endpoint, { cache: "no-store" });
     if (!resp.ok) return { ok: false, error: `HTTP ${resp.status}` };
     const json = (await resp.json()) as {
       ok: boolean;
@@ -414,14 +417,24 @@ export function useProject() {
     void (async () => {
       const fromFile = await loadFromFile();
       if (cancelled) return;
-      const autoLocalState = fromFile.ok && fromFile.source === "local-private-file"
-        ? fromFile.state
+      const cachedState = cached
+        || active?.state
+        || (fromFile.ok && fromFile.source === "browser" && fromFile.state?.campaignSource
+          ? fromFile.state
+          : undefined);
+      const shouldProbePreferredFile = !!cachedState && (
+        !!cachedState.campaignSource || isStarterOrDemoProject(cachedState)
+      );
+      const preferredFile = shouldProbePreferredFile ? await loadFromFile(true) : null;
+      const localFileResponse = preferredFile?.ok ? preferredFile : fromFile;
+      const autoLocalState = localFileResponse.ok && localFileResponse.source === "local-private-file"
+        ? localFileResponse.state
         : null;
-      const configuredFileState = fromFile.ok && fromFile.source === "configured-file"
-        ? fromFile.state
+      const configuredFileState = localFileResponse.ok && localFileResponse.source === "configured-file"
+        ? localFileResponse.state
         : null;
       const shouldAutoLoadLocalProject = !!autoLocalState
-        && (!active || isStarterOrDemoProject(cached || active.state));
+        && (!active || isStarterOrDemoProject(cachedState));
       const shouldRefreshExpandedLocalArtwork = hasExpandedLocalArtwork(cached || active?.state, autoLocalState);
       const shouldUseFileProject = !!configuredFileState || shouldAutoLoadLocalProject || shouldRefreshExpandedLocalArtwork;
       let nextState = shouldUseFileProject
@@ -448,7 +461,7 @@ export function useProject() {
       libraryRef.current = nextLibrary;
       activeProjectIdRef.current = activeProjectId;
       setProjectLibrary(nextLibrary);
-      setFileSyncAvailable(fromFile.ok && fromFile.persisted === "file");
+      setFileSyncAvailable(localFileResponse.ok && localFileResponse.persisted === "file");
       setSaveError(null);
       pastRef.current = [];
       futureRef.current = [];
@@ -600,6 +613,10 @@ export function useProject() {
     if (!parsed.success) {
       return { ok: false, error: "That file is not a valid StoreCanvas project JSON." };
     }
+    if (timer.current) {
+      clearTimeout(timer.current);
+      timer.current = null;
+    }
     const nextState = mergeWithDefaults(parsed.data as Partial<ProjectState>);
     let library = libraryRef.current;
     if (activeProjectIdRef.current) {
@@ -608,10 +625,18 @@ export function useProject() {
     }
     const project = makeLocalProject(nextState);
     const nextLibrary = upsertLocalProject(library, project);
-    libraryRef.current = nextLibrary;
+    // Persist an imported project immediately. A user or an agent can reload
+    // right after choosing a JSON file, before the normal autosave debounce;
+    // the active campaign must still be available for local-file comparison.
+    const persisted = saveToLocalStorage(nextState, nextLibrary, project.id);
+    libraryRef.current = persisted.ok ? persisted.library : nextLibrary;
     activeProjectIdRef.current = project.id;
-    setProjectLibrary(nextLibrary);
+    setProjectLibrary(libraryRef.current);
     _setState(nextState);
+    // Keep the local server bridge in sync with imports immediately. This is
+    // important when a browser refresh happens before the debounced autosave;
+    // localStorage remains the durable browser fallback on hosted runtimes.
+    void saveToFile(nextState);
     pastRef.current = [];
     futureRef.current = [];
     lastPushAt.current = 0;

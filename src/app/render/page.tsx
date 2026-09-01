@@ -26,8 +26,8 @@ function isOrientation(value: string | undefined): value is Orientation {
   return value === "portrait" || value === "landscape";
 }
 
-async function readProject(): Promise<ProjectState> {
-  if (!isProjectFileConfigured()) {
+async function readProject(preferFile = false): Promise<ProjectState> {
+  if (!preferFile && !isProjectFileConfigured()) {
     const localProject = getLocalProject();
     if (localProject) return localProject;
   }
@@ -51,7 +51,9 @@ export default async function RenderPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [state, params] = await Promise.all([readProject(), searchParams]);
+  const params = await searchParams;
+  const preferFile = one(params.source) === "file";
+  const state = await readProject(preferFile);
   const requestedDevice = one(params.device);
   const requestedOrientation = one(params.orientation);
   const requestedLocale = one(params.locale);

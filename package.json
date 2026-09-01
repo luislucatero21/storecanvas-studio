@@ -21,6 +21,9 @@
     "type": "git",
     "url": "git+https://github.com/luislucatero21/storecanvas-studio.git"
   },
+  "bin": {
+    "storecanvas": "scripts/storecanvas.mjs"
+  },
   "bugs": {
     "url": "https://github.com/luislucatero21/storecanvas-studio/issues"
   },

@@ -6,6 +6,17 @@ StoreCanvas uses the following direct open-source dependencies and project tools
 | --- | --- | --- | --- |
 | React / React DOM | UI runtime | MIT | [facebook/react](https://github.com/facebook/react) |
 | Next.js | App framework and server rendering | MIT | [vercel/next.js](https://github.com/vercel/next.js) |
+| dnd-kit | Drag-and-drop screen ordering | MIT | [clauderic/dnd-kit](https://github.com/clauderic/dnd-kit) |
+| Radix UI | Accessible editor primitives | MIT | [radix-ui/primitives](https://github.com/radix-ui/primitives) |
+| html-to-image | Browser PNG export | MIT | [bubkoo/html-to-image](https://github.com/bubkoo/html-to-image) |
+| JSZip | ZIP export bundling | MIT | [Stuk/jszip](https://github.com/Stuk/jszip) |
+| react-rnd | Resizable editor layers | MIT | [bokuweb/react-rnd](https://github.com/bokuweb/react-rnd) |
+| Lucide React | UI icons | ISC | [lucide-icons/lucide](https://github.com/lucide-icons/lucide) |
+| Sharp | Image metadata and processing support | Apache-2.0 | [lovell/sharp](https://github.com/lovell/sharp) |
+| Zod | Runtime project/request validation | MIT | [colinhacks/zod](https://github.com/colinhacks/zod) |
+| Tailwind CSS / tailwind-merge | Styling and class composition | MIT | [tailwindlabs/tailwindcss](https://github.com/tailwindlabs/tailwindcss), [dcastil/tailwind-merge](https://github.com/dcastil/tailwind-merge) |
+| Vitest / Vite | Unit-test runner and tooling | MIT | [vitest-dev/vitest](https://github.com/vitest-dev/vitest), [vitejs/vite](https://github.com/vitejs/vite) |
+| Playwright | Browser/UI tests and CLI rendering | Apache-2.0 | [microsoft/playwright](https://github.com/microsoft/playwright) |
 | dnd-kit (`@dnd-kit/*`) | Drag-and-drop interactions | MIT | [clauderic/dnd-kit](https://github.com/clauderic/dnd-kit) |
 | Radix UI (`@radix-ui/react-*`) | Accessible primitives | MIT | [radix-ui/primitives](https://github.com/radix-ui/primitives) |
 | class-variance-authority | Component variants | Apache-2.0 | [joe-bell/cva](https://github.com/joe-bell/cva) |

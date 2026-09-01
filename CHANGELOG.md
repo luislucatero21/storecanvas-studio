@@ -8,6 +8,7 @@ All notable changes to StoreCanvas are documented here. This project follows a l
 
 - Open-source community health files, contribution guidance, issue forms, CI, Dependabot, security policy, support policy, roadmap, architecture notes, and citation metadata.
 - A repository audit record with reproducible quality and dependency checks.
+- A JSON-first agent bridge and CLI for catalog discovery, template/palette composition, 1–10-slot AI backgrounds, validation, and deterministic rendering, plus a reusable `storecanvas-agent` skill.
 
 ### Changed
 

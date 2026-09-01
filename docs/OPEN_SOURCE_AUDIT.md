@@ -38,8 +38,8 @@ The audit pass for this snapshot produced:
 
 - `pnpm audit --audit-level high`: no known vulnerabilities;
 - `pnpm typecheck`: passed;
-- Vitest: 42 unit tests passed;
-- Playwright: 27 UI tests passed;
+- Vitest: 53 unit tests passed;
+- Playwright: 32 UI tests passed;
 - Next.js production build: passed.
 
 ## Maintainer actions outside the repository

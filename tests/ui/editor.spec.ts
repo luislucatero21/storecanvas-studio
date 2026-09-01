@@ -107,9 +107,9 @@ test.describe("StoreCanvas editor", () => {
     await expect(page.getByRole("button", { name: "Project menu" })).toContainText("Local campaign");
   });
 
-  test("refreshes a stale local Rutmia panorama from the project file", async ({ page }) => {
+  test("refreshes a stale local campaign panorama from the project file", async ({ page }) => {
     const cached = JSON.parse(JSON.stringify(baseline));
-    cached.appName = "Rutmia";
+    cached.appName = "Local campaign";
     cached.campaignSource = {
       provider: "app-store",
       appId: "6757990035",
@@ -132,7 +132,7 @@ test.describe("StoreCanvas editor", () => {
       mimeType: "application/json",
       buffer: Buffer.from(JSON.stringify(cached)),
     });
-    await expect(page.getByLabel("App name")).toHaveValue("Rutmia");
+    await expect(page.getByLabel("App name")).toHaveValue("Local campaign");
 
     await page.route("**/api/project*", async (route) => {
       if (route.request().method() !== "GET") {
