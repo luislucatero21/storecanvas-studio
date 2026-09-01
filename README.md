@@ -78,7 +78,8 @@ Select **Connected** in the toolbar, then click those thumbnails to inspect each
 - Independent device slots, plus explicit opt-in transform linking when repeated captures should move together.
 - iPhone 17 Pro Max, iPhone 14 Pro Max, and iPhone 13 Pro Max frames with Dynamic Island/cutout and physical controls.
 - Flat, optical-tilt, low-angle, high-angle, and custom camera controls.
-- Ten campaign templates and twelve palette presets, with custom brand tokens and accessible contrast guidance.
+- Twelve campaign templates and twelve palette presets, with custom brand tokens and accessible contrast guidance.
+- A typography system with self-hosted open fonts, template-level pairings, slide-level caption overrides, and per-layer family, size, color, weight, italic, decoration, and auto-contrast controls.
 - Per-slide text layers, responsive constraints, hiding/locking, undo/redo, multiple locales, and JSON backups.
 - App Store URL import that creates a project-owned template, palette, and copy direction from listing metadata and screenshot color signals. Published composites stay reference-only unless the user opts into using them as captures.
 - Optional bring-your-own-key copy polish through OpenAI or OpenRouter, plus connected-artwork generation through OpenAI. Choose 1–10 covered screens; the API prompt receives the requested span and light/dark tone pattern. Keys remain in memory for the current dialog session.
@@ -89,6 +90,12 @@ Select **Connected** in the toolbar, then click those thumbnails to inspect each
 StoreCanvas does not operate a hosted project database, account system, telemetry pipeline, billing flow, or usage meter. Local browser storage is the canonical library; local file sync is explicit; Vercel writes are disabled. AI requests go only to the provider selected by the user and may have that provider's own cost or terms.
 
 The repository contains a fictional Ledgerly fixture: its product screens, icon, and connected signal artwork are generated visual assets included for demonstration and testing. App Store metadata, screenshots, app icons, logos, and downloaded/generated assets from a user's own project may belong to someone else. Only redistribute assets for which you have permission, and keep private campaign material in ignored paths.
+
+## Typography and contrast
+
+Accent color is adaptive by default. StoreCanvas keeps the requested hue, then adjusts lightness when the active light/dark surface would make a small label hard to read. This is deterministic and applied by the same render path used by the editor, thumbnails, and exports; the minimum target for accent labels is 3:1 and normal text targets 4.5:1. The **Type** tab in **Campaign** lets you switch back to a fixed accent or tune the behavior.
+
+Typography is layered so a campaign can stay coherent without taking control away from the creator: the **Type** tab sets the campaign pairing, selecting **Headline** on a canvas exposes label/headline overrides for the current slide, and selecting a custom **Text** layer exposes its own family, size, color, weight, italic, decoration, and contrast controls. Font choices are bundled with `next/font` at build time and are limited to open-licensed families or operating-system fallbacks. See the [Google Fonts source catalog](https://github.com/google/fonts), [Space Grotesk](https://github.com/floriankarsten/space-grotesk), and the attribution notes in [`THIRD_PARTY.md`](THIRD_PARTY.md).
 
 ## Rendering from the command line
 
@@ -159,7 +166,7 @@ pnpm build
 pnpm audit --audit-level high
 ```
 
-CI runs dependency audit, typecheck, 58 unit tests, Playwright browser tests, and a production build on pushes and pull requests to `main`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution workflow and [docs/OPEN_SOURCE_AUDIT.md](docs/OPEN_SOURCE_AUDIT.md) for the current audit snapshot.
+CI runs dependency audit, typecheck, unit tests, Playwright browser tests, and a production build on pushes and pull requests to `main`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution workflow and [docs/OPEN_SOURCE_AUDIT.md](docs/OPEN_SOURCE_AUDIT.md) for the current audit snapshot.
 
 ## Project map
 

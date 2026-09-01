@@ -450,14 +450,15 @@
     },
     "typography": {
       "display": {
-        "family": "Georgia",
+        "family": "fraunces",
         "weight": 700
       },
       "body": {
-        "family": "Inter",
+        "family": "manrope",
         "weight": 500
       }
-    }
+    },
+    "accentMode": "adaptive"
   },
   "customPaletteName": "Ledgerly signal"
 }

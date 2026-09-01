@@ -548,6 +548,52 @@ test.describe("StoreCanvas editor", () => {
     }).toEqual({ templateId: "product-cinema", paletteId: "midnight-pool", artworkStart: 3, firstTransform: undefined });
   });
 
+  test("lets the user apply a campaign type direction and adaptive accent mode", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Campaign wardrobe" }).click();
+    await page.getByRole("tab", { name: "Type", exact: true }).click();
+    await expect(page.getByLabel("Display font")).toBeVisible();
+    await page.getByLabel("Display font").click();
+    await page.getByRole("option", { name: "Space Grotesk" }).click();
+    await page.getByLabel("Adaptive accent color").uncheck();
+    await page.getByRole("button", { name: "Apply typography" }).click();
+
+    await expect.poll(async () => {
+      const response = await page.request.get("/api/project");
+      const body = await response.json();
+      return {
+        family: body.state.brand.typography.display.family,
+        accentMode: body.state.brand.accentMode,
+      };
+    }).toEqual({ family: "space-grotesk", accentMode: "fixed" });
+  });
+
+  test("exposes per-layer and per-caption typography overrides", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: /^Text$/ }).click();
+    await expect(page.getByLabel("Text styling")).toBeVisible();
+    await page.getByLabel("Text font").click();
+    await page.getByRole("option", { name: "Manrope" }).click();
+    await page.getByLabel("Text weight").click();
+    await page.getByRole("option", { name: "Heavy" }).click();
+    await page.getByLabel("Italic text").click();
+
+    await expect.poll(async () => {
+      const response = await page.request.get("/api/project");
+      const body = await response.json();
+      return body.state.slidesByDevice.iphone[0].textElements?.[0];
+    }).toMatchObject({ fontFamily: "manrope", fontWeight: 800, fontStyle: "italic" });
+
+    await page.locator('.store-canvas-well [data-caption-headline]').first().click();
+    await expect(page.getByLabel("Caption typography")).toBeVisible();
+    await page.getByLabel("Headline italic").click();
+    await expect.poll(async () => {
+      const response = await page.request.get("/api/project");
+      const body = await response.json();
+      return body.state.slidesByDevice.iphone[0].textStyles?.headline?.style;
+    }).toBe("italic");
+  });
+
   test("generates a two-screen artwork without storing the personal key", async ({ page }) => {
     await page.route("**/api/ai/image", async (route) => {
       const request = route.request().postDataJSON();

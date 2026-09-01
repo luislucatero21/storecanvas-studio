@@ -69,10 +69,18 @@ import type {
   SlideLayout,
   TextElement,
   SlotSpan,
+  TypographyStyle,
 } from "@/lib/types";
 import { SLOT_SPAN_OPTIONS } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import { ScreenshotPicker } from "./screenshot-picker";
 import { getCanvas, getElementTransform } from "./slide-canvas";
+import {
+  DEFAULT_TYPOGRAPHY,
+  FONT_OPTIONS,
+  FONT_WEIGHT_OPTIONS,
+  fontOptionId,
+} from "@/lib/typography";
 
 type Props = {
   slide: Slide;
@@ -791,6 +799,21 @@ function ElementTransformControls({
     });
   }
 
+  function patchCaptionStyle(role: "label" | "headline", patch: Partial<NonNullable<Slide["textStyles"]>["label"]>) {
+    onChange({
+      textStyles: {
+        ...(slide.textStyles || {}),
+        [role]: { ...(slide.textStyles?.[role] || {}), ...patch },
+      },
+    });
+  }
+
+  function resetCaptionStyle(role: "label" | "headline") {
+    const next = { ...(slide.textStyles || {}) };
+    delete next[role];
+    onChange({ textStyles: Object.keys(next).length ? next : undefined });
+  }
+
   function setTextElementValue(element: TextElement, value: string) {
     patchTextElement(element.id, { text: writeLocalized(element.text, locale, value) });
   }
@@ -953,6 +976,9 @@ function ElementTransformControls({
             onTextPatch={(patch) => {
               if (activeTextElement) patchTextElement(activeTextElement.id, patch);
             }}
+            captionStyles={slide.textStyles}
+            onCaptionStylePatch={patchCaptionStyle}
+            onCaptionStyleReset={resetCaptionStyle}
             onDeleteText={() => {
               if (activeTextElement) deleteTextElement(activeTextElement);
             }}
@@ -1079,6 +1105,9 @@ function ActiveElementPanel({
   onReorder,
   onTextChange,
   onTextPatch,
+  captionStyles,
+  onCaptionStylePatch,
+  onCaptionStyleReset,
   onDeleteText,
   hidden,
   locked,
@@ -1099,6 +1128,9 @@ function ActiveElementPanel({
   onReorder: (dir: "front" | "back" | "up" | "down") => void;
   onTextChange: (value: string) => void;
   onTextPatch: (patch: Partial<TextElement>) => void;
+  captionStyles?: Slide["textStyles"];
+  onCaptionStylePatch: (role: "label" | "headline", patch: Partial<TypographyStyle>) => void;
+  onCaptionStyleReset: (role: "label" | "headline") => void;
   onDeleteText: () => void;
   hidden: boolean;
   locked: boolean;
@@ -1182,6 +1214,14 @@ function ActiveElementPanel({
           onTextPatch={onTextPatch}
         />
       )}
+
+      {activeId === "caption" ? (
+        <CaptionTypographyPanel
+          styles={captionStyles}
+          onPatch={onCaptionStylePatch}
+          onReset={onCaptionStyleReset}
+        />
+      ) : null}
 
       <div className="space-y-1">
         <div className="flex items-center justify-between">
@@ -1352,8 +1392,11 @@ function TextElementPanel({
   onTextPatch: (patch: Partial<TextElement>) => void;
 }) {
   const text = element.text?.[locale] ?? pickText(element.text, locale);
+  const fontId = fontOptionId(element.fontFamily, "dm-sans");
+  const adaptiveColor = element.adaptiveColor !== false;
+  const decoration = element.textDecoration ?? "none";
   return (
-    <div className="space-y-2 rounded border bg-muted/30 p-2">
+    <div className="space-y-2 rounded border bg-muted/30 p-2" aria-label="Text styling">
       <div className="space-y-1">
         <Label className="text-[11px] text-muted-foreground">Text</Label>
         <Textarea
@@ -1365,24 +1408,78 @@ function TextElementPanel({
       </div>
       <div className="grid grid-cols-[1fr_76px] gap-2">
         <div className="space-y-1">
-          <Label className="text-[11px] text-muted-foreground">Size</Label>
+          <Label className="text-[11px] text-muted-foreground">Size (px)</Label>
           <Input
             type="number"
             min={12}
             max={400}
             value={Math.round(element.fontSize || 72)}
             onChange={(event) => onTextPatch({ fontSize: Number(event.target.value) || 72 })}
+            aria-label="Text size"
           />
         </div>
         <div className="space-y-1">
           <Label className="text-[11px] text-muted-foreground">Color</Label>
           <Input
             type="color"
-            value={element.color || "#171717"}
+            value={/^#[0-9a-f]{6}$/i.test(element.color || "") ? element.color! : "#171717"}
             className="h-9 p-1"
             onChange={(event) => onTextPatch({ color: event.target.value })}
+            aria-label="Text color"
           />
         </div>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div className="space-y-1">
+          <Label className="text-[11px] text-muted-foreground">Font</Label>
+          <Select value={fontId} onValueChange={(value) => onTextPatch({ fontFamily: value })}>
+            <SelectTrigger aria-label="Text font" className="h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {FONT_OPTIONS.map((option) => <SelectItem key={option.id} value={option.id}>{option.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[11px] text-muted-foreground">Weight</Label>
+          <Select value={String(element.fontWeight || 700)} onValueChange={(value) => onTextPatch({ fontWeight: Number(value) })}>
+            <SelectTrigger aria-label="Text weight" className="h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {FONT_WEIGHT_OPTIONS.map((option) => <SelectItem key={option.value} value={String(option.value)}>{option.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <button
+          type="button"
+          aria-label="Bold text"
+          aria-pressed={(element.fontWeight ?? 700) >= 700}
+          onClick={() => onTextPatch({ fontWeight: (element.fontWeight ?? 700) >= 700 ? 500 : 700 })}
+          className={cn("rounded-md border px-2.5 py-1.5 text-xs", (element.fontWeight ?? 700) >= 700 ? "border-[hsl(var(--accent))]/70 bg-[hsl(var(--accent))]/10 font-bold" : "border-border/70 text-muted-foreground hover:text-foreground")}
+        >
+          Bold
+        </button>
+        <button
+          type="button"
+          aria-label="Italic text"
+          aria-pressed={element.fontStyle === "italic"}
+          onClick={() => onTextPatch({ fontStyle: element.fontStyle === "italic" ? "normal" : "italic" })}
+          className={cn("rounded-md border px-2.5 py-1.5 text-xs", element.fontStyle === "italic" ? "border-[hsl(var(--accent))]/70 bg-[hsl(var(--accent))]/10" : "border-border/70 text-muted-foreground hover:text-foreground")}
+        >
+          <span className="italic">Italic</span>
+        </button>
+        <Select value={decoration} onValueChange={(value) => onTextPatch({ textDecoration: value as TextElement["textDecoration"] })}>
+          <SelectTrigger aria-label="Text decoration" className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">No decoration</SelectItem>
+            <SelectItem value="underline">Underline</SelectItem>
+            <SelectItem value="line-through">Strike</SelectItem>
+          </SelectContent>
+        </Select>
+        <label className="ml-auto flex items-center gap-1.5 text-[10px] text-muted-foreground">
+          <input type="checkbox" checked={adaptiveColor} onChange={(event) => onTextPatch({ adaptiveColor: event.target.checked })} aria-label="Auto contrast text" className="h-4 w-4 accent-[hsl(var(--accent))]" />
+          Auto contrast
+        </label>
       </div>
       <div className="grid grid-cols-3 gap-1">
         <LayerButton
@@ -1406,6 +1503,143 @@ function TextElementPanel({
         >
           <AlignRight className="h-3.5 w-3.5" />
         </LayerButton>
+      </div>
+    </div>
+  );
+}
+
+function CaptionTypographyPanel({
+  styles,
+  onPatch,
+  onReset,
+}: {
+  styles?: Slide["textStyles"];
+  onPatch: (role: "label" | "headline", patch: Partial<TypographyStyle>) => void;
+  onReset: (role: "label" | "headline") => void;
+}) {
+  return (
+    <div className="space-y-2 rounded border bg-muted/30 p-2" aria-label="Caption typography">
+      <div className="flex items-baseline justify-between gap-2">
+        <Label className="text-[11px] font-semibold">Caption typography</Label>
+        <span className="text-[9px] text-muted-foreground">this slide only</span>
+      </div>
+      <CaptionRoleControl
+        role="label"
+        label="Label / eyebrow"
+        style={{ ...DEFAULT_TYPOGRAPHY.body, ...(styles?.label || {}) }}
+        fallbackSize={38}
+        fallbackFamily="dm-sans"
+        onPatch={onPatch}
+        onReset={onReset}
+      />
+      <CaptionRoleControl
+        role="headline"
+        label="Headline"
+        style={{ ...DEFAULT_TYPOGRAPHY.display, ...(styles?.headline || {}) }}
+        fallbackSize={122}
+        fallbackFamily="fraunces"
+        onPatch={onPatch}
+        onReset={onReset}
+      />
+      <p className="text-[10px] leading-relaxed text-muted-foreground">Auto contrast keeps the accent and headline readable when this slide is light, dark or connected across seams.</p>
+    </div>
+  );
+}
+
+function CaptionRoleControl({
+  role,
+  label,
+  style,
+  fallbackSize,
+  fallbackFamily,
+  onPatch,
+  onReset,
+}: {
+  role: "label" | "headline";
+  label: string;
+  style: TypographyStyle;
+  fallbackSize: number;
+  fallbackFamily: string;
+  onPatch: (role: "label" | "headline", patch: Partial<TypographyStyle>) => void;
+  onReset: (role: "label" | "headline") => void;
+}) {
+  const fontId = fontOptionId(style.family, fallbackFamily);
+  const adaptiveColor = style.adaptiveColor !== false;
+  return (
+    <div className="rounded-md bg-background/70 p-2 shadow-[0_0_0_1px_hsl(var(--border)/.55)]">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="text-[10px] font-medium">{label}</span>
+        <button type="button" onClick={() => onReset(role)} className="text-[9px] text-muted-foreground underline underline-offset-2 hover:text-foreground">Reset</button>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div className="space-y-1">
+          <Label className="text-[9px] text-muted-foreground">Font</Label>
+          <Select value={fontId} onValueChange={(value) => onPatch(role, { family: value })}>
+            <SelectTrigger aria-label={`${label} font`} className="h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>{FONT_OPTIONS.map((option) => <SelectItem key={option.id} value={option.id}>{option.label}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[9px] text-muted-foreground">Size (px)</Label>
+          <Input
+            type="number"
+            min={8}
+            max={800}
+            value={Math.round(style.fontSize || fallbackSize)}
+            onChange={(event) => onPatch(role, { fontSize: Number(event.target.value) || fallbackSize })}
+            aria-label={`${label} size`}
+            className="h-8 text-xs"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[9px] text-muted-foreground">Weight</Label>
+          <Select value={String(style.weight || (role === "headline" ? 700 : 600))} onValueChange={(value) => onPatch(role, { weight: Number(value) })}>
+            <SelectTrigger aria-label={`${label} weight`} className="h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>{FONT_WEIGHT_OPTIONS.map((option) => <SelectItem key={option.value} value={String(option.value)}>{option.label}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[9px] text-muted-foreground">Color</Label>
+          <Input
+            type="color"
+            value={/^#[0-9a-f]{6}$/i.test(style.color || "") ? style.color! : "#17213A"}
+            onChange={(event) => onPatch(role, { color: event.target.value.toUpperCase() })}
+            aria-label={`${label} color`}
+            className="h-8 p-1"
+          />
+        </div>
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+        <button
+          type="button"
+          aria-label={`${label} bold`}
+          aria-pressed={(style.weight ?? (role === "headline" ? 700 : 600)) >= 700}
+          onClick={() => onPatch(role, { weight: (style.weight ?? 500) >= 700 ? 500 : 700 })}
+          className={cn("rounded-md border px-2.5 py-1.5 text-xs", (style.weight ?? (role === "headline" ? 700 : 600)) >= 700 ? "border-[hsl(var(--accent))]/70 bg-[hsl(var(--accent))]/10 font-bold" : "border-border/70 text-muted-foreground hover:text-foreground")}
+        >
+          Bold
+        </button>
+        <button
+          type="button"
+          aria-label={`${label} italic`}
+          aria-pressed={style.style === "italic"}
+          onClick={() => onPatch(role, { style: style.style === "italic" ? "normal" : "italic" })}
+          className={cn("rounded-md border px-2.5 py-1.5 text-xs", style.style === "italic" ? "border-[hsl(var(--accent))]/70 bg-[hsl(var(--accent))]/10" : "border-border/70 text-muted-foreground hover:text-foreground")}
+        >
+          <span className="italic">Italic</span>
+        </button>
+        <Select value={style.decoration ?? "none"} onValueChange={(value) => onPatch(role, { decoration: value as TypographyStyle["decoration"] })}>
+          <SelectTrigger aria-label={`${label} decoration`} className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">No decoration</SelectItem>
+            <SelectItem value="underline">Underline</SelectItem>
+            <SelectItem value="line-through">Strike</SelectItem>
+          </SelectContent>
+        </Select>
+        <label className="ml-auto flex items-center gap-1.5 text-[10px] text-muted-foreground">
+          <input type="checkbox" checked={adaptiveColor} onChange={(event) => onPatch(role, { adaptiveColor: event.target.checked })} aria-label={`${label} auto contrast`} className="h-4 w-4 accent-[hsl(var(--accent))]" />
+          Auto contrast
+        </label>
       </div>
     </div>
   );

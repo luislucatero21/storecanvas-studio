@@ -1,17 +1,14 @@
 import type { Metadata } from "next";
-import { DM_Sans, Fraunces } from "next/font/google";
 import "./globals.css";
-
-const bodyFont = DM_Sans({
-  subsets: ["latin"],
-  variable: "--font-body",
-  display: "swap",
-});
-const displayFont = Fraunces({
-  subsets: ["latin"],
-  variable: "--font-display",
-  display: "swap",
-});
+import {
+  bodyFont,
+  displayFont,
+  instrumentSerifFont,
+  interFont,
+  manropeFont,
+  sourceSansFont,
+  spaceGroteskFont,
+} from "./fonts";
 
 export const metadata: Metadata = {
   title: "StoreCanvas — Campaign studio",
@@ -21,7 +18,19 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${bodyFont.variable} ${displayFont.variable}`}>{children}</body>
+      <body
+        className={[
+          bodyFont.variable,
+          displayFont.variable,
+          manropeFont.variable,
+          spaceGroteskFont.variable,
+          sourceSansFont.variable,
+          interFont.variable,
+          instrumentSerifFont.variable,
+        ].join(" ")}
+      >
+        {children}
+      </body>
     </html>
   );
 }

@@ -690,6 +690,8 @@ export function ScreenshotEditor() {
         campaignSourceUrl={state.campaignSource?.sourceUrl}
         copyLinked={state.copySync?.enabled === true}
         brandColors={state.brand?.colors}
+        brandTypography={state.brand?.typography}
+        accentMode={state.brand?.accentMode}
         onTemplateChange={(templateId, options) => {
           const template = state.customTemplate?.id === templateId ? state.customTemplate : campaignTemplateById(templateId);
           setState((project) => project.customTemplate?.id === templateId
@@ -713,6 +715,15 @@ export function ScreenshotEditor() {
           toast.success("Custom colors applied", {
             description: "Screenshots, layouts, typography and localized copy stayed in place.",
           });
+        }}
+        onTypographyChange={(typography) => {
+          setState((project) => ({ ...project, brand: { ...project.brand, typography } }));
+          toast.success("Typography applied", {
+            description: "The campaign type system changed; individual layers can still override it.",
+          });
+        }}
+        onAccentModeChange={(accentMode) => {
+          setState((project) => ({ ...project, brand: { ...project.brand, accentMode } }));
         }}
         onApplyCampaignImport={(proposal, options) => {
           setState((project) => applyCampaignImport(project, proposal, options));

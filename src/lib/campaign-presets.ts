@@ -173,6 +173,13 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
     description: "A clear headline, a capture-led proof point, then a memorable closer.",
     signature: "Measured contrast with one two-screen reveal.",
     recommendedPaletteId: "parchment-signal",
+    typography: {
+      display: { family: "fraunces", weight: 700, sizeScale: 1 },
+      body: { family: "dm-sans", weight: 500, sizeScale: 1 },
+      label: { family: "dm-sans", weight: 700, adaptiveColor: true },
+      headline: { family: "fraunces", weight: 700, adaptiveColor: true },
+      text: { family: "dm-sans", weight: 600 },
+    },
     layouts: [
       "hero",
       "device-bottom",
@@ -195,6 +202,13 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
     description: "Alternating light and dark beats for apps with momentum, routines or motion.",
     signature: "An energetic front-to-back cadence with a late reveal.",
     recommendedPaletteId: "afterglow-pulse",
+    typography: {
+      display: { family: "space-grotesk", weight: 700, sizeScale: 1.04 },
+      body: { family: "manrope", weight: 600, sizeScale: 1 },
+      label: { family: "space-grotesk", weight: 700, adaptiveColor: true },
+      headline: { family: "space-grotesk", weight: 700, adaptiveColor: true },
+      text: { family: "manrope", weight: 600 },
+    },
     layouts: [
       "hero",
       "device-top",
@@ -217,6 +231,13 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
     description: "A sober system that lets dense real product captures make the claim.",
     signature: "An opening promise followed by quiet, legible evidence.",
     recommendedPaletteId: "tide-notes",
+    typography: {
+      display: { family: "source-sans-3", weight: 700, sizeScale: 1 },
+      body: { family: "dm-sans", weight: 500, sizeScale: 1 },
+      label: { family: "source-sans-3", weight: 700, adaptiveColor: true },
+      headline: { family: "source-sans-3", weight: 700, adaptiveColor: true },
+      text: { family: "dm-sans", weight: 500 },
+    },
     layouts: [
       "hero",
       "device-bottom",
@@ -239,6 +260,13 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
     description: "A bolder sequence with big pauses so the campaign has room to breathe.",
     signature: "Two typographic rests frame the product’s strongest proof.",
     recommendedPaletteId: "plum-press",
+    typography: {
+      display: { family: "instrument-serif", weight: 400, sizeScale: 1.08 },
+      body: { family: "manrope", weight: 500, sizeScale: 1 },
+      label: { family: "manrope", weight: 700, adaptiveColor: true },
+      headline: { family: "instrument-serif", weight: 400, adaptiveColor: true },
+      text: { family: "manrope", weight: 500 },
+    },
     layouts: [
       "hero",
       "device-bottom",
@@ -261,6 +289,13 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
     description: "A brisk sequence of alternating device positions for launches with many tangible wins.",
     signature: "Compressed proof beats finish on one decisive statement.",
     recommendedPaletteId: "cobalt-proof",
+    typography: {
+      display: { family: "space-grotesk", weight: 700, sizeScale: 1.08 },
+      body: { family: "inter", weight: 500, sizeScale: 1 },
+      label: { family: "space-grotesk", weight: 700, adaptiveColor: true },
+      headline: { family: "space-grotesk", weight: 700, adaptiveColor: true },
+      text: { family: "inter", weight: 500 },
+    },
     layouts: [
       "hero",
       "device-top",
@@ -283,6 +318,13 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
     description: "Long visual pauses, restrained repetition and generous room for premium product detail.",
     signature: "A calm opening and two typographic rests reduce cognitive load.",
     recommendedPaletteId: "rose-clay",
+    typography: {
+      display: { family: "instrument-serif", weight: 400, sizeScale: 1.1 },
+      body: { family: "manrope", weight: 500, sizeScale: 1 },
+      label: { family: "manrope", weight: 700, adaptiveColor: true },
+      headline: { family: "instrument-serif", weight: 400, adaptiveColor: true },
+      text: { family: "manrope", weight: 500 },
+    },
     layouts: [
       "hero",
       "device-bottom",
@@ -305,6 +347,13 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
     description: "A grounded proof sequence for health, habit and utility apps that need to feel trustworthy.",
     signature: "Real screens lead; quieter interludes make the evidence memorable.",
     recommendedPaletteId: "orchard-ledger",
+    typography: {
+      display: { family: "manrope", weight: 700, sizeScale: 1 },
+      body: { family: "dm-sans", weight: 500, sizeScale: 1 },
+      label: { family: "manrope", weight: 700, adaptiveColor: true },
+      headline: { family: "manrope", weight: 700, adaptiveColor: true },
+      text: { family: "dm-sans", weight: 500 },
+    },
     layouts: [
       "hero",
       "device-bottom",
@@ -327,6 +376,13 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
     description: "Poster-like contrasts and full stops for campaigns that must read instantly in search results.",
     signature: "Four dark beats create a clear thumbnail rhythm from first frame to close.",
     recommendedPaletteId: "saffron-night",
+    typography: {
+      display: { family: "space-grotesk", weight: 700, sizeScale: 1.06 },
+      body: { family: "inter", weight: 500, sizeScale: 1 },
+      label: { family: "space-grotesk", weight: 700, adaptiveColor: true },
+      headline: { family: "space-grotesk", weight: 700, adaptiveColor: true },
+      text: { family: "inter", weight: 500 },
+    },
     layouts: [
       "hero",
       "device-top",
@@ -349,6 +405,13 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
     description: "Two image-led reveals connect adjacent screens while devices remain independently composed.",
     signature: "A cinematic panorama at screens four–five and a visual echo near the close.",
     recommendedPaletteId: "apricot-ink",
+    typography: {
+      display: { family: "fraunces", weight: 700, sizeScale: 1.04 },
+      body: { family: "dm-sans", weight: 500, sizeScale: 1 },
+      label: { family: "dm-sans", weight: 700, adaptiveColor: true },
+      headline: { family: "fraunces", weight: 700, adaptiveColor: true },
+      text: { family: "dm-sans", weight: 600 },
+    },
     layouts: ["hero", "device-bottom", "device-top", "device-bottom", "device-top", "no-device", "device-bottom", "device-top", "device-bottom", "no-device"],
     invertedIndices: [2, 6],
     connectedPairs: [{ startIndex: 3, span: 2 }, { startIndex: 6, span: 2 }],
@@ -360,6 +423,13 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
     description: "Oversized UI, quiet typography and two connected visual moments create launch-film pacing.",
     signature: "Big crops and controlled pauses keep the product dominant.",
     recommendedPaletteId: "midnight-pool",
+    typography: {
+      display: { family: "fraunces", weight: 700, sizeScale: 1.08 },
+      body: { family: "manrope", weight: 500, sizeScale: 1 },
+      label: { family: "manrope", weight: 700, adaptiveColor: true },
+      headline: { family: "fraunces", weight: 700, adaptiveColor: true },
+      text: { family: "manrope", weight: 500 },
+    },
     layouts: ["hero", "device-top", "device-bottom", "two-devices", "device-top", "no-device", "device-bottom", "two-devices", "device-top", "no-device"],
     invertedIndices: [0, 3, 5, 8],
     connectedPairs: [{ startIndex: 3, span: 2 }, { startIndex: 7, span: 2 }],
@@ -371,6 +441,13 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
     description: "A human editorial rhythm for health, routine and coaching products with tangible evidence.",
     signature: "Warm connected imagery frames calm product proof.",
     recommendedPaletteId: "alpine-mint",
+    typography: {
+      display: { family: "fraunces", weight: 700, sizeScale: 1 },
+      body: { family: "manrope", weight: 500, sizeScale: 1 },
+      label: { family: "manrope", weight: 700, adaptiveColor: true },
+      headline: { family: "fraunces", weight: 700, adaptiveColor: true },
+      text: { family: "manrope", weight: 500 },
+    },
     layouts: ["hero", "device-bottom", "two-devices", "device-top", "device-bottom", "no-device", "device-bottom", "device-top", "two-devices", "no-device"],
     invertedIndices: [2, 5, 8],
     connectedPairs: [{ startIndex: 1, span: 2 }, { startIndex: 6, span: 2 }],
@@ -382,6 +459,13 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
     description: "A high-contrast sequence with connected art, oversized devices and memorable typographic rests.",
     signature: "A bold opening seam gives way to a decisive final proof beat.",
     recommendedPaletteId: "ultraviolet-cream",
+    typography: {
+      display: { family: "space-grotesk", weight: 700, sizeScale: 1.08 },
+      body: { family: "dm-sans", weight: 600, sizeScale: 1 },
+      label: { family: "space-grotesk", weight: 700, adaptiveColor: true },
+      headline: { family: "space-grotesk", weight: 700, adaptiveColor: true },
+      text: { family: "dm-sans", weight: 600 },
+    },
     layouts: ["hero", "device-top", "device-bottom", "no-device", "device-bottom", "two-devices", "device-top", "device-bottom", "two-devices", "no-device"],
     invertedIndices: [1, 3, 6, 9],
     connectedPairs: [{ startIndex: 1, span: 2 }, { startIndex: 5, span: 2 }],
@@ -473,6 +557,9 @@ export function applyCampaignTemplateDefinition(
   const next = {
     ...project,
     templateId: template.id,
+    ...(options.applyTemplateTypography && template.typography
+      ? { brand: { ...project.brand, typography: template.typography } }
+      : {}),
     slidesByDevice: {
       ...project.slidesByDevice,
       [device]: recomposed,

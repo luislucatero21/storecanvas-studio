@@ -17,6 +17,7 @@ StoreCanvas uses the following direct open-source dependencies and project tools
 | Tailwind CSS / tailwind-merge | Styling and class composition | MIT | [tailwindlabs/tailwindcss](https://github.com/tailwindlabs/tailwindcss), [dcastil/tailwind-merge](https://github.com/dcastil/tailwind-merge) |
 | Vitest / Vite | Unit-test runner and tooling | MIT | [vitest-dev/vitest](https://github.com/vitest-dev/vitest), [vitejs/vite](https://github.com/vitejs/vite) |
 | Playwright | Browser/UI tests and CLI rendering | Apache-2.0 | [microsoft/playwright](https://github.com/microsoft/playwright) |
+| Google Fonts families (DM Sans, Fraunces, Manrope, Space Grotesk, Source Sans 3, Inter, Instrument Serif) | Self-hosted campaign typography via `next/font/google` | SIL OFL 1.1 | [google/fonts](https://github.com/google/fonts) · [Manrope](https://github.com/google/fonts/tree/main/ofl/manrope) · [Space Grotesk](https://github.com/floriankarsten/space-grotesk) · [Instrument Serif](https://github.com/google/fonts/tree/main/ofl/instrumentserif) |
 | dnd-kit (`@dnd-kit/*`) | Drag-and-drop interactions | MIT | [clauderic/dnd-kit](https://github.com/clauderic/dnd-kit) |
 | Radix UI (`@radix-ui/react-*`) | Accessible primitives | MIT | [radix-ui/primitives](https://github.com/radix-ui/primitives) |
 | class-variance-authority | Component variants | Apache-2.0 | [joe-bell/cva](https://github.com/joe-bell/cva) |

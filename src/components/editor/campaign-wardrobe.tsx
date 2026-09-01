@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, Layers3, Palette, SlidersHorizontal, Sparkles } from "lucide-react";
+import { Check, Layers3, Palette, SlidersHorizontal, Sparkles, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,12 +13,28 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   CAMPAIGN_TEMPLATES,
   PALETTE_PRESETS,
   campaignTemplateById,
   paletteById,
 } from "@/lib/campaign-presets";
-import type { BrandTokens, CampaignTemplate, Device, PalettePreset, TemplateApplyOptions } from "@/lib/types";
+import { contrastRatio } from "@/lib/color";
+import {
+  DEFAULT_TYPOGRAPHY,
+  FONT_OPTIONS,
+  FONT_WEIGHT_OPTIONS,
+  TYPOGRAPHY_SCALE_OPTIONS,
+  fontOptionById,
+  fontOptionId,
+} from "@/lib/typography";
+import type { AccentMode, BrandTokens, CampaignTemplate, Device, PalettePreset, TemplateApplyOptions, TypographyStyle, TypographyTokens } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -28,10 +44,14 @@ type Props = {
   paletteId?: string;
   customPaletteName?: string;
   colors?: BrandTokens["colors"];
+  typography?: BrandTokens["typography"];
+  accentMode?: AccentMode;
   disabled?: boolean;
   onTemplateChange: (templateId: string, options?: TemplateApplyOptions) => void;
   onPaletteChange: (paletteId: string) => void;
   onCustomColorsChange: (colors: NonNullable<BrandTokens["colors"]>) => void;
+  onTypographyChange: (typography: TypographyTokens) => void;
+  onAccentModeChange: (mode: AccentMode) => void;
 };
 
 export function CampaignWardrobe({
@@ -41,13 +61,18 @@ export function CampaignWardrobe({
   paletteId,
   customPaletteName,
   colors,
+  typography,
+  accentMode = "adaptive",
   disabled,
   onTemplateChange,
   onPaletteChange,
   onCustomColorsChange,
+  onTypographyChange,
+  onAccentModeChange,
 }: Props) {
   const [open, setOpen] = React.useState(false);
   const [useRecommendedPalette, setUseRecommendedPalette] = React.useState(false);
+  const [useTemplateTypography, setUseTemplateTypography] = React.useState(false);
   const [resetCustomizations, setResetCustomizations] = React.useState(false);
   const templates = React.useMemo(
     () => customTemplate ? [customTemplate, ...CAMPAIGN_TEMPLATES.filter((item) => item.id !== customTemplate.id)] : CAMPAIGN_TEMPLATES,
@@ -105,6 +130,9 @@ export function CampaignWardrobe({
               <TabsTrigger value="tune" className="rounded-full px-4 text-xs">
                 Tune
               </TabsTrigger>
+              <TabsTrigger value="typography" className="rounded-full px-4 text-xs">
+                Type
+              </TabsTrigger>
             </TabsList>
             <p className="text-xs text-muted-foreground">
               Current: <span className="font-medium text-foreground">{activeTemplate.name}</span> +{" "}
@@ -120,7 +148,10 @@ export function CampaignWardrobe({
               <button type="button" className={cn("flex items-center justify-between rounded-md border px-3 py-2 text-left text-xs", resetCustomizations ? "border-[hsl(var(--accent))]/60 bg-[hsl(var(--accent))]/10" : "border-border/60 bg-background/55")} onClick={() => setResetCustomizations((value) => !value)} aria-label="Reset built-in placement with template" aria-pressed={resetCustomizations}>
                 <span><span className="block font-medium">Reset built-in placement</span><span className="text-[10px] text-muted-foreground">Override primary device and caption positions</span></span>{resetCustomizations ? <Check className="h-4 w-4 text-[hsl(var(--accent))]" /> : null}
               </button>
-              <p className="sm:col-span-2 text-[10px] leading-relaxed text-muted-foreground">Connected artwork automatically moves to this template’s designed two-screen seams. Both overrides above are opt-in.</p>
+              <button type="button" className={cn("flex items-center justify-between rounded-md border px-3 py-2 text-left text-xs", useTemplateTypography ? "border-[hsl(var(--accent))]/60 bg-[hsl(var(--accent))]/10" : "border-border/60 bg-background/55")} onClick={() => setUseTemplateTypography((value) => !value)} aria-label="Use template recommended typography" aria-pressed={useTemplateTypography}>
+                <span><span className="block font-medium">Use template type direction</span><span className="text-[10px] text-muted-foreground">Override current font pairing and weights</span></span>{useTemplateTypography ? <Check className="h-4 w-4 text-[hsl(var(--accent))]" /> : null}
+              </button>
+              <p className="sm:col-span-2 text-[10px] leading-relaxed text-muted-foreground">Connected artwork automatically moves to this template’s designed two-screen seams. Every override above is opt-in.</p>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               {templates.map((template) => (
@@ -130,7 +161,7 @@ export function CampaignWardrobe({
                   customColors={template.id === customTemplate?.id ? colors : undefined}
                   selected={template.id === activeTemplate.id}
                   disabled={disabled}
-                  onSelect={() => onTemplateChange(template.id, { applyRecommendedPalette: useRecommendedPalette, resetCustomizations, reflowConnectedArtwork: true })}
+                  onSelect={() => onTemplateChange(template.id, { applyRecommendedPalette: useRecommendedPalette, applyTemplateTypography: useTemplateTypography, resetCustomizations, reflowConnectedArtwork: true })}
                 />
               ))}
             </div>
@@ -165,9 +196,248 @@ export function CampaignWardrobe({
               onApply={onCustomColorsChange}
             />
           </TabsContent>
+
+          <TabsContent value="typography" className="mt-5">
+            <TypographyTune
+              typography={typography}
+              accentMode={accentMode}
+              disabled={disabled}
+              onApply={(next, nextAccentMode) => {
+                onTypographyChange(next);
+                onAccentModeChange(nextAccentMode);
+              }}
+            />
+          </TabsContent>
         </Tabs>
       </DialogContent>
     </Dialog>
+  );
+}
+
+type TypographyGroup = {
+  key: "display" | "body";
+  label: string;
+  description: string;
+  roles: Array<"display" | "headline" | "body" | "label" | "text">;
+  fallbackFamily: string;
+  fallbackColor: string;
+};
+
+const TYPOGRAPHY_GROUPS: TypographyGroup[] = [
+  {
+    key: "display",
+    label: "Display / headlines",
+    description: "The main promise, feature headlines and the app name.",
+    roles: ["display", "headline"],
+    fallbackFamily: "fraunces",
+    fallbackColor: "#17213A",
+  },
+  {
+    key: "body",
+    label: "Body / labels",
+    description: "Eyebrows, supporting copy and extra text layers.",
+    roles: ["body", "label", "text"],
+    fallbackFamily: "dm-sans",
+    fallbackColor: "#17213A",
+  },
+];
+
+function TypographyTune({
+  typography,
+  accentMode,
+  disabled,
+  onApply,
+}: {
+  typography?: BrandTokens["typography"];
+  accentMode: AccentMode;
+  disabled?: boolean;
+  onApply: (typography: TypographyTokens, accentMode: AccentMode) => void;
+}) {
+  const [draft, setDraft] = React.useState<TypographyTokens>(() => ({
+    ...DEFAULT_TYPOGRAPHY,
+    ...typography,
+  }));
+  const [adaptiveAccent, setAdaptiveAccent] = React.useState(accentMode !== "fixed");
+
+  React.useEffect(() => {
+    setDraft({ ...DEFAULT_TYPOGRAPHY, ...typography });
+    setAdaptiveAccent(accentMode !== "fixed");
+  }, [accentMode, typography]);
+
+  function groupStyle(group: TypographyGroup): TypographyStyle {
+    return { ...DEFAULT_TYPOGRAPHY[group.key], ...(draft[group.key] || {}), };
+  }
+
+  function patchGroup(group: TypographyGroup, patch: Partial<TypographyStyle>) {
+    setDraft((current) => {
+      const next = { ...current };
+      for (const role of group.roles) {
+        next[role] = { ...(current[role] || {}), ...patch };
+      }
+      return next;
+    });
+  }
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-border/70 bg-background/55">
+      <div className="border-b border-border/70 p-5">
+        <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          <Type className="h-3.5 w-3.5 text-[hsl(var(--accent))]" /> Type direction
+        </div>
+        <h3 className="store-panel-title mt-2 text-xl">Give every message a voice</h3>
+        <p className="mt-2 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+          Choose a bundled font pairing, scale and emphasis for the whole campaign. Select a caption or text layer in the canvas to override it individually.
+        </p>
+      </div>
+
+      <div className="grid gap-4 p-5 lg:grid-cols-2">
+        {TYPOGRAPHY_GROUPS.map((group) => {
+          const style = groupStyle(group);
+          const family = fontOptionId(style.family, group.fallbackFamily);
+          const font = fontOptionById(family);
+          const scale = String(style.sizeScale ?? 1);
+          const weight = String(style.weight ?? (group.key === "display" ? 700 : 500));
+          const adaptive = style.adaptiveColor !== false;
+          return (
+            <section key={group.key} className="rounded-lg border border-border/70 bg-card/60 p-4" aria-label={group.label}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground">{group.label}</h4>
+                  <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{group.description}</p>
+                </div>
+                <span
+                  aria-hidden
+                  className="rounded-md border border-border/70 px-2 py-1 text-lg"
+                  style={{ fontFamily: font?.family, fontStyle: style.style ?? "normal", fontWeight: style.weight ?? 500 }}
+                >
+                  Aa
+                </span>
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <label className="grid gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                  Font
+                  <Select value={family} onValueChange={(value) => patchGroup(group, { family: value })} disabled={disabled}>
+                    <SelectTrigger aria-label={`${group.key === "display" ? "Display" : "Body"} font`} className="h-9 text-xs normal-case tracking-normal">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FONT_OPTIONS.map((option) => (
+                        <SelectItem key={option.id} value={option.id}>{option.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </label>
+                <label className="grid gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                  Scale
+                  <Select value={scale} onValueChange={(value) => patchGroup(group, { sizeScale: Number(value) })} disabled={disabled}>
+                    <SelectTrigger aria-label={`${group.key === "display" ? "Display" : "Body"} type scale`} className="h-9 text-xs normal-case tracking-normal">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TYPOGRAPHY_SCALE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={String(option.value)}>{option.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </label>
+                <label className="grid gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                  Weight
+                  <Select value={weight} onValueChange={(value) => patchGroup(group, { weight: Number(value) })} disabled={disabled}>
+                    <SelectTrigger aria-label={`${group.key === "display" ? "Display" : "Body"} weight`} className="h-9 text-xs normal-case tracking-normal">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FONT_WEIGHT_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={String(option.value)}>{option.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </label>
+                <label className="grid gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                  Color
+                  <span className="flex h-9 items-center gap-2 rounded-md border border-input px-2">
+                    <input
+                      type="color"
+                      value={/^#[0-9a-f]{6}$/i.test(style.color || "") ? style.color! : group.fallbackColor}
+                      disabled={disabled}
+                      onChange={(event) => patchGroup(group, { color: event.target.value.toUpperCase() })}
+                      className="h-6 w-7 cursor-pointer rounded border-0 bg-transparent p-0 disabled:cursor-not-allowed"
+                      aria-label={`${group.key === "display" ? "Display" : "Body"} text color`}
+                    />
+                    <span className="font-mono text-[10px] normal-case tracking-normal text-foreground/70">{style.color || "Theme foreground"}</span>
+                  </span>
+                </label>
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  disabled={disabled}
+                  aria-label={`${group.key === "display" ? "Display" : "Body"} bold`}
+                  aria-pressed={(style.weight ?? (group.key === "display" ? 700 : 500)) >= 700}
+                  onClick={() => patchGroup(group, { weight: (style.weight ?? 500) >= 700 ? 500 : 700 })}
+                  className={cn("rounded-md border px-2.5 py-1.5 text-xs", (style.weight ?? (group.key === "display" ? 700 : 500)) >= 700 ? "border-[hsl(var(--accent))]/70 bg-[hsl(var(--accent))]/10 font-bold" : "border-border/70 text-muted-foreground hover:text-foreground")}
+                >
+                  Bold
+                </button>
+                <button
+                  type="button"
+                  disabled={disabled}
+                  aria-label={`${group.key === "display" ? "Display" : "Body"} italic`}
+                  aria-pressed={style.style === "italic"}
+                  onClick={() => patchGroup(group, { style: style.style === "italic" ? "normal" : "italic" })}
+                  className={cn("rounded-md border px-2.5 py-1.5 text-xs transition-colors", style.style === "italic" ? "border-[hsl(var(--accent))]/70 bg-[hsl(var(--accent))]/10 text-foreground" : "border-border/70 text-muted-foreground hover:text-foreground")}
+                >
+                  <span className="italic">Italic</span>
+                </button>
+                <Select value={style.decoration ?? "none"} onValueChange={(value) => patchGroup(group, { decoration: value as TypographyStyle["decoration"] })} disabled={disabled}>
+                  <SelectTrigger aria-label={`${group.key === "display" ? "Display" : "Body"} decoration`} className="h-8 w-32 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No decoration</SelectItem>
+                    <SelectItem value="underline">Underline</SelectItem>
+                    <SelectItem value="line-through">Strike</SelectItem>
+                  </SelectContent>
+                </Select>
+                <label className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={adaptive}
+                    disabled={disabled}
+                    onChange={(event) => patchGroup(group, { adaptiveColor: event.target.checked })}
+                    aria-label={`${group.key === "display" ? "Display" : "Body"} auto contrast`}
+                    className="h-4 w-4 accent-[hsl(var(--accent))]"
+                  />
+                  Auto contrast
+                </label>
+              </div>
+              <p className="mt-3 text-[10px] text-muted-foreground">
+                {font?.license}{font?.sourceUrl ? <> · <a href={font.sourceUrl} target="_blank" rel="noreferrer" className="underline underline-offset-2 hover:text-foreground">font source</a></> : null}
+              </p>
+            </section>
+          );
+        })}
+      </div>
+
+      <div className="flex flex-wrap items-start justify-between gap-4 border-t border-border/70 bg-muted/35 px-5 py-4">
+        <label className="flex max-w-xl items-start gap-2 text-xs text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={adaptiveAccent}
+            disabled={disabled}
+            onChange={(event) => setAdaptiveAccent(event.target.checked)}
+            aria-label="Adaptive accent color"
+            className="mt-0.5 h-4 w-4 accent-[hsl(var(--accent))]"
+          />
+          <span><span className="font-semibold text-foreground">Adaptive accent color</span><span className="block text-[11px] leading-relaxed">Recommended · keeps accent labels readable against the active light or dark surface while preserving their hue.</span></span>
+        </label>
+        <Button type="button" size="sm" disabled={disabled} onClick={() => onApply(draft, adaptiveAccent ? "adaptive" : "fixed")}>
+          Apply typography
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -255,19 +525,6 @@ function ColorTune({
       </div>
     </div>
   );
-}
-
-function contrastRatio(first: string, second: string) {
-  const luminance = (hex: string) => {
-    const channels = [1, 3, 5].map((offset) => Number.parseInt(hex.slice(offset, offset + 2), 16) / 255);
-    const [red, green, blue] = channels.map((channel) =>
-      channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4,
-    );
-    return red * 0.2126 + green * 0.7152 + blue * 0.0722;
-  };
-  const light = Math.max(luminance(first), luminance(second));
-  const dark = Math.min(luminance(first), luminance(second));
-  return (light + 0.05) / (dark + 0.05);
 }
 
 function TemplateChoice({

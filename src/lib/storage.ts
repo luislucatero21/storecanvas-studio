@@ -16,7 +16,7 @@ import {
   upsertLocalProject,
   type ProjectLibrary,
 } from "./project-library";
-import type { ConnectedArtwork, Device, DeviceModel, DevicePresentation, DeviceSlot, ElementTransform, ProjectState, Slide, SlotSpan, TextElement } from "./types";
+import type { ConnectedArtwork, Device, DeviceModel, DevicePresentation, DeviceSlot, ElementTransform, ProjectState, Slide, SlotSpan, TextElement, TypographyStyle } from "./types";
 
 const HISTORY_LIMIT = 50;
 // Coalesce rapid edits (typing, slider drags) into a single undo step.
@@ -43,6 +43,23 @@ function cleanTransform(value: unknown): ElementTransform | undefined {
   };
 }
 
+function cleanTypographyStyle(value: unknown): TypographyStyle | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const raw = value as Partial<TypographyStyle>;
+  const style: TypographyStyle = {};
+  if (typeof raw.family === "string" && raw.family.trim()) style.family = raw.family.trim();
+  if (typeof raw.fontSize === "number" && Number.isFinite(raw.fontSize)) style.fontSize = Math.max(1, Math.min(2000, raw.fontSize));
+  if (typeof raw.sizeScale === "number" && Number.isFinite(raw.sizeScale)) style.sizeScale = Math.max(0.7, Math.min(1.5, raw.sizeScale));
+  if (typeof raw.weight === "number" && Number.isFinite(raw.weight)) style.weight = Math.max(100, Math.min(900, raw.weight));
+  if (raw.style === "normal" || raw.style === "italic") style.style = raw.style;
+  if (raw.decoration === "none" || raw.decoration === "underline" || raw.decoration === "line-through") style.decoration = raw.decoration;
+  if (typeof raw.color === "string" && raw.color.trim()) style.color = raw.color.trim();
+  if (typeof raw.adaptiveColor === "boolean") style.adaptiveColor = raw.adaptiveColor;
+  if (typeof raw.letterSpacing === "number" && Number.isFinite(raw.letterSpacing)) style.letterSpacing = Math.max(-0.2, Math.min(0.5, raw.letterSpacing));
+  if (typeof raw.lineHeight === "number" && Number.isFinite(raw.lineHeight)) style.lineHeight = Math.max(0.5, Math.min(3, raw.lineHeight));
+  return Object.keys(style).length ? style : undefined;
+}
+
 function cleanTextElement(value: unknown): TextElement | undefined {
   if (!value || typeof value !== "object") return undefined;
   const raw = value as Partial<TextElement>;
@@ -53,13 +70,29 @@ function cleanTextElement(value: unknown): TextElement | undefined {
     id: raw.id,
     text: coerceLocalized(raw.text as unknown),
     transform,
+    ...(typeof raw.fontFamily === "string" && raw.fontFamily.trim()
+      ? { fontFamily: raw.fontFamily.trim() }
+      : {}),
     ...(typeof raw.fontSize === "number" && Number.isFinite(raw.fontSize)
-      ? { fontSize: raw.fontSize }
+      ? { fontSize: Math.max(1, Math.min(2000, raw.fontSize)) }
       : {}),
     ...(typeof raw.fontWeight === "number" && Number.isFinite(raw.fontWeight)
       ? { fontWeight: raw.fontWeight }
       : {}),
+    ...(raw.fontStyle === "normal" || raw.fontStyle === "italic"
+      ? { fontStyle: raw.fontStyle }
+      : {}),
+    ...(raw.textDecoration === "none" || raw.textDecoration === "underline" || raw.textDecoration === "line-through"
+      ? { textDecoration: raw.textDecoration }
+      : {}),
     ...(typeof raw.color === "string" ? { color: raw.color } : {}),
+    ...(typeof raw.adaptiveColor === "boolean" ? { adaptiveColor: raw.adaptiveColor } : {}),
+    ...(typeof raw.letterSpacing === "number" && Number.isFinite(raw.letterSpacing)
+      ? { letterSpacing: Math.max(-0.2, Math.min(0.5, raw.letterSpacing)) }
+      : {}),
+    ...(typeof raw.lineHeight === "number" && Number.isFinite(raw.lineHeight)
+      ? { lineHeight: Math.max(0.5, Math.min(3, raw.lineHeight)) }
+      : {}),
     ...(raw.align === "left" || raw.align === "center" || raw.align === "right"
       ? { align: raw.align }
       : {}),
@@ -140,6 +173,13 @@ function migrateSlide(slide: Slide): Slide {
   const textElements = Array.isArray(slide.textElements)
     ? slide.textElements.map(cleanTextElement).filter((t): t is TextElement => !!t)
     : undefined;
+  const textStyles = slide.textStyles
+    ? Object.fromEntries(
+        Object.entries(slide.textStyles)
+          .map(([role, style]) => [role, cleanTypographyStyle(style)])
+          .filter((entry): entry is [string, TypographyStyle] => !!entry[1]),
+      ) as Slide["textStyles"]
+    : undefined;
   const deviceSlots = Array.isArray(slide.deviceSlots)
     ? slide.deviceSlots.map(cleanDeviceSlot).filter((slot): slot is DeviceSlot => !!slot)
     : undefined;
@@ -159,6 +199,7 @@ function migrateSlide(slide: Slide): Slide {
     label: coerceLocalized(slide.label as unknown),
     headline: coerceLocalized(slide.headline as unknown),
     ...(transforms && Object.keys(transforms).length > 0 ? { transforms } : { transforms: undefined }),
+    ...(textStyles && Object.keys(textStyles).length > 0 ? { textStyles } : { textStyles: undefined }),
     ...(textElements && textElements.length > 0 ? { textElements } : { textElements: undefined }),
     ...(deviceSlots && deviceSlots.length > 0 ? { deviceSlots } : { deviceSlots: undefined }),
     ...(connectedArtworks && connectedArtworks.length > 0 ? { connectedArtworks } : { connectedArtworks: undefined }),

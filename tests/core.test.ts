@@ -26,6 +26,7 @@ import { setCopyLinking, writeLinkedCopy } from "@/lib/copy-sync";
 import { applyDeviceAngle, createDeviceSlot, setDeviceSlotLinking, setDeviceSlotSpan } from "@/lib/device-presentation";
 import { exportFileName, exportPath, slugify } from "@/lib/export-naming";
 import { captionContrastForRect, captionSegmentColors, captionTextGradient } from "@/lib/caption-contrast";
+import { accentForBackground } from "@/lib/color";
 import { getElementTransform, isCaptionContinuation } from "@/components/editor/slide-canvas";
 import { ProjectStateSchema } from "@/lib/schema";
 import { validateProject } from "@/lib/validation";
@@ -218,6 +219,16 @@ describe("StoreCanvas project contracts", () => {
     }
   });
 
+  it("adapts accent colors to the active surface while preserving fixed mode", () => {
+    const preferred = "#FFAA4D";
+    const surface = "#F3EEE6";
+    const adaptive = accentForBackground(preferred, surface, "adaptive");
+
+    expect(adaptive).not.toBe(preferred);
+    expect(contrastRatio(adaptive, surface)).toBeGreaterThanOrEqual(3);
+    expect(accentForBackground(preferred, surface, "fixed")).toBe(preferred);
+  });
+
   it("includes self-contained generated captures for the checked-in finance example", () => {
     for (const name of ["dashboard", "cash-flow", "accounts", "ask", "goals", "autopilot", "insights", "privacy", "bills"]) {
       expect(existsSync(resolve("public/screenshots/demo/ledgerly", `${name}.png`)), name).toBe(true);
@@ -301,6 +312,16 @@ describe("StoreCanvas project contracts", () => {
     expect(preserved.slidesByDevice.iphone[0].transforms).toEqual(slide.transforms);
     expect(overridden.paletteId).toBe("afterglow-pulse");
     expect(overridden.slidesByDevice.iphone[0].transforms).toBeUndefined();
+  });
+
+  it("applies a template type direction only when explicitly opted in", () => {
+    const project = { ...DEFAULT_PROJECT, brand: { colors: { accent: "#FF765D" } } };
+    const template = CAMPAIGN_TEMPLATES.find((item) => item.id === "afterglow-rhythm")!;
+    const preserved = applyCampaignTemplate(project, template.id, "iphone");
+    const applied = applyCampaignTemplate(project, template.id, "iphone", { applyTemplateTypography: true });
+
+    expect(preserved.brand?.typography).toBeUndefined();
+    expect(applied.brand?.typography).toEqual(template.typography);
   });
 
   it("reflows uploaded connected artwork to the active template's two-screen seam", () => {

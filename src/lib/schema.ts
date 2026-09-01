@@ -4,6 +4,25 @@ import { SLOT_SPAN_OPTIONS } from "./types";
 const DeviceSchema = z.enum(["iphone", "ipad", "android", "android-7", "android-10", "feature-graphic"]);
 const LayoutSchema = z.enum(["hero", "device-bottom", "device-top", "two-devices", "no-device", "split-landscape", "feature-graphic"]);
 const LocalizedTextSchema = z.union([z.string(), z.record(z.string(), z.string())]);
+const TypographyStyleSchema = z.object({
+  family: z.string().trim().min(1).optional(),
+  fontSize: z.number().finite().positive().max(2000).optional(),
+  sizeScale: z.number().finite().min(0.7).max(1.5).optional(),
+  weight: z.number().finite().min(100).max(900).optional(),
+  style: z.enum(["normal", "italic"]).optional(),
+  decoration: z.enum(["none", "underline", "line-through"]).optional(),
+  color: z.string().optional(),
+  adaptiveColor: z.boolean().optional(),
+  letterSpacing: z.number().finite().min(-0.2).max(0.5).optional(),
+  lineHeight: z.number().finite().min(0.5).max(3).optional(),
+}).passthrough();
+const TypographyTokensSchema = z.object({
+  display: TypographyStyleSchema.optional(),
+  body: TypographyStyleSchema.optional(),
+  label: TypographyStyleSchema.optional(),
+  headline: TypographyStyleSchema.optional(),
+  text: TypographyStyleSchema.optional(),
+}).passthrough();
 const TransformSchema = z.object({
   x: z.number().finite(),
   y: z.number().finite(),
@@ -20,6 +39,7 @@ const CampaignTemplateSchema = z.object({
   description: z.string(),
   signature: z.string(),
   recommendedPaletteId: z.string().trim().min(1),
+  typography: TypographyTokensSchema.optional(),
   layouts: z.array(LayoutSchema).min(1),
   invertedIndices: z.array(z.number().int().nonnegative()),
   connectedPairs: z.array(z.object({
@@ -66,9 +86,15 @@ const TextElementSchema = z.object({
   id: z.string().min(1),
   text: z.union([z.string(), z.record(z.string(), z.string())]),
   transform: TransformSchema,
-  fontSize: z.number().finite().positive().optional(),
+  fontFamily: z.string().trim().min(1).optional(),
+  fontSize: z.number().finite().positive().max(2000).optional(),
   fontWeight: z.number().finite().positive().optional(),
+  fontStyle: z.enum(["normal", "italic"]).optional(),
+  textDecoration: z.enum(["none", "underline", "line-through"]).optional(),
   color: z.string().optional(),
+  adaptiveColor: z.boolean().optional(),
+  letterSpacing: z.number().finite().min(-0.2).max(0.5).optional(),
+  lineHeight: z.number().finite().min(0.5).max(3).optional(),
   align: z.enum(["left", "center", "right"]).optional(),
 }).passthrough();
 const AssetSchema = z.object({
@@ -99,6 +125,7 @@ export const SlideSchema = z.object({
   copyKey: z.string().trim().min(1).optional(),
   inverted: z.boolean().optional(),
   transforms: z.record(z.string(), TransformSchema).optional(),
+  textStyles: z.record(TypographyStyleSchema).optional(),
   textElements: z.array(TextElementSchema).optional(),
   constraints: z.record(z.string(), ConstraintSchema).optional(),
   responsive: z.record(z.string(), z.record(z.string(), ConstraintSchema)).optional(),
@@ -138,7 +165,8 @@ export const ProjectStateSchema = z.object({
   assets: z.record(z.string(), AssetSchema).optional(),
   brand: z.object({
     colors: z.record(z.string(), z.string()).optional(),
-    typography: z.record(z.string(), z.unknown()).optional(),
+    typography: TypographyTokensSchema.optional(),
+    accentMode: z.enum(["adaptive", "fixed"]).optional(),
     radius: z.record(z.string(), z.number().finite()).optional(),
     effects: z.record(z.string(), z.string()).optional(),
   }).passthrough().optional(),

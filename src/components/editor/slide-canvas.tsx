@@ -32,6 +32,8 @@ import { pickText } from "@/lib/locale";
 import { constraintFor, resolveResponsiveTransform } from "@/lib/constraints";
 import { resolveAssetPath } from "@/lib/asset-library";
 import { captionContrastForRect } from "@/lib/caption-contrast";
+import { accessibleColor, accentForBackground } from "@/lib/color";
+import { clampSizeScale, fontFamilyCss, typographyForRole } from "@/lib/typography";
 import {
   AndroidPhone,
   AndroidTabletL,
@@ -245,8 +247,25 @@ function Caption({
   onFocus?: () => void;
 }) {
   const fg = inverted ? theme.fgAlt : theme.fg;
-  const accent = theme.accent;
-  const headlineGradient = contrastGradient;
+  const surface = inverted ? theme.bgAlt : theme.bg;
+  const labelStyle = {
+    ...typographyForRole(theme.typography, "label"),
+    ...slide.textStyles?.label,
+  };
+  const headlineStyle = {
+    ...typographyForRole(theme.typography, "headline"),
+    ...slide.textStyles?.headline,
+  };
+  const adaptiveLabel = labelStyle.adaptiveColor !== false;
+  const labelColor = adaptiveLabel
+    ? accentForBackground(labelStyle.color || theme.accent, surface, theme.accentMode)
+    : labelStyle.color || theme.accent;
+  const preferredHeadlineColor = headlineStyle.color || fg;
+  const adaptiveHeadline = headlineStyle.adaptiveColor !== false;
+  const singleHeadlineColor = adaptiveHeadline
+    ? accessibleColor(preferredHeadlineColor, surface, 4.5)
+    : preferredHeadlineColor;
+  const headlineGradient = adaptiveHeadline ? contrastGradient : undefined;
   // Scale typography off the *shorter* dimension so landscape layouts don't
   // produce headlines so tall they overlap the device frame.
   const unit = Math.min(cW, cH);
@@ -258,11 +277,19 @@ function Caption({
         onChange={edit?.onLabelChange}
         onFocus={onFocus}
         placeholder="LABEL"
+        dataAttributes={{
+          "data-caption-label": "true",
+          "data-accent-adaptive": adaptiveLabel ? "true" : "false",
+        }}
         style={{
-          fontSize: unit * 0.028,
-          fontWeight: 600,
-          letterSpacing: unit * 0.0015,
-          color: accent,
+          fontFamily: fontFamilyCss(labelStyle.family, "body"),
+          fontSize: labelStyle.fontSize ?? unit * 0.028 * clampSizeScale(labelStyle.sizeScale),
+          fontWeight: labelStyle.weight ?? 600,
+          fontStyle: labelStyle.style ?? "normal",
+          textDecoration: labelStyle.decoration ?? "none",
+          letterSpacing: unit * (labelStyle.letterSpacing ?? 0.0015),
+          lineHeight: labelStyle.lineHeight ?? 1.15,
+          color: labelColor,
           textTransform: "uppercase",
           marginBottom: unit * 0.018,
           minHeight: unit * 0.03,
@@ -278,23 +305,27 @@ function Caption({
         dataAttributes={{
           "data-caption-headline": "true",
           "data-caption-contrast": headlineGradient ? "per-slot" : "single-slot",
+          "data-headline-adaptive": adaptiveHeadline ? "true" : "false",
           ...(segmentColors?.length
             ? { "data-caption-segment-colors": segmentColors.join(",") }
             : {}),
         }}
         style={{
-          fontSize: unit * 0.092,
-          fontWeight: 700,
-          lineHeight: 0.96,
-          letterSpacing: -unit * 0.001,
-          color: headlineGradient ? "transparent" : fg,
+          fontFamily: fontFamilyCss(headlineStyle.family, "display"),
+          fontSize: headlineStyle.fontSize ?? unit * 0.092 * clampSizeScale(headlineStyle.sizeScale),
+          fontWeight: headlineStyle.weight ?? 700,
+          fontStyle: headlineStyle.style ?? "normal",
+          textDecoration: headlineStyle.decoration ?? "none",
+          lineHeight: headlineStyle.lineHeight ?? 0.96,
+          letterSpacing: unit * (headlineStyle.letterSpacing ?? -0.001),
+          color: headlineGradient ? "transparent" : singleHeadlineColor,
           backgroundImage: headlineGradient,
           backgroundClip: headlineGradient ? "text" : undefined,
           WebkitBackgroundClip: headlineGradient ? "text" : undefined,
           WebkitTextFillColor: headlineGradient ? "transparent" : undefined,
           backgroundRepeat: headlineGradient ? "no-repeat" : undefined,
           backgroundSize: headlineGradient ? "100% 100%" : undefined,
-          caretColor: fg,
+          caretColor: singleHeadlineColor,
         }}
       />
     </div>
@@ -984,14 +1015,28 @@ function FeatureGraphicCanvas({
           </div>
         )}
         <div>
-          <div style={{ fontSize: cW * 0.06, fontWeight: 800, lineHeight: 1.05 }}>{appName || "App"}</div>
+          <div
+            style={{
+              fontFamily: fontFamilyCss(typographyForRole(theme.typography, "headline").family, "display"),
+              fontSize: cW * 0.06 * clampSizeScale(typographyForRole(theme.typography, "headline").sizeScale),
+              fontWeight: typographyForRole(theme.typography, "headline").weight ?? 800,
+              fontStyle: typographyForRole(theme.typography, "headline").style ?? "normal",
+              lineHeight: 1.05,
+            }}
+          >
+            {appName || "App"}
+          </div>
           <EditableText
             value={pickText(slide.headline, locale)}
             editable={editable}
             multiline
             onChange={edit?.onHeadlineChange}
             style={{
+              fontFamily: fontFamilyCss(typographyForRole(theme.typography, "text").family, "body"),
               fontSize: cW * 0.028,
+              fontWeight: typographyForRole(theme.typography, "text").weight ?? 500,
+              fontStyle: typographyForRole(theme.typography, "text").style ?? "normal",
+              textDecoration: typographyForRole(theme.typography, "text").decoration ?? "none",
               color: "rgba(255,255,255,0.85)",
               marginTop: cW * 0.012,
               lineHeight: 1.25,
@@ -1054,8 +1099,27 @@ function SlideElements({
   const { cW, cH, Frame, frameAspect, defaults } = getSlideGeometry(slide, device, orientation);
   const inverted = !!slide.inverted;
   const captionRect = resolvedRectFor("caption", slide, device, orientation, locale, defaults);
+  const headlineStyle = {
+    ...typographyForRole(theme.typography, "headline"),
+    ...slide.textStyles?.headline,
+  };
+  const headlineAdaptive = headlineStyle.adaptiveColor !== false;
+  const headlinePreferredColor = headlineStyle.color;
   const captionContrast = captionRect
-    ? captionContrastForRect(theme, deckInverted, cW, screenX + captionRect.x, captionRect.width)
+    ? headlineAdaptive
+      ? captionContrastForRect(
+          theme,
+          deckInverted,
+          cW,
+          screenX + captionRect.x,
+          captionRect.width,
+          (_baseColor, segmentInverted) => accessibleColor(
+            headlinePreferredColor || (segmentInverted ? theme.fgAlt : theme.fg),
+            segmentInverted ? theme.bgAlt : theme.bg,
+            4.5,
+          ),
+        )
+      : undefined
     : undefined;
   const deviceRect = resolvedRectFor("device", slide, device, orientation, locale, defaults);
   const secondaryRect = resolvedRectFor(
@@ -1191,7 +1255,11 @@ function SlideElements({
     const rect = getElementTransform(slide, device, orientation, elementId, locale) || textElement.transform;
     const rotation = rect.rotation ?? 0;
     const zIndex = rect.zIndex ?? 5 + index;
-    const textColor = textElement.color || (inverted ? theme.fgAlt : theme.fg);
+    const textDefaults = typographyForRole(theme.typography, "text");
+    const preferredColor = textElement.color || (inverted ? theme.fgAlt : theme.fg);
+    const textColor = textElement.adaptiveColor !== false
+      ? accessibleColor(preferredColor, inverted ? theme.bgAlt : theme.bg, 4.5)
+      : preferredColor;
     return (
       <Movable
         key={textElement.id}
@@ -1244,10 +1312,14 @@ function SlideElements({
             placeholder="Text"
             style={{
               width: "100%",
+              fontFamily: fontFamilyCss(textElement.fontFamily || textDefaults.family, "body"),
               color: textColor,
-              fontSize: textElement.fontSize ?? Math.min(cW, cH) * 0.06,
-              fontWeight: textElement.fontWeight ?? 700,
-              lineHeight: 1.05,
+              fontSize: textElement.fontSize ?? Math.min(cW, cH) * 0.06 * clampSizeScale(textDefaults.sizeScale),
+              fontWeight: textElement.fontWeight ?? textDefaults.weight ?? 700,
+              fontStyle: textElement.fontStyle ?? textDefaults.style ?? "normal",
+              textDecoration: textElement.textDecoration ?? textDefaults.decoration ?? "none",
+              letterSpacing: textElement.letterSpacing ?? textDefaults.letterSpacing ?? 0,
+              lineHeight: textElement.lineHeight ?? textDefaults.lineHeight ?? 1.05,
               textAlign: textElement.align ?? "center",
               textShadow: inverted ? "0 2px 18px rgba(0,0,0,0.22)" : "0 2px 18px rgba(255,255,255,0.2)",
             }}

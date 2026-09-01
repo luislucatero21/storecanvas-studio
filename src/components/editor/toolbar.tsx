@@ -35,7 +35,7 @@ import {
 import { detectPlatform } from "@/lib/defaults";
 import type { AiProposal } from "@/lib/ai";
 import type { CampaignImportOptions, CampaignImportProposal } from "@/lib/app-store-import";
-import type { BrandTokens, CampaignTemplate, Device, Orientation, Slide, TemplateApplyOptions } from "@/lib/types";
+import type { AccentMode, BrandTokens, CampaignTemplate, Device, Orientation, Slide, TemplateApplyOptions, TypographyTokens } from "@/lib/types";
 import type { ValidationResult } from "@/lib/validation";
 import { AiPolish } from "./ai-polish";
 import { AppStoreImporter } from "./app-store-importer";
@@ -84,9 +84,13 @@ type Props = {
   customPaletteName?: string;
   campaignSourceUrl?: string;
   brandColors?: BrandTokens["colors"];
+  brandTypography?: BrandTokens["typography"];
+  accentMode?: AccentMode;
   onTemplateChange: (templateId: string, options?: TemplateApplyOptions) => void;
   onPaletteChange: (paletteId: string) => void;
   onCustomColorsChange: (colors: NonNullable<BrandTokens["colors"]>) => void;
+  onTypographyChange: (typography: TypographyTokens) => void;
+  onAccentModeChange: (mode: AccentMode) => void;
   onApplyCampaignImport: (proposal: CampaignImportProposal, options: CampaignImportOptions) => void;
   onApplyAiProposal: (proposal: AiProposal) => void;
   validation: ValidationResult;
@@ -268,10 +272,14 @@ export function Toolbar(props: Props) {
         paletteId={props.paletteId}
         customPaletteName={props.customPaletteName}
         colors={props.brandColors}
+        typography={props.brandTypography}
+        accentMode={props.accentMode}
         disabled={props.busy}
         onTemplateChange={props.onTemplateChange}
         onPaletteChange={props.onPaletteChange}
         onCustomColorsChange={props.onCustomColorsChange}
+        onTypographyChange={props.onTypographyChange}
+        onAccentModeChange={props.onAccentModeChange}
       />
       <AiPolish
         appName={props.appName}

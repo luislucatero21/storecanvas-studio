@@ -27,6 +27,7 @@ export function captionContrastForRect(
   artboardWidth: number,
   x: number,
   width: number,
+  resolveColor?: (baseColor: string, inverted: boolean) => string,
 ) {
   const safeWidth = Math.max(1, width);
   const left = x;
@@ -47,8 +48,10 @@ export function captionContrastForRect(
       0,
       Math.min(invertedArtboards.length - 1, Math.floor(midpoint / artboardWidth)),
     );
+    const inverted = invertedArtboards[artboard] === true;
+    const baseColor = inverted ? theme.fgAlt : theme.fg;
     return {
-      color: invertedArtboards[artboard] ? theme.fgAlt : theme.fg,
+      color: resolveColor ? resolveColor(baseColor, inverted) : baseColor,
       start: percentFromPosition(start, left, safeWidth),
       end: percentFromPosition(end, left, safeWidth),
     };

@@ -52,6 +52,31 @@ export type DevicePresentation = {
   deviceModel?: DeviceModel;
 };
 
+export type AccentMode = "adaptive" | "fixed";
+
+/** Reusable type direction. Sizes are relative scales for project/template defaults. */
+export type TypographyStyle = {
+  family?: string;
+  /** Absolute design-pixel override for a slide-level style; template defaults use sizeScale. */
+  fontSize?: number;
+  sizeScale?: number;
+  weight?: number;
+  style?: "normal" | "italic";
+  decoration?: "none" | "underline" | "line-through";
+  color?: string;
+  adaptiveColor?: boolean;
+  letterSpacing?: number;
+  lineHeight?: number;
+};
+
+export type TypographyTokens = {
+  display?: TypographyStyle;
+  body?: TypographyStyle;
+  label?: TypographyStyle;
+  headline?: TypographyStyle;
+  text?: TypographyStyle;
+};
+
 /** Number of adjacent screen slots an element may intentionally span. */
 export const SLOT_SPAN_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 export type SlotSpan = typeof SLOT_SPAN_OPTIONS[number];
@@ -98,9 +123,15 @@ export type TextElement = {
   id: string;
   text: LocalizedText;
   transform: ElementTransform;
+  fontFamily?: string;
   fontSize?: number;
   fontWeight?: number;
+  fontStyle?: "normal" | "italic";
+  textDecoration?: "none" | "underline" | "line-through";
   color?: string;
+  adaptiveColor?: boolean;
+  letterSpacing?: number;
+  lineHeight?: number;
   align?: "left" | "center" | "right";
 };
 
@@ -134,10 +165,9 @@ export type BrandTokens = {
     inkAlt?: string;
     muted?: string;
   };
-  typography?: {
-    display?: { family?: string; weight?: number };
-    body?: { family?: string; weight?: number };
-  };
+  typography?: TypographyTokens;
+  /** Defaults to adaptive so small accent labels remain legible on light/dark artboards. */
+  accentMode?: AccentMode;
   radius?: { card?: number };
   effects?: { deviceShadow?: string };
 };
@@ -179,6 +209,8 @@ export type Slide = {
   inverted?: boolean;         // dark background variant
   // Per-element overrides; when present, replaces layout default placement.
   transforms?: Partial<Record<BuiltInElementId, ElementTransform>>;
+  /** Per-slide label/headline overrides; project/template typography remains the fallback. */
+  textStyles?: Partial<Record<"label" | "headline", TypographyStyle>>;
   textElements?: TextElement[];
   constraints?: Partial<Record<string, LayoutConstraint>>;
   responsive?: Partial<Record<string, ResponsiveOverrides>>;
@@ -202,6 +234,8 @@ export type Theme = {
   fgAlt: string;       // text on bgAlt
   accent: string;
   muted: string;
+  accentMode?: AccentMode;
+  typography?: TypographyTokens;
 };
 
 export type PalettePreset = {
@@ -219,6 +253,7 @@ export type CampaignTemplate = {
   description: string;
   signature: string;
   recommendedPaletteId: string;
+  typography?: TypographyTokens;
   layouts: SlideLayout[];
   invertedIndices: number[];
   connectedPairs: Array<{ startIndex: number; span: SlotSpan }>;
@@ -226,6 +261,7 @@ export type CampaignTemplate = {
 
 export type TemplateApplyOptions = {
   applyRecommendedPalette?: boolean;
+  applyTemplateTypography?: boolean;
   resetCustomizations?: boolean;
   reflowConnectedArtwork?: boolean;
 };
