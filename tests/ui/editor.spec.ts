@@ -1,6 +1,11 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import baseline from "../../example-project.json";
 import { buildCampaignImportProposal, type AppStoreListing } from "../../src/lib/app-store-import";
+
+async function gotoRender(page: Page, url: string) {
+  await expect.poll(async () => (await page.request.get(url)).status(), { timeout: 15_000 }).toBe(200);
+  await page.goto(url);
+}
 
 test.describe("StoreCanvas editor", () => {
   test.describe.configure({ mode: "serial" });
@@ -28,6 +33,27 @@ test.describe("StoreCanvas editor", () => {
     await expect(page.getByText("10 screens")).toBeVisible();
   });
 
+  test("imports a private project and switches local campaigns from the visible selector", async ({ page }) => {
+    await page.goto("/");
+    const projectMenu = page.getByRole("button", { name: "Project menu" });
+    await projectMenu.click();
+    await expect(page.getByText("Local projects")).toBeVisible();
+
+    const imported = { ...baseline, appName: "Imported campaign" };
+    await page.getByLabel("Import project JSON").setInputFiles({
+      name: "private-campaign.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify(imported)),
+    });
+    await expect(projectMenu).toContainText("Imported campaign");
+    await expect(page.getByLabel("App name")).toHaveValue("Imported campaign");
+
+    await projectMenu.click();
+    await page.getByRole("menuitem", { name: /Example app/ }).click();
+    await expect(page.getByLabel("App name")).toHaveValue("Example app");
+    await expect(page.getByRole("button", { name: "Project menu" })).toContainText("Example app");
+  });
+
   test("switches locale and edits the active headline", async ({ page }) => {
     await page.goto("/");
 
@@ -48,7 +74,7 @@ test.describe("StoreCanvas editor", () => {
   });
 
   test("renders an exact-size export artboard", async ({ page }) => {
-    await page.goto("/render?device=iphone&locale=en-US&size=1320x2868");
+    await gotoRender(page, "/render?device=iphone&locale=en-US&size=1320x2868");
 
     const render = page.locator('[data-render-valid="true"]');
     await expect(render).toHaveAttribute("data-render-width", "1320");
@@ -63,7 +89,7 @@ test.describe("StoreCanvas editor", () => {
     const baseURL = test.info().project.use.baseURL as string;
 
     try {
-      await page.goto(`${baseURL}/render?device=iphone&locale=es-MX&size=1320x2868`);
+      await gotoRender(page, `${baseURL}/render?device=iphone&locale=es-MX&size=1320x2868`);
       const firstSlide = page.locator('[data-slide-id="demo-1-route"]');
       await expect(firstSlide.getByText("UNA FORMA MÁS CLARA DE AVANZAR")).toBeVisible();
       await expect(firstSlide.getByText("Haz espacio para lo importante.")).toBeVisible();
@@ -113,7 +139,7 @@ test.describe("StoreCanvas editor", () => {
   });
 
   test("renders iPhone 17 Pro Max anatomy while editorial copy stays face-forward", async ({ page }) => {
-    await page.goto("/render?device=iphone&locale=es-MX&size=1320x2868");
+    await gotoRender(page, "/render?device=iphone&locale=es-MX&size=1320x2868");
 
     const firstSlide = page.locator('[data-slide-id="demo-1-route"]');
     const frame = firstSlide.locator('[data-device-model="iphone-17-pro-max"]').first();
@@ -173,7 +199,7 @@ test.describe("StoreCanvas editor", () => {
   });
 
   test("preloads the example with connected art, independent phones and message continuity", async ({ page }) => {
-    await page.goto("/render?device=iphone&locale=es-MX&size=1320x2868");
+    await gotoRender(page, "/render?device=iphone&locale=es-MX&size=1320x2868");
 
     const captureStart = page.locator('[data-slide-id="demo-4-recovery"]');
     const messageStart = page.locator('[data-slide-id="demo-8-routine"]');
@@ -268,8 +294,6 @@ test.describe("StoreCanvas editor", () => {
     });
     await page.goto("/");
     await page.getByRole("button", { name: /Screen 4 ·/ }).click();
-    await page.getByRole("combobox", { name: "Artwork image provider" }).click();
-    await page.getByRole("option", { name: "OpenAI" }).click();
     await page.getByRole("textbox", { name: "Artwork OpenAI API key" }).fill("sk-artwork-ui-test");
     await page.getByRole("button", { name: "Generate connected artwork 1" }).click();
 
@@ -287,7 +311,8 @@ test.describe("StoreCanvas editor", () => {
 
     await page.getByRole("button", { name: "Link copy across devices" }).click();
     await page.getByLabel("Headline").fill("One promise everywhere.");
-    await page.getByRole("combobox").first().click();
+    await page.getByRole("combobox", { name: "Device" }).click();
+    await expect(page.getByRole("option", { name: "iPad" })).toBeVisible();
     await page.getByRole("option", { name: "iPad" }).click();
 
     await expect(page.getByLabel("Headline")).toHaveValue("One promise everywhere.");
@@ -331,7 +356,7 @@ test.describe("StoreCanvas editor", () => {
       country: "mx",
       locale: "es-MX",
       name: "Example app",
-      description: "PLANEA CON IA. Tú apruebas cada cambio. PRIVACIDAD PRIMERO. Metas, tendencias, recordatorios y una compra Pro de por vida.",
+      description: "PLANEA CON IA. Tú apruebas cada cambio. PRIVACIDAD PRIMERO. Metas, tendencias y recordatorios.",
       genre: "Productivity",
       version: "1.6.1",
       artworkUrl: "https://is1-ssl.mzstatic.com/icon.jpg",
@@ -404,7 +429,7 @@ test.describe("StoreCanvas editor", () => {
   });
 
   test("renders the example's native iPad campaign at App Store size", async ({ page }) => {
-    await page.goto("/render?device=ipad&locale=en-US&size=2064x2752");
+    await gotoRender(page, "/render?device=ipad&locale=en-US&size=2064x2752");
 
     const render = page.locator('[data-render-valid="true"]');
     await expect(render).toHaveAttribute("data-render-width", "2064");

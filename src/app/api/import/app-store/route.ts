@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { AppStoreImportError, fetchAppStoreCampaign } from "@/lib/app-store-server";
+import { isReadOnlyRuntime } from "@/lib/runtime";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
   if (!url.trim()) return NextResponse.json({ ok: false, error: "Add an App Store URL." }, { status: 400 });
 
   try {
-    const result = await fetchAppStoreCampaign(url);
+    const result = await fetchAppStoreCampaign(url, { cacheAssets: !isReadOnlyRuntime() });
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     if (error instanceof AppStoreImportError) {

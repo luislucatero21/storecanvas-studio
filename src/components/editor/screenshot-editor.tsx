@@ -44,7 +44,23 @@ import { DeckCanvas, getCanvas } from "./slide-canvas";
 import { Toolbar } from "./toolbar";
 
 export function ScreenshotEditor() {
-  const { state, setState, hydrated, savedAt, saveError, reset, resetDevice, undo, redo } = useProject();
+  const {
+    state,
+    setState,
+    hydrated,
+    savedAt,
+    saveError,
+    fileSyncAvailable,
+    projects,
+    activeProjectId,
+    switchProject,
+    createProject,
+    importProject,
+    reset,
+    resetDevice,
+    undo,
+    redo,
+  } = useProject();
   const [activeSlideId, setActiveSlideId] = React.useState<string | null>(null);
   const [selectedElement, setSelectedElement] = React.useState<SelectedElement | null>(null);
   const [exporting, setExporting] = React.useState<string | null>(null);
@@ -618,10 +634,16 @@ export function ScreenshotEditor() {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background">
-      <Toaster position="top-right" richColors closeButton />
+      <Toaster position="bottom-right" richColors closeButton />
       <Toolbar
         appName={state.appName}
         setAppName={(v) => setState((p) => ({ ...p, appName: v }))}
+        projectState={state}
+        projects={projects}
+        activeProjectId={activeProjectId}
+        onSwitchProject={switchProject}
+        onCreateProject={() => createProject()}
+        onImportProject={importProject}
         connectedCanvas={state.connectedCanvas}
         setConnectedCanvas={(v) => setState((p) => ({ ...p, connectedCanvas: v }))}
         locale={state.locale}
@@ -646,6 +668,7 @@ export function ScreenshotEditor() {
         exporting={exporting}
         savedAt={savedAt}
         saveError={saveError}
+        fileSyncAvailable={fileSyncAvailable}
         busy={busy}
         templateId={state.templateId}
         customTemplate={state.customTemplate}

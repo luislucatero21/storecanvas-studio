@@ -26,8 +26,46 @@ import { captionSegmentColors, captionTextGradient } from "@/lib/caption-contras
 import { getElementTransform } from "@/components/editor/slide-canvas";
 import { ProjectStateSchema } from "@/lib/schema";
 import { validateProject } from "@/lib/validation";
+import { isReadOnlyRuntime } from "@/lib/runtime";
+import { isProjectFileConfigured } from "@/lib/project-file";
+import {
+  createProjectId,
+  emptyProjectLibrary,
+  makeLocalProject,
+  removeLocalProject,
+  summarizeProjects,
+  upsertLocalProject,
+} from "@/lib/project-library";
 
 describe("StoreCanvas project contracts", () => {
+  it("recognizes read-only runtimes without requiring a database", () => {
+    expect(isReadOnlyRuntime({})).toBe(false);
+    expect(isReadOnlyRuntime({ VERCEL: "1" })).toBe(true);
+    expect(isReadOnlyRuntime({ ["STORECANVAS_READ_ONLY"]: "1" })).toBe(true);
+  });
+
+  it("keeps the checked-in demo read-only unless file sync is opted in", () => {
+    expect(isProjectFileConfigured({})).toBe(false);
+    expect(isProjectFileConfigured({ ["STORECANVAS_PROJECT_FILE"]: "app-store-screenshots.json" })).toBe(true);
+  });
+
+  it("keeps local projects portable and switches the active record predictably", () => {
+    const first = makeLocalProject({ ...DEFAULT_PROJECT, appName: "First campaign" }, { id: "first", updatedAt: 100 });
+    const second = makeLocalProject({ ...DEFAULT_PROJECT, appName: "Second campaign" }, { id: "second", updatedAt: 200 });
+    const library = upsertLocalProject(upsertLocalProject(emptyProjectLibrary(), first), second);
+
+    expect(library.activeProjectId).toBe("second");
+    expect(summarizeProjects(library.projects)).toEqual([
+      { id: "second", name: "Second campaign", updatedAt: 200 },
+      { id: "first", name: "First campaign", updatedAt: 100 },
+    ]);
+    expect(createProjectId("Local campaign", 1000, 0)).toMatch(/^local-campaign-rs-0000$/);
+
+    const remaining = removeLocalProject(library, "second");
+    expect(remaining.activeProjectId).toBe("first");
+    expect(remaining.projects).toHaveLength(1);
+  });
+
   it("resolves a shared caption width once when its position is customized", () => {
     const sharedSlide = {
       ...DEFAULT_PROJECT.slidesByDevice.iphone[0],

@@ -53,18 +53,10 @@ export function resolveProviderRequest(
     };
   }
 
-  const endpoint = configured(env.STORECANVAS_PLATFORM_AI_URL);
-  const apiKey = configured(env.STORECANVAS_PLATFORM_AI_TOKEN);
-  if (!endpoint || !apiKey) {
-    throw new AiServiceError(
-      "Platform AI is not configured for this deployment. Add STORECANVAS_PLATFORM_AI_URL and STORECANVAS_PLATFORM_AI_TOKEN, or use your own provider key.",
-      503,
-    );
-  }
   return {
-    endpoint,
-    apiKey,
-    model: configured(env.STORECANVAS_PLATFORM_AI_MODEL) || input.model,
+    endpoint: "https://api.openai.com/v1/chat/completions",
+    apiKey: input.apiKey!,
+    model: input.model,
     headers: {},
   };
 }

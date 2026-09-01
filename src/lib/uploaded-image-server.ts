@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { isReadOnlyRuntime } from "./runtime";
 
 const MIME_EXT: Record<string, string> = {
   "image/png": "png",
@@ -24,6 +25,10 @@ export async function saveUploadedDataUrl(dataUrl: string): Promise<string> {
   if (!ext) throw new UploadedImageError(`Unsupported mime: ${mime}`);
   const bytes = Buffer.from(match[2], "base64");
   if (bytes.byteLength > 12 * 1024 * 1024) throw new UploadedImageError("Image too large (>12MB)", 413);
+
+  // Vercel's filesystem is ephemeral. Keep the validated asset in the local
+  // project state instead so refreshes in the same browser still work.
+  if (isReadOnlyRuntime()) return dataUrl;
 
   const hash = createHash("sha1").update(bytes).digest("hex").slice(0, 16);
   const filename = `${hash}.${ext}`;

@@ -205,6 +205,20 @@ async function cacheListingAssets(
   };
 }
 
+async function downloadListingBuffers(listing: AppStoreListing, fetchImpl: FetchLike) {
+  const urls = [listing.artworkUrl, ...listing.screenshotUrls].filter(
+    (url): url is string => typeof url === "string" && url.length > 0,
+  ).slice(0, 5);
+  const results = await Promise.all(
+    urls.map((url) => downloadAppleImage(url, fetchImpl).then(({ buffer }) => buffer).catch(() => null)),
+  );
+  return results.filter((buffer) => !!buffer) as Buffer[];
+}
+
+function proxyAssetPath(rawUrl: string) {
+  return `/api/import/app-store/image?url=${encodeURIComponent(rawUrl)}`;
+}
+
 export async function fetchAppStoreCampaign(
   rawUrl: string,
   options: {
@@ -247,7 +261,18 @@ export async function fetchAppStoreCampaign(
   const analyzeImages = options.analyzeImages || extractBrandColorSignals;
   let colorSignals: BrandColorSignals;
   if (options.cacheAssets === false) {
-    colorSignals = await analyzeImages([]);
+    // Keep the filesystem read-only but still inspect the current listing
+    // screenshots in memory so Vercel can derive a useful palette. The browser
+    // later loads the same images through the same-origin proxy paths below.
+    colorSignals = await analyzeImages(await downloadListingBuffers(listing, fetchImpl));
+    // The browser can still use published captures without writing them into
+    // a server filesystem. Same-origin proxy paths also make export reliable
+    // when Apple's image host does not expose permissive CORS headers.
+    listing = {
+      ...listing,
+      ...(listing.artworkUrl ? { localArtworkPath: proxyAssetPath(listing.artworkUrl) } : {}),
+      localScreenshotPaths: listing.screenshotUrls.map(proxyAssetPath),
+    };
   } else {
     const cached = await cacheListingAssets(listing, fetchImpl, options.publicDir || path.join(process.cwd(), "public"));
     listing = {

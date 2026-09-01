@@ -343,7 +343,6 @@ function ConnectedArtworkPanel({
   onChange: (patch: Partial<Slide>) => void;
   onSelectElement: (id: ElementId | null) => void;
 }) {
-  const [provider, setProvider] = React.useState<"platform" | "openai">("platform");
   const [apiKey, setApiKey] = React.useState("");
   const [prompt, setPrompt] = React.useState("A calm editorial sunrise ribbon with soft indigo and coral forms, generous negative space, premium wellness campaign photography direction");
   const [generatingId, setGeneratingId] = React.useState<string | null>(null);
@@ -371,7 +370,7 @@ function ConnectedArtworkPanel({
       const response = await fetch("/api/ai/image", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ provider, apiKey: provider === "openai" ? apiKey : undefined, model: "gpt-image-2", prompt }),
+        body: JSON.stringify({ provider: "openai", apiKey, model: "gpt-image-2", prompt }),
       });
       const body = await response.json() as { ok?: boolean; path?: string; error?: string };
       if (!response.ok || !body.ok || !body.path) throw new Error(body.error || "Image generation failed");
@@ -414,15 +413,12 @@ function ConnectedArtworkPanel({
               <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"><WandSparkles className="h-3.5 w-3.5 text-[hsl(var(--accent))]" /> Generate seam artwork</div>
               <Textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} rows={3} aria-label={`Connected artwork ${index + 1} prompt`} />
               <div className="mt-2 grid grid-cols-[110px_1fr] gap-2">
-                <Select value={provider} onValueChange={(value) => setProvider(value as "platform" | "openai")}>
-                  <SelectTrigger aria-label="Artwork image provider" className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="platform">Platform</SelectItem><SelectItem value="openai">OpenAI</SelectItem></SelectContent>
-                </Select>
-                {provider === "openai" ? <Input type="password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder="Personal API key" aria-label="Artwork OpenAI API key" className="h-8 text-xs" autoComplete="off" /> : <p className="self-center text-[10px] text-muted-foreground">Uses the deployment image provider.</p>}
+                <span className="flex h-8 items-center rounded-md border bg-muted/35 px-2 text-[10px] font-medium">OpenAI · own key</span>
+                <Input type="password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder="Personal API key" aria-label="Artwork OpenAI API key" className="h-8 text-xs" autoComplete="off" />
               </div>
               <div className="mt-2 flex items-center justify-between gap-2">
                 <p className="text-[9px] text-muted-foreground">Keys are sent per request and never stored in the project.</p>
-                <Button type="button" size="sm" className="h-7 px-2 text-[10px]" disabled={generatingId !== null || prompt.trim().length < 12 || (provider === "openai" && !apiKey.trim())} onClick={() => generate(artwork)} aria-label={`Generate connected artwork ${index + 1}`}>
+                <Button type="button" size="sm" className="h-7 px-2 text-[10px]" disabled={generatingId !== null || prompt.trim().length < 12 || !apiKey.trim()} onClick={() => generate(artwork)} aria-label={`Generate connected artwork ${index + 1}`}>
                   <WandSparkles className="h-3.5 w-3.5" /> {generatingId === artwork.id ? "Generating…" : "Generate"}
                 </Button>
               </div>

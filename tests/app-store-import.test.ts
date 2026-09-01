@@ -22,7 +22,7 @@ const demoListing: AppStoreListing = {
     "PRIVACIDAD PRIMERO",
     "Example app no requiere una cuenta ni opera sistemas de publicidad o rastreo.",
     "Procesa las solicitudes primero en tu dispositivo y la asistencia segura en la nube es opcional.",
-    "Una sola compra Pro desbloquea todas las herramientas.",
+    "Tus datos permanecen bajo tu control.",
   ].join("\n\n"),
   genre: "Productivity",
   version: "1.6.1",
@@ -37,7 +37,7 @@ const demoListing: AppStoreListing = {
     "iPhone_6.9_07-progress.png",
     "iPhone_6.9_08-privacy.png",
     "iPhone_6.9_09-reminders.png",
-    "iPhone_6.9_10-lifetime.png",
+    "iPhone_6.9_10-privacy.png",
   ].map((name) => `https://is1-ssl.mzstatic.com/${name}`),
   localArtworkPath: "/screenshots/imported/apple-1234567890/icon.jpg",
   localScreenshotPaths: Array.from(
@@ -90,7 +90,7 @@ describe("App Store campaign imports", () => {
       },
     });
     expect(proposal.evidence.map((item) => item.id)).toEqual(
-      expect.arrayContaining(["ai-control", "privacy", "progress", "lifetime"]),
+      expect.arrayContaining(["ai-control", "privacy", "progress"]),
     );
     expect(proposal.copy.slice(0, 4)).toEqual([
       expect.objectContaining({ label: "LA IDEA PRINCIPAL", headline: "Haz clara tu próxima acción." }),

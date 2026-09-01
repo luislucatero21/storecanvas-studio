@@ -1,11 +1,9 @@
 import { z } from "zod";
 import { saveUploadedDataUrl } from "./uploaded-image-server";
-
 type FetchLike = typeof fetch;
-type RuntimeEnv = Record<string, string | undefined>;
 
 export const ArtworkImageRequestSchema = z.object({
-  provider: z.enum(["platform", "openai"]),
+  provider: z.literal("openai"),
   apiKey: z.string().trim().optional(),
   model: z.string().trim().min(1).default("gpt-image-2"),
   prompt: z.string().trim().min(12).max(2400),
@@ -32,21 +30,9 @@ export class ArtworkImageError extends Error {
 
 export function resolveArtworkProviderRequest(
   raw: ArtworkImageRequest,
-  env: RuntimeEnv = process.env,
 ): ArtworkProviderRequest {
   const input = ArtworkImageRequestSchema.parse(raw);
-  if (input.provider === "openai") {
-    return { endpoint: "https://api.openai.com/v1/images/generations", apiKey: input.apiKey!, model: input.model };
-  }
-  const endpoint = env.STORECANVAS_PLATFORM_IMAGE_URL?.trim();
-  const apiKey = env.STORECANVAS_PLATFORM_IMAGE_TOKEN?.trim();
-  if (!endpoint || !apiKey) {
-    throw new ArtworkImageError(
-      "Platform image generation is not configured. Add STORECANVAS_PLATFORM_IMAGE_URL and STORECANVAS_PLATFORM_IMAGE_TOKEN, or use a personal OpenAI key.",
-      503,
-    );
-  }
-  return { endpoint, apiKey, model: env.STORECANVAS_PLATFORM_IMAGE_MODEL?.trim() || input.model };
+  return { endpoint: "https://api.openai.com/v1/images/generations", apiKey: input.apiKey!, model: input.model };
 }
 
 async function providerError(response: Response) {
@@ -62,7 +48,6 @@ export async function requestArtworkImage(
   raw: ArtworkImageRequest,
   options: {
     fetchImpl?: FetchLike;
-    env?: RuntimeEnv;
     timeoutMs?: number;
     saveDataUrl?: (dataUrl: string) => Promise<string>;
   } = {},
@@ -70,7 +55,7 @@ export async function requestArtworkImage(
   const parsed = ArtworkImageRequestSchema.safeParse(raw);
   if (!parsed.success) throw new ArtworkImageError(parsed.error.issues[0]?.message || "Invalid image request");
   const input = parsed.data;
-  const provider = resolveArtworkProviderRequest(input, options.env);
+  const provider = resolveArtworkProviderRequest(input);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? 90_000);
   try {

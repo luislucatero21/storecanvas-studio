@@ -144,15 +144,6 @@ function collectEvidence(listing: AppStoreListing): CampaignEvidence[] {
       "Tendencias, rachas y análisis convierten la actividad en información útil.",
     );
   }
-  if (hasAny(text, [/de por vida/, /lifetime/, /one-time purchase/, /una sola compra/])) {
-    add(
-      "lifetime",
-      "Lifetime option",
-      "Opción de por vida",
-      "The Pro offer is positioned as one purchase instead of a recurring plan.",
-      "La oferta Pro se presenta como una compra, no como un pago recurrente.",
-    );
-  }
   if (hasAny(text, [/metas/, /goals/, /hábitos/, /habits/, /rutina/, /routine/])) {
     add(
       "routine",
@@ -264,7 +255,6 @@ function spanishCopy(evidence: CampaignEvidence[], appName: string): CampaignCop
     { label: "METAS QUE SE ADAPTAN", headline: "Convierte intención en avance.", rationale: "Une metas medibles con flexibilidad cotidiana.", signal: "routine" },
     { label: "A TU MANERA", headline: "Recordatorios que sí encajan.", rationale: "Cierra el núcleo del producto con control de horarios.", signal: "routine" },
   );
-  if (ids.has("lifetime")) items.push({ label: "UNA COMPRA. SIN CUOTAS.", headline: `${appName} Pro, de por vida.`, rationale: "Termina con una propuesta comercial simple y diferenciada.", signal: "lifetime" });
   return items;
 }
 
@@ -287,15 +277,13 @@ function englishCopy(evidence: CampaignEvidence[], appName: string): CampaignCop
     { label: "GOALS THAT ADAPT", headline: "Turn intention into progress.", rationale: "Connect measurable goals to a flexible day.", signal: "routine" },
     { label: "ON YOUR TERMS", headline: "Reminders that fit.", rationale: "Close the product core with scheduling control.", signal: "routine" },
   );
-  if (ids.has("lifetime")) items.push({ label: "ONE PURCHASE. NO DUES.", headline: `${appName} Pro, for life.`, rationale: "End on a simple commercial differentiator.", signal: "lifetime" });
   return items;
 }
 
-type ScreenshotIntent = "hero" | "ai-plan" | "focus" | "recovery" | "reflection" | "goals" | "progress" | "privacy" | "reminders" | "lifetime";
+type ScreenshotIntent = "hero" | "ai-plan" | "focus" | "recovery" | "reflection" | "goals" | "progress" | "privacy" | "reminders";
 
 function screenshotIntent(rawUrl: string): ScreenshotIntent | undefined {
   const filename = decodeURIComponent(rawUrl).toLowerCase();
-  if (/de-por-vida|lifetime|one-time/.test(filename)) return "lifetime";
   if (/recordatorio|reminder|notification|schedule/.test(filename)) return "reminders";
   if (/ai|assistant|coach|plan|prompt/.test(filename)) return "ai-plan";
   if (/focus|timer|session|concentr/.test(filename)) return "focus";
@@ -345,10 +333,6 @@ function copyForIntent(intent: ScreenshotIntent, spanish: boolean, appName: stri
     reminders: {
       es: ["A TU MANERA", "Recordatorios que sí encajan.", "La pantalla de ajustes demuestra control de horarios."],
       en: ["ON YOUR TERMS", "Reminders that fit.", "The settings screen proves scheduling control."],
-    },
-    lifetime: {
-      es: ["UNA COMPRA. SIN CUOTAS.", `${appName} Pro, de por vida.`, "Cierra con una propuesta comercial simple y diferenciada."],
-      en: ["ONE PURCHASE. NO DUES.", `${appName} Pro, for life.`, "End on a simple commercial differentiator."],
     },
   };
   const [label, headline, rationale] = spanish ? catalog[intent].es : catalog[intent].en;

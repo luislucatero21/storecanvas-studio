@@ -36,41 +36,51 @@ describe("App Store import server", () => {
   it("looks up only the parsed Apple app id and returns a generated campaign", async () => {
     const fetchImpl = vi.fn(async (input: string | URL | Request) => {
       const url = String(input);
-      expect(url).toBe("https://itunes.apple.com/lookup?id=1234567890&country=mx&entity=software");
-      return new Response(JSON.stringify({
-        resultCount: 1,
-        results: [{
-          trackName: "Example app",
-          description: "PLANEA CON IA. Tú apruebas cada cambio. PRIVACIDAD PRIMERO. Metas, tendencias y Pro de por vida.",
-          primaryGenreName: "Productivity",
-          version: "1.6.1",
-          artworkUrl512: "https://is1-ssl.mzstatic.com/icon.jpg",
-          screenshotUrls: ["https://is1-ssl.mzstatic.com/store-01.jpg"],
-        }],
-      }), { status: 200, headers: { "content-type": "application/json" } });
+      if (url === "https://itunes.apple.com/lookup?id=1234567890&country=mx&entity=software") {
+        return new Response(JSON.stringify({
+          resultCount: 1,
+          results: [{
+            trackName: "Example app",
+            description: "PLANEA CON IA. Tú apruebas cada cambio. PRIVACIDAD PRIMERO. Metas y tendencias.",
+            primaryGenreName: "Productivity",
+            version: "1.6.1",
+            artworkUrl512: "https://is1-ssl.mzstatic.com/icon.jpg",
+            screenshotUrls: ["https://is1-ssl.mzstatic.com/store-01.jpg"],
+          }],
+        }), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      expect(url).toMatch(/^https:\/\/is1-ssl\.mzstatic\.com\//);
+      return new Response(Uint8Array.from([0, 1, 2, 3]), {
+        status: 200,
+        headers: { "content-type": "image/jpeg" },
+      });
     });
+    const analyzeImages = vi.fn(async () => ({
+      surface: "#EAF5FF",
+      ink: "#11143B",
+      primary: "#18BDEB",
+      accent: "#FF9E35",
+    }));
 
     const result = await fetchAppStoreCampaign(
       "https://apps.apple.com/mx/app/demo/id1234567890",
       {
         fetchImpl: fetchImpl as typeof fetch,
         cacheAssets: false,
-        analyzeImages: async () => ({
-          surface: "#EAF5FF",
-          ink: "#11143B",
-          primary: "#18BDEB",
-          accent: "#FF9E35",
-        }),
+        analyzeImages,
       },
     );
 
-    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    expect(analyzeImages).toHaveBeenCalledWith([Buffer.from([0, 1, 2, 3]), Buffer.from([0, 1, 2, 3])]);
     expect(result.listing).toMatchObject({
       appId: "1234567890",
       country: "mx",
       locale: "es-MX",
       name: "Example app",
       screenshotUrls: ["https://is1-ssl.mzstatic.com/store-01.jpg"],
+      localArtworkPath: "/api/import/app-store/image?url=https%3A%2F%2Fis1-ssl.mzstatic.com%2Ficon.jpg",
+      localScreenshotPaths: ["/api/import/app-store/image?url=https%3A%2F%2Fis1-ssl.mzstatic.com%2Fstore-01.jpg"],
     });
     expect(result.proposal).toMatchObject({
       baseTemplateId: "afterglow-rhythm",

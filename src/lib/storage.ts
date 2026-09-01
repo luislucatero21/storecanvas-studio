@@ -3,6 +3,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { PROJECT_SCHEMA_VERSION, STORAGE_KEY } from "./constants";
 import { DEFAULT_PROJECT } from "./defaults";
 import { coerceLocalized } from "./locale";
+import { ProjectStateSchema } from "./schema";
+import {
+  PROJECT_LIBRARY_KEY,
+  emptyProjectLibrary,
+  createProjectId,
+  makeLocalProject,
+  projectName,
+  removeLocalProject,
+  summarizeProjects,
+  upsertLocalProject,
+  type ProjectLibrary,
+} from "./project-library";
 import type { ConnectedArtwork, Device, DeviceModel, DevicePresentation, DeviceSlot, ElementTransform, ProjectState, Slide, TextElement } from "./types";
 
 const HISTORY_LIMIT = 50;
@@ -201,6 +213,53 @@ function mergeWithDefaults(parsed: Partial<ProjectState>): ProjectState {
   return merged;
 }
 
+function normalizeStoredProject(value: unknown): ProjectState | null {
+  if (!value || typeof value !== "object") return null;
+  return mergeWithDefaults(value as Partial<ProjectState>);
+}
+
+function loadProjectLibrary(): ProjectLibrary {
+  if (typeof window === "undefined") return emptyProjectLibrary();
+  try {
+    const raw = window.localStorage.getItem(PROJECT_LIBRARY_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<ProjectLibrary>;
+      if (parsed.version === 1 && Array.isArray(parsed.projects)) {
+        const projects = parsed.projects.flatMap((candidate) => {
+          if (!candidate || typeof candidate !== "object") return [];
+          const item = candidate as Partial<ProjectLibrary["projects"][number]>;
+          const state = normalizeStoredProject(item.state);
+          if (!state || typeof item.id !== "string" || !item.id.trim()) return [];
+          return [{
+            id: item.id,
+            name: typeof item.name === "string" && item.name.trim() ? item.name.trim() : projectName(state),
+            state,
+            updatedAt: typeof item.updatedAt === "number" && Number.isFinite(item.updatedAt) ? item.updatedAt : Date.now(),
+          }];
+        });
+        if (projects.length > 0) {
+          const activeProjectId = projects.some((project) => project.id === parsed.activeProjectId)
+            ? parsed.activeProjectId!
+            : projects[0].id;
+          return { version: 1, activeProjectId, projects };
+        }
+      }
+    }
+
+    // Migrate the pre-selector cache. This is how an existing private
+    // campaign (including one loaded before the open-source cleanup) returns
+    // automatically without ever being copied into the repository.
+    const legacy = loadFromLocalStorage();
+    if (legacy) {
+      const recovered = makeLocalProject(legacy, { id: "project-recovered" });
+      return upsertLocalProject(emptyProjectLibrary(), recovered);
+    }
+  } catch {
+    // A malformed or full cache should not prevent the editor from opening.
+  }
+  return emptyProjectLibrary();
+}
+
 function loadFromLocalStorage(): ProjectState | null {
   if (typeof window === "undefined") return null;
   try {
@@ -213,34 +272,43 @@ function loadFromLocalStorage(): ProjectState | null {
 }
 
 async function loadFromFile(): Promise<
-  { ok: true; state: ProjectState | null } | { ok: false; error: string }
+  { ok: true; state: ProjectState | null; persisted?: "file" | "browser" } | { ok: false; error: string }
 > {
   if (typeof window === "undefined") return { ok: false, error: "Window is not available" };
   try {
     const resp = await fetch("/api/project", { cache: "no-store" });
     if (!resp.ok) return { ok: false, error: `HTTP ${resp.status}` };
-    const json = (await resp.json()) as { ok: boolean; state: Partial<ProjectState> | null };
+    const json = (await resp.json()) as { ok: boolean; state: Partial<ProjectState> | null; persisted?: "file" | "browser" };
     if (!json.ok) return { ok: false, error: "Project response was not ok" };
-    if (!json.state) return { ok: true, state: null };
-    return { ok: true, state: mergeWithDefaults(json.state) };
+    if (!json.state) return { ok: true, state: null, persisted: json.persisted };
+    return { ok: true, state: mergeWithDefaults(json.state), persisted: json.persisted };
   } catch {
     return { ok: false, error: "Project file could not be loaded" };
   }
 }
 
-function saveToLocalStorage(state: ProjectState): { ok: true } | { ok: false; error: string } {
-  if (typeof window === "undefined") return { ok: true };
+function saveToLocalStorage(
+  state: ProjectState,
+  library: ProjectLibrary,
+  activeProjectId: string,
+): { ok: true; library: ProjectLibrary } | { ok: false; error: string } {
+  if (typeof window === "undefined") return { ok: true, library };
   try {
+    const project = makeLocalProject(state, { id: activeProjectId, updatedAt: Date.now() });
+    const nextLibrary = upsertLocalProject(library, project);
+    window.localStorage.setItem(PROJECT_LIBRARY_KEY, JSON.stringify(nextLibrary));
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    return { ok: true };
+    return { ok: true, library: nextLibrary };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return { ok: false, error: msg };
   }
 }
 
-async function saveToFile(state: ProjectState): Promise<{ ok: true } | { ok: false; error: string }> {
-  if (typeof window === "undefined") return { ok: true };
+async function saveToFile(state: ProjectState): Promise<
+  { ok: true; persisted: "file" | "browser" } | { ok: false; error: string }
+> {
+  if (typeof window === "undefined") return { ok: true, persisted: "browser" };
   try {
     const resp = await fetch("/api/project", {
       method: "POST",
@@ -250,9 +318,9 @@ async function saveToFile(state: ProjectState): Promise<{ ok: true } | { ok: fal
     if (!resp.ok) {
       return { ok: false, error: `HTTP ${resp.status}` };
     }
-    const json = (await resp.json()) as { ok: boolean; error?: string };
+    const json = (await resp.json()) as { ok: boolean; error?: string; persisted?: "file" | "browser" };
     if (!json.ok) return { ok: false, error: json.error || "Unknown error" };
-    return { ok: true };
+    return { ok: true, persisted: json.persisted || "file" };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }
@@ -267,10 +335,14 @@ function applyUpdater(updater: Updater, prev: ProjectState): ProjectState {
 export function useProject() {
   const [state, _setState] = useState<ProjectState>(DEFAULT_PROJECT);
   const [hydrated, setHydrated] = useState(false);
-  const [fileReady, setFileReady] = useState(false);
+  const [projectLibrary, setProjectLibrary] = useState<ProjectLibrary>(() => emptyProjectLibrary());
+  const [fileSyncAvailable, setFileSyncAvailable] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const libraryRef = useRef<ProjectLibrary>(emptyProjectLibrary());
+  const activeProjectIdRef = useRef<string | null>(null);
+  const stateRef = useRef<ProjectState>(DEFAULT_PROJECT);
 
   // History stacks live in refs — they don't drive any rendered UI, so
   // mutating them never needs to re-render.
@@ -278,27 +350,38 @@ export function useProject() {
   const futureRef = useRef<ProjectState[]>([]);
   const lastPushAt = useRef(0);
 
-  // Hydrate: prefer file (git-tracked) → localStorage (cache) → defaults.
-  // localStorage is consulted first for instant paint, then file overwrites if present.
+  // Hydrate the active browser project first. A file is only the initial seed
+  // when this browser has no project yet; it must not overwrite a selected
+  // local campaign on every deploy or refresh.
   useEffect(() => {
     let cancelled = false;
-    const cached = loadFromLocalStorage();
+    const localLibrary = loadProjectLibrary();
+    const active = localLibrary.projects.find((project) => project.id === localLibrary.activeProjectId)
+      || localLibrary.projects[0];
+    const cached = active?.state || loadFromLocalStorage();
     if (cached) _setState(cached);
 
     void (async () => {
       const fromFile = await loadFromFile();
       if (cancelled) return;
-      if (fromFile.ok) {
-        if (fromFile.state) {
-          _setState(fromFile.state);
-        } else {
-          _setState(DEFAULT_PROJECT);
-        }
-        setFileReady(true);
+      let nextState = cached || (fromFile.ok ? fromFile.state : null) || DEFAULT_PROJECT;
+      let nextLibrary = localLibrary;
+      let activeProjectId = active?.id || localLibrary.activeProjectId;
+      if (!activeProjectId) {
+        const seed = makeLocalProject(nextState, {
+          id: cached ? "project-recovered" : createProjectId(nextState.appName),
+        });
+        nextLibrary = upsertLocalProject(nextLibrary, seed);
+        activeProjectId = seed.id;
       } else {
-        setFileReady(false);
-        setSaveError(fromFile.error);
+        nextLibrary = { ...nextLibrary, activeProjectId };
       }
+      _setState(nextState);
+      libraryRef.current = nextLibrary;
+      activeProjectIdRef.current = activeProjectId;
+      setProjectLibrary(nextLibrary);
+      setFileSyncAvailable(fromFile.ok && fromFile.persisted === "file");
+      setSaveError(null);
       pastRef.current = [];
       futureRef.current = [];
       lastPushAt.current = 0;
@@ -310,32 +393,44 @@ export function useProject() {
     };
   }, []);
 
-  // Debounced autosave to BOTH localStorage (fast, offline) and file (git-trackable).
+  // Debounced autosave to the local project library first, then best-effort to
+  // the development file. Vercel returns a browser-persisted acknowledgement
+  // from the file endpoint, so this remains quiet in a read-only runtime.
   useEffect(() => {
-    if (!hydrated || !fileReady) return;
+    if (!hydrated) return;
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
-      const localResult = saveToLocalStorage(state);
+      const activeProjectId = activeProjectIdRef.current || createProjectId(state.appName);
+      activeProjectIdRef.current = activeProjectId;
+      const localResult = saveToLocalStorage(state, libraryRef.current, activeProjectId);
+      if (localResult.ok) {
+        libraryRef.current = localResult.library;
+        setProjectLibrary(localResult.library);
+      }
       void saveToFile(state).then((fileResult) => {
         if (fileResult.ok && localResult.ok) {
           setSavedAt(Date.now());
           setSaveError(null);
-        } else if (!fileResult.ok && !localResult.ok) {
-          setSaveError(fileResult.error);
-        } else if (!fileResult.ok) {
-          // Local cache succeeded but file save failed — work isn't git-portable yet.
+          setFileSyncAvailable(fileResult.persisted === "file");
+        } else if (localResult.ok) {
+          // Browser storage is the source of truth when a filesystem is not
+          // available (for example on Vercel or a static deployment).
           setSavedAt(Date.now());
-          setSaveError(`File save failed: ${fileResult.error}`);
+          setFileSyncAvailable(false);
+          setSaveError(null);
         } else {
-          setSavedAt(Date.now());
-          setSaveError(localResult.ok ? null : localResult.error);
+          setSaveError(localResult.error);
         }
       });
     }, SAVE_DEBOUNCE_MS);
     return () => {
       if (timer.current) clearTimeout(timer.current);
     };
-  }, [state, hydrated, fileReady]);
+  }, [state, hydrated]);
+
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   const setState = useCallback((updater: Updater) => {
     _setState((prev) => {
@@ -387,12 +482,106 @@ export function useProject() {
     }));
   }, [setState]);
 
+  const switchProject = useCallback((projectId: string) => {
+    const project = libraryRef.current.projects.find((candidate) => candidate.id === projectId);
+    if (!project) return false;
+    let library = libraryRef.current;
+    const currentId = activeProjectIdRef.current;
+    if (currentId && currentId !== projectId) {
+      const currentSave = saveToLocalStorage(stateRef.current, library, currentId);
+      if (currentSave.ok) library = currentSave.library;
+    }
+    const nextLibrary = { ...library, activeProjectId: project.id };
+    libraryRef.current = nextLibrary;
+    activeProjectIdRef.current = project.id;
+    setProjectLibrary(nextLibrary);
+    _setState(project.state);
+    pastRef.current = [];
+    futureRef.current = [];
+    lastPushAt.current = 0;
+    setSaveError(null);
+    return true;
+  }, []);
+
+  const createProject = useCallback((name = "Untitled project") => {
+    let library = libraryRef.current;
+    if (activeProjectIdRef.current) {
+      const currentSave = saveToLocalStorage(stateRef.current, library, activeProjectIdRef.current);
+      if (currentSave.ok) library = currentSave.library;
+    }
+    const nextState = mergeWithDefaults({
+      ...DEFAULT_PROJECT,
+      appName: name.trim() || "Untitled project",
+    });
+    const project = makeLocalProject(nextState);
+    const nextLibrary = upsertLocalProject(library, project);
+    libraryRef.current = nextLibrary;
+    activeProjectIdRef.current = project.id;
+    setProjectLibrary(nextLibrary);
+    _setState(nextState);
+    pastRef.current = [];
+    futureRef.current = [];
+    lastPushAt.current = 0;
+    return project.id;
+  }, []);
+
+  const importProject = useCallback((raw: unknown):
+    | { ok: true; projectId: string; name: string }
+    | { ok: false; error: string } => {
+    const parsed = ProjectStateSchema.safeParse(raw);
+    if (!parsed.success) {
+      return { ok: false, error: "That file is not a valid StoreCanvas project JSON." };
+    }
+    const nextState = mergeWithDefaults(parsed.data as Partial<ProjectState>);
+    let library = libraryRef.current;
+    if (activeProjectIdRef.current) {
+      const currentSave = saveToLocalStorage(stateRef.current, library, activeProjectIdRef.current);
+      if (currentSave.ok) library = currentSave.library;
+    }
+    const project = makeLocalProject(nextState);
+    const nextLibrary = upsertLocalProject(library, project);
+    libraryRef.current = nextLibrary;
+    activeProjectIdRef.current = project.id;
+    setProjectLibrary(nextLibrary);
+    _setState(nextState);
+    pastRef.current = [];
+    futureRef.current = [];
+    lastPushAt.current = 0;
+    setSaveError(null);
+    return { ok: true, projectId: project.id, name: project.name };
+  }, []);
+
+  const deleteProject = useCallback((projectId: string) => {
+    if (libraryRef.current.projects.length <= 1) return false;
+    const nextLibrary = removeLocalProject(libraryRef.current, projectId);
+    libraryRef.current = nextLibrary;
+    setProjectLibrary(nextLibrary);
+    if (activeProjectIdRef.current === projectId) {
+      const next = nextLibrary.projects.find((project) => project.id === nextLibrary.activeProjectId);
+      if (next) {
+        activeProjectIdRef.current = next.id;
+        _setState(next.state);
+        pastRef.current = [];
+        futureRef.current = [];
+        lastPushAt.current = 0;
+      }
+    }
+    return true;
+  }, []);
+
   return {
     state,
     setState,
     hydrated,
     savedAt,
     saveError,
+    fileSyncAvailable,
+    projects: summarizeProjects(projectLibrary.projects),
+    activeProjectId: projectLibrary.activeProjectId,
+    switchProject,
+    createProject,
+    importProject,
+    deleteProject,
     reset,
     resetDevice,
     undo,

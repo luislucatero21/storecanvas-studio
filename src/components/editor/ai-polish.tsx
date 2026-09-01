@@ -28,7 +28,6 @@ import type { Device, Slide } from "@/lib/types";
 const DEFAULT_MODEL: Record<AiProvider, string> = {
   openai: "gpt-4.1-mini",
   openrouter: "openai/gpt-4o-mini",
-  platform: "gpt-4.1-mini",
 };
 
 const PROVIDER_COPY: Record<AiProvider, { name: string; detail: string }> = {
@@ -39,10 +38,6 @@ const PROVIDER_COPY: Record<AiProvider, { name: string; detail: string }> = {
   openrouter: {
     name: "OpenRouter · bring your key",
     detail: "Use a model slug from your OpenRouter account.",
-  },
-  platform: {
-    name: "StoreCanvas workspace",
-    detail: "Uses managed workspace credits when this deployment is configured.",
   },
 };
 
@@ -96,8 +91,7 @@ export function AiPolish({
     () => new Map(campaignSlides.map((slide) => [slide.id, slide])),
     [campaignSlides],
   );
-  const requiresKey = provider !== "platform";
-  const cannotRun = disabled || loading || campaignSlides.length === 0 || (requiresKey && !apiKey.trim());
+  const cannotRun = disabled || loading || campaignSlides.length === 0 || !apiKey.trim();
 
   function handleOpenChange(next: boolean) {
     setOpen(next);
@@ -119,7 +113,7 @@ export function AiPolish({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           provider,
-          ...(requiresKey ? { apiKey } : {}),
+          apiKey,
           model,
           mode,
           appName,
@@ -201,8 +195,7 @@ export function AiPolish({
                 <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{PROVIDER_COPY[provider].detail}</p>
               </div>
 
-              {requiresKey ? (
-                <div>
+              <div>
                   <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground" htmlFor="ai-api-key">
                     Personal API key
                   </label>
@@ -223,13 +216,7 @@ export function AiPolish({
                   <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                     This key lives only in this dialog session and is <span className="font-medium text-foreground">never saved in StoreCanvas</span>.
                   </p>
-                </div>
-              ) : (
-                <p className="rounded-md bg-muted/60 px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
-                  No personal key is needed. A deployment administrator must configure the managed
-                  workspace endpoint and credits first.
-                </p>
-              )}
+              </div>
 
               <div>
                 <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground" htmlFor="ai-model">

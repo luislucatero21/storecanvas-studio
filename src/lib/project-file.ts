@@ -6,6 +6,10 @@ import path from "node:path";
  */
 export const DEFAULT_PROJECT_FILE = "example-project.json";
 
+export function isProjectFileConfigured(env: Record<string, string | undefined> = process.env) {
+  return !!env.STORECANVAS_PROJECT_FILE?.trim();
+}
+
 export function projectFilePath(root = process.cwd()) {
   const configured = process.env.STORECANVAS_PROJECT_FILE?.trim() || DEFAULT_PROJECT_FILE;
   return path.resolve(root, configured);

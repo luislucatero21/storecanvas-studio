@@ -11,7 +11,7 @@ pnpm install   # bun install also works
 pnpm dev       # http://localhost:3000
 ```
 
-Open `http://localhost:3000`. The editor loads `example-project.json` and autosaves changes to that file plus the browser cache.
+Open `http://localhost:3000`. The editor loads `example-project.json` as a read-only seed and autosaves changes to the browser-local project library.
 
 To work on a private project without adding it to Git, create `.env.local`:
 
@@ -20,6 +20,8 @@ STORECANVAS_PROJECT_FILE=app-store-screenshots.json
 ```
 
 `app-store-screenshots.json`, uploaded screenshots, generated backgrounds and exports are ignored by Git. This keeps private app captures out of an open-source checkout while preserving the existing local file.
+
+The checked-in demo is never overwritten by default. Configure `STORECANVAS_PROJECT_FILE` only when you want local file sync for a private campaign or CLI render.
 
 ## Features
 
@@ -31,7 +33,7 @@ STORECANVAS_PROJECT_FILE=app-store-screenshots.json
 - Twelve campaign templates and twelve accessible palette presets, with separate opt-in controls for recommended colors and placement resets.
 - Direct brand-token customization, per-slide text layers, responsive constraints, hiding/locking and undo/redo.
 - App Store URL import that derives a project-owned template, palette and copy suggestions from listing metadata and screenshot signals. Published composites remain reference-only unless the user explicitly enables them as captures.
-- Optional connected-artwork generation through an OpenAI-compatible Images API or a managed deployment endpoint. API keys stay in the active dialog and are never written to the project file.
+- Optional connected-artwork generation through OpenAI or OpenRouter using a key supplied for the current dialog session. StoreCanvas never runs a hosted usage meter, stores keys, or charges for usage.
 - Deterministic Playwright rendering for exact storefront sizes.
 
 ## Working with assets
@@ -52,7 +54,11 @@ Use `--all` to render every configured locale and device deck with screens. Set 
 
 ## AI providers
 
-AI copy polish accepts a user-provided OpenAI or OpenRouter key in memory for the current dialog session. Connected artwork generation follows the same pattern. A deployment can optionally configure a server-side OpenAI-compatible gateway in `.env.local`; copy `.env.example` to get the available variables. StoreCanvas does not provide billing, key storage or a hosted proxy by itself.
+AI copy polish and connected artwork are optional bring-your-own-key helpers. Keys stay in memory for the current dialog session and are sent only to the selected OpenAI-compatible provider; they are never written to a project file or StoreCanvas storage. Provider usage may have its own third-party cost, but StoreCanvas has no plans, checkout, account billing, or hosted usage meter.
+
+## Local-first deployment
+
+The editor uses browser local storage as its canonical project library. This keeps projects, imported captures, generated data URLs and edits available without a remote database. The local `/api/project` endpoint remains a convenience for git-trackable development files; on Vercel it becomes read-only and autosaves stay in the current browser. Use the visible **Project** selector to create projects, import a private `app-store-screenshots.json`, switch between campaigns, or download a backup JSON.
 
 ## Tests
 

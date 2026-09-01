@@ -6,7 +6,8 @@ import { getExportSizes, themeById } from "@/lib/constants";
 import { DEFAULT_PROJECT } from "@/lib/defaults";
 import { ProjectStateSchema } from "@/lib/schema";
 import { applyBrandTokens } from "@/lib/theme";
-import { projectFilePath } from "@/lib/project-file";
+import { isProjectFileConfigured, projectFilePath } from "@/lib/project-file";
+import { getLocalProject } from "@/lib/local-project-server";
 import type { Device, Orientation, ProjectState } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +27,10 @@ function isOrientation(value: string | undefined): value is Orientation {
 }
 
 async function readProject(): Promise<ProjectState> {
+  if (!isProjectFileConfigured()) {
+    const localProject = getLocalProject();
+    if (localProject) return localProject;
+  }
   try {
     const raw = await fs.readFile(projectFilePath(), "utf8");
     const parsed = ProjectStateSchema.safeParse(JSON.parse(raw));

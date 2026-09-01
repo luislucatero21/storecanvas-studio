@@ -40,10 +40,21 @@ import type { ValidationResult } from "@/lib/validation";
 import { AiPolish } from "./ai-polish";
 import { AppStoreImporter } from "./app-store-importer";
 import { CampaignWardrobe } from "./campaign-wardrobe";
+import { ProjectSwitcher } from "./project-switcher";
+import type { LocalProjectSummary } from "@/lib/project-library";
+import type { ProjectState } from "@/lib/types";
 
 type Props = {
   appName: string;
   setAppName: (v: string) => void;
+  projectState: ProjectState;
+  projects: LocalProjectSummary[];
+  activeProjectId: string | null;
+  onSwitchProject: (projectId: string) => boolean;
+  onCreateProject: () => string;
+  onImportProject: (raw: unknown) =>
+    | { ok: true; projectId: string; name: string }
+    | { ok: false; error: string };
   connectedCanvas: boolean;
   setConnectedCanvas: (v: boolean) => void;
   copyLinked: boolean;
@@ -62,6 +73,7 @@ type Props = {
   exporting: string | null;
   savedAt: number | null;
   saveError: string | null;
+  fileSyncAvailable: boolean;
   busy: boolean;
   templateId?: string;
   customTemplate?: CampaignTemplate;
@@ -102,6 +114,15 @@ export function Toolbar(props: Props) {
         <span className="store-wordmark-mark">S</span>
         <span className="text-xs font-semibold tracking-[0.12em]">STORECANVAS</span>
       </div>
+      <ProjectSwitcher
+        state={props.projectState}
+        projects={props.projects}
+        activeProjectId={props.activeProjectId}
+        disabled={props.busy}
+        onSwitchProject={props.onSwitchProject}
+        onCreateProject={props.onCreateProject}
+        onImportProject={props.onImportProject}
+      />
       <Input
         value={props.appName}
         onChange={(e) => props.setAppName(e.target.value)}
@@ -157,7 +178,7 @@ export function Toolbar(props: Props) {
         onValueChange={(v) => props.setDevice(v as Device)}
         disabled={props.busy}
       >
-        <SelectTrigger className="h-8 w-44 text-xs">
+        <SelectTrigger aria-label="Device" className="h-8 w-44 text-xs">
           <SelectValue placeholder="Device">{deviceLabel}</SelectValue>
         </SelectTrigger>
         <SelectContent>
@@ -255,7 +276,7 @@ export function Toolbar(props: Props) {
       />
 
       <div className="ml-auto flex shrink-0 items-center gap-2">
-        <SaveStatus savedAt={props.savedAt} saveError={props.saveError} />
+        <SaveStatus savedAt={props.savedAt} saveError={props.saveError} fileSyncAvailable={props.fileSyncAvailable} />
         <span aria-hidden className="h-5 w-px bg-border" />
         <Button
           type="button"
@@ -363,7 +384,7 @@ export function Toolbar(props: Props) {
   );
 }
 
-function SaveStatus({ savedAt, saveError }: { savedAt: number | null; saveError: string | null }) {
+function SaveStatus({ savedAt, saveError, fileSyncAvailable }: { savedAt: number | null; saveError: string | null; fileSyncAvailable: boolean }) {
   const [, setTick] = React.useState(0);
   React.useEffect(() => {
     const t = setInterval(() => setTick((x) => x + 1), 60_000);
@@ -391,12 +412,12 @@ function SaveStatus({ savedAt, saveError }: { savedAt: number | null; saveError:
   const seconds = Math.max(0, Math.round((Date.now() - savedAt) / 1000));
   const label =
     seconds < 5
-      ? "saved"
+      ? fileSyncAvailable ? "saved locally + file" : "saved locally"
       : seconds < 60
-        ? `saved ${seconds}s ago`
+        ? `${fileSyncAvailable ? "saved + file" : "saved locally"} ${seconds}s ago`
         : seconds < 3600
-          ? `saved ${Math.round(seconds / 60)}m ago`
-          : `saved ${Math.round(seconds / 3600)}h ago`;
+          ? `${fileSyncAvailable ? "saved + file" : "saved locally"} ${Math.round(seconds / 60)}m ago`
+          : `${fileSyncAvailable ? "saved + file" : "saved locally"} ${Math.round(seconds / 3600)}h ago`;
   return (
     <span className="flex items-center gap-1 text-xs text-muted-foreground">
       <Check className="h-3.5 w-3.5 text-green-500" /> {label}

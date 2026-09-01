@@ -2,7 +2,7 @@ import { z } from "zod";
 import { writeLocalized } from "./locale";
 import type { Device, ProjectState } from "./types";
 
-export const AI_PROVIDERS = ["openai", "openrouter", "platform"] as const;
+export const AI_PROVIDERS = ["openai", "openrouter"] as const;
 export const AI_MODES = ["polish", "narrative", "critique"] as const;
 
 export const AiProviderSchema = z.enum(AI_PROVIDERS);
@@ -28,7 +28,7 @@ export const AiImproveRequestSchema = z
     slides: z.array(AiSlideInputSchema).min(1).max(10),
   })
   .superRefine((value, ctx) => {
-    if (value.provider !== "platform" && !value.apiKey) {
+    if (!value.apiKey) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["apiKey"],
