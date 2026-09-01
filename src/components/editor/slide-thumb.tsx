@@ -58,9 +58,10 @@ export function SlideThumb({
   const aspect = cW / cH;
   const tileH = Math.max(34, Math.min(120, Math.round(THUMB_W / aspect)));
   const scale = THUMB_W / cW;
-  const start = connectedCanvas ? Math.max(0, index - 1) : index;
-  const visibleSlides = connectedCanvas ? slides.slice(start, Math.min(slides.length, index + 2)) : [slide];
-  const localIndex = index - start;
+  // Connected artwork belongs to its origin screen and can span the entire
+  // deck. Render the same graph as the main canvas, then crop to this screen.
+  const visibleSlides = connectedCanvas ? slides : [slide];
+  const localIndex = connectedCanvas ? index : 0;
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -73,13 +74,13 @@ export function SlideThumb({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "group relative flex items-stretch gap-2 rounded-lg border bg-card p-1.5 transition-all hover:border-foreground/30 hover:bg-accent",
-        active && "border-primary ring-1 ring-primary",
+        "group relative flex items-stretch gap-2 rounded-lg border bg-card p-1.5 transition-all hover:border-foreground/30 hover:bg-accent/10",
+        active && "border-primary bg-primary/[0.06] ring-1 ring-primary",
       )}
     >
       <button
         type="button"
-        className="flex w-3 cursor-grab items-center justify-center text-muted-foreground/60 hover:text-foreground focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:cursor-grabbing"
+        className="flex w-7 shrink-0 cursor-grab items-center justify-center rounded-md text-muted-foreground/60 hover:bg-muted hover:text-foreground focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:cursor-grabbing"
         {...attributes}
         {...listeners}
         aria-label={`Reorder screen ${index + 1} (press space, then arrow keys)`}
@@ -90,6 +91,7 @@ export function SlideThumb({
       <button
         type="button"
         onClick={onSelect}
+        aria-label={`Screen ${index + 1} · ${LAYOUT_LABEL[slide.layout]}`}
         className="flex flex-1 items-center gap-3 overflow-hidden text-left"
       >
         <div

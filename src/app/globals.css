@@ -84,19 +84,15 @@
   outline-offset: 4px;
   transition: outline-color 140ms cubic-bezier(0.23, 1, 0.32, 1), opacity 140ms ease;
 }
-.rnd-editable:hover {
-  outline-color: hsl(var(--accent) / 0.65);
-}
 .rnd-editable:focus-within,
 .rnd-editable.rnd-selected {
   outline-color: hsl(var(--accent) / 0.95);
   outline-style: solid;
 }
 
-.rnd-rotate-handle {
+.rnd-rotate-handle,
+.rnd-move-handle {
   position: absolute;
-  right: -14px;
-  top: -14px;
   z-index: 20;
   display: flex;
   height: 28px;
@@ -115,18 +111,32 @@
     transform 120ms ease;
 }
 
-.rnd-editable:hover .rnd-rotate-handle,
+.rnd-rotate-handle {
+  right: -14px;
+  top: -14px;
+}
+
+.rnd-move-handle {
+  left: -14px;
+  top: -14px;
+}
+
+.rnd-editable.rnd-selected .rnd-move-handle,
 .rnd-editable.rnd-selected .rnd-rotate-handle,
-.rnd-rotate-handle:focus-visible {
+.rnd-rotate-handle:focus-visible,
+.rnd-move-handle:focus-visible {
   opacity: 1;
 }
 
 .rnd-rotate-handle:hover,
-.rnd-rotate-handle:focus-visible {
+.rnd-rotate-handle:focus-visible,
+.rnd-move-handle:hover,
+.rnd-move-handle:focus-visible {
   transform: scale(1.05);
 }
 
-.rnd-rotate-handle:active {
+.rnd-rotate-handle:active,
+.rnd-move-handle:active {
   cursor: grabbing;
 }
 

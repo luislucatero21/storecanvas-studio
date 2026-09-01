@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 import { Rnd } from "react-rnd";
-import { RotateCw } from "lucide-react";
+import { Move, RotateCw } from "lucide-react";
 import type {
   AssetLibrary,
   BuiltInElementId,
@@ -31,7 +31,7 @@ import { img } from "@/lib/image-cache";
 import { pickText } from "@/lib/locale";
 import { constraintFor, resolveResponsiveTransform } from "@/lib/constraints";
 import { resolveAssetPath } from "@/lib/asset-library";
-import { captionSegmentColors, captionTextGradient } from "@/lib/caption-contrast";
+import { captionContrastForRect } from "@/lib/caption-contrast";
 import {
   AndroidPhone,
   AndroidTabletL,
@@ -228,6 +228,7 @@ function Caption({
   align = "center",
   inverted,
   segmentColors,
+  contrastGradient,
   onFocus,
 }: {
   cW: number;
@@ -240,11 +241,12 @@ function Caption({
   align?: "center" | "left";
   inverted?: boolean;
   segmentColors?: readonly string[];
+  contrastGradient?: string;
   onFocus?: () => void;
 }) {
   const fg = inverted ? theme.fgAlt : theme.fg;
   const accent = theme.accent;
-  const headlineGradient = segmentColors ? captionTextGradient(segmentColors) : undefined;
+  const headlineGradient = contrastGradient;
   // Scale typography off the *shorter* dimension so landscape layouts don't
   // produce headlines so tall they overlap the device frame.
   const unit = Math.min(cW, cH);
@@ -273,15 +275,13 @@ function Caption({
         onChange={edit?.onHeadlineChange}
         onFocus={onFocus}
         placeholder="Headline goes here"
-        dataAttributes={
-          segmentColors
-            ? {
-                "data-caption-headline": "true",
-                "data-caption-contrast": headlineGradient ? "per-slot" : "single-slot",
-                "data-caption-segment-colors": segmentColors.join(","),
-              }
-            : { "data-caption-headline": "true" }
-        }
+        dataAttributes={{
+          "data-caption-headline": "true",
+          "data-caption-contrast": headlineGradient ? "per-slot" : "single-slot",
+          ...(segmentColors?.length
+            ? { "data-caption-segment-colors": segmentColors.join(",") }
+            : {}),
+        }}
         style={{
           fontSize: unit * 0.092,
           fontWeight: 700,
@@ -648,6 +648,7 @@ export function SlideCanvas({
         boundsW={cW}
         boundsH={cH}
         allowCrossScreen={false}
+        deckInverted={[!!slide.inverted]}
         artworkSegmentInverted={[!!slide.inverted]}
       />
     </div>
@@ -748,11 +749,6 @@ export function DeckCanvas({
 
       {slides.map((slide, index) => {
         if (slide.layout === "feature-graphic" || device === "feature-graphic") return null;
-        const captionSpan = slide.captionSpan || 1;
-        const captionSegmentInverted =
-          connectedCanvas && captionSpan > 1
-            ? slides.slice(index, index + captionSpan).map((segment) => !!segment.inverted)
-            : undefined;
         const artworkSegmentInverted = connectedCanvas
           ? slides.slice(index, index + 10).map((segment) => !!segment.inverted)
           : [!!slide.inverted];
@@ -789,7 +785,7 @@ export function DeckCanvas({
             boundsW={connectedCanvas ? totalW : cW}
             boundsH={cH}
             allowCrossScreen={connectedCanvas}
-            captionSegmentInverted={captionSegmentInverted}
+            deckInverted={connectedCanvas ? slides.map((segment) => !!segment.inverted) : [!!slide.inverted]}
             artworkSegmentInverted={artworkSegmentInverted}
           />
         );
@@ -993,7 +989,7 @@ function SlideElements({
   boundsW,
   boundsH,
   allowCrossScreen,
-  captionSegmentInverted,
+  deckInverted,
   artworkSegmentInverted,
 }: {
   slide: Slide;
@@ -1011,7 +1007,7 @@ function SlideElements({
   boundsW: number;
   boundsH: number;
   allowCrossScreen: boolean;
-  captionSegmentInverted?: readonly boolean[];
+  deckInverted: readonly boolean[];
   artworkSegmentInverted?: readonly boolean[];
 }) {
   const isHidden = (id: ElementId) => slide.hiddenElements?.includes(id) ?? false;
@@ -1025,12 +1021,10 @@ function SlideElements({
   );
   const { cW, cH, Frame, frameAspect, defaults } = getSlideGeometry(slide, device, orientation);
   const inverted = !!slide.inverted;
-  const captionSpan = slide.captionSpan || 1;
-  const captionColors =
-    captionSpan > 1 && captionSegmentInverted && captionSegmentInverted.length > 1
-      ? captionSegmentColors(theme, captionSegmentInverted.slice(0, captionSpan))
-      : undefined;
   const captionRect = resolvedRectFor("caption", slide, device, orientation, locale, defaults);
+  const captionContrast = captionRect
+    ? captionContrastForRect(theme, deckInverted, cW, screenX + captionRect.x, captionRect.width)
+    : undefined;
   const deviceRect = resolvedRectFor("device", slide, device, orientation, locale, defaults);
   const secondaryRect = resolvedRectFor(
     "deviceSecondary",
@@ -1065,7 +1059,8 @@ function SlideElements({
         edit={edit}
         align={captionRect.align || "center"}
         inverted={inverted}
-        segmentColors={captionColors}
+        segmentColors={captionContrast?.colors}
+        contrastGradient={captionContrast?.gradient}
         onFocus={() => edit?.onSelectElement?.("caption")}
       />
     );
@@ -1092,6 +1087,8 @@ function SlideElements({
         selected={selectedElementId === "caption"}
         onSelect={() => edit?.onSelectElement?.("caption")}
         allowOverflow={allowCrossScreen}
+        dragHandleOnly
+        moveLabel="Move text"
       >
         <div
           data-caption-span={slide.captionSpan || 1}
@@ -1187,6 +1184,8 @@ function SlideElements({
         selected={selectedElementId === elementId}
         onSelect={() => edit?.onSelectElement?.(elementId)}
         allowOverflow={allowCrossScreen}
+        dragHandleOnly
+        moveLabel="Move text"
       >
         <div
           data-front-facing="text"
@@ -1255,6 +1254,8 @@ function SlideElements({
         selected={selectedElementId === id}
         onSelect={() => edit?.onSelectElement?.(id)}
         allowOverflow={allowCrossScreen}
+        dragHandleOnly
+        moveLabel="Move background"
       >
         <div style={{ position: "relative", width: "100%", height: "100%" }}>
           <img
@@ -1434,6 +1435,8 @@ function Movable({
   locked = false,
   selected = false,
   onSelect,
+  dragHandleOnly = false,
+  moveLabel = "Move element",
 }: {
   rect: Rect;
   boundsW: number;
@@ -1449,6 +1452,8 @@ function Movable({
   locked?: boolean;
   selected?: boolean;
   onSelect?: () => void;
+  dragHandleOnly?: boolean;
+  moveLabel?: string;
 }) {
   const rotationRef = React.useRef(rotation);
   const dragStartRef = React.useRef<{
@@ -1545,6 +1550,7 @@ function Movable({
       bounds={allowOverflow ? undefined : "parent"}
       scale={previewScale}
       lockAspectRatio={lockAspectRatio}
+      dragHandleClassName={dragHandleOnly ? "rnd-move-handle" : undefined}
       position={{ x: display.x, y: display.y }}
       size={{ width: display.width, height: display.height }}
       onDragStart={(event) => {
@@ -1605,6 +1611,24 @@ function Movable({
     >
       {rotated}
       {!locked && (
+        <>
+        {dragHandleOnly && selected ? (
+          <button
+            type="button"
+            className="rnd-move-handle"
+            style={{
+              left: -14 / controlScale,
+              top: -14 / controlScale,
+              width: 28 / controlScale,
+              height: 28 / controlScale,
+            }}
+            onMouseDown={() => onSelect?.()}
+            title={moveLabel}
+            aria-label={moveLabel}
+          >
+            <Move style={{ width: 14 / controlScale, height: 14 / controlScale }} />
+          </button>
+        ) : null}
         <button
           type="button"
           className="rnd-rotate-handle"
@@ -1620,6 +1644,7 @@ function Movable({
         >
           <RotateCw style={{ width: 14 / controlScale, height: 14 / controlScale }} />
         </button>
+        </>
       )}
     </Rnd>
   );

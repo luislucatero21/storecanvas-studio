@@ -23,7 +23,7 @@ import { createConnectedArtwork } from "@/lib/connected-artwork";
 import { setCopyLinking, writeLinkedCopy } from "@/lib/copy-sync";
 import { applyDeviceAngle, createDeviceSlot, setDeviceSlotLinking, setDeviceSlotSpan } from "@/lib/device-presentation";
 import { exportFileName, exportPath, slugify } from "@/lib/export-naming";
-import { captionSegmentColors, captionTextGradient } from "@/lib/caption-contrast";
+import { captionContrastForRect, captionSegmentColors, captionTextGradient } from "@/lib/caption-contrast";
 import { getElementTransform } from "@/components/editor/slide-canvas";
 import { ProjectStateSchema } from "@/lib/schema";
 import { validateProject } from "@/lib/validation";
@@ -121,6 +121,19 @@ describe("StoreCanvas project contracts", () => {
     expect(captionTextGradient(colors)).toBe(
       "linear-gradient(90deg, #161D3C 0%, #161D3C 50%, #F8FBFF 50%, #F8FBFF 100%)",
     );
+  });
+
+  it("pins caption contrast to real artboard seams and avoids single-slot gradients", () => {
+    const theme = { fg: "#161D3C", fgAlt: "#F8FBFF" };
+    const shared = captionContrastForRect(theme, [false, true], 1320, 320, 1900);
+    expect(shared.colors).toEqual(["#161D3C", "#F8FBFF"]);
+    expect(shared.gradient).toBe(
+      "linear-gradient(90deg, #161D3C 0%, #161D3C 52.6316%, #F8FBFF 52.6316%, #F8FBFF 100%)",
+    );
+
+    const single = captionContrastForRect(theme, [false, true], 1320, 105, 1109);
+    expect(single.colors).toEqual(["#161D3C"]);
+    expect(single.gradient).toBeUndefined();
   });
 
   it("ships a competitive wardrobe with at least twelve palettes and templates", () => {

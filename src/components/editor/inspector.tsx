@@ -146,6 +146,37 @@ export function Inspector({
     }
   }
 
+  function setCaptionSpan(span: SlotSpan) {
+    const currentSpan = slide.captionSpan || 1;
+    const current = getElementTransform(slide, device, orientation, "caption", locale);
+    const { cW } = getCanvas(device, orientation);
+    if (!current) {
+      onChange({ captionSpan: span === 1 ? undefined : span });
+      return;
+    }
+    const defaultWidthForSpan = cW * 0.84 + cW * (span - 1);
+    const desiredWidth = span < currentSpan
+      ? Math.min(current.width, defaultWidthForSpan)
+      : current.width + (span - currentSpan) * cW;
+    const availableWidth = cW * span - Math.max(0, current.x);
+    const width = Math.max(cW * 0.35, Math.min(desiredWidth, availableWidth));
+    const captionConstraint = { ...(slide.constraints?.caption || {}) };
+    // A responsive width override otherwise wins over the user's explicit
+    // screen-count choice and can make a 1× caption cross the next seam.
+    delete captionConstraint.width;
+    onChange({
+      captionSpan: span === 1 ? undefined : span,
+      transforms: {
+        ...slide.transforms,
+        caption: { ...current, width },
+      },
+      constraints: {
+        ...slide.constraints,
+        caption: captionConstraint,
+      },
+    });
+  }
+
   React.useEffect(() => {
     if (device === "feature-graphic" && slide.layout !== "feature-graphic") {
       onChange({ layout: "feature-graphic", transforms: undefined, screenshotSecondary: undefined });
@@ -228,7 +259,7 @@ export function Inspector({
                     variant={(slide.captionSpan || 1) === span ? "secondary" : "ghost"}
                     size="sm"
                     className="h-7 min-w-7 px-2 text-[10px]"
-                    onClick={() => onChange({ captionSpan: span === 1 ? undefined : span })}
+                    onClick={() => setCaptionSpan(span)}
                     aria-label={`Set message width to ${span} screen${span === 1 ? "" : "s"}`}
                     aria-pressed={(slide.captionSpan || 1) === span}
                   >
@@ -242,18 +273,6 @@ export function Inspector({
 
         {!isFeatureGraphic && !isNoDevice && (
           <div className="space-y-1.5">
-            <div className="space-y-1">
-              <Label className="text-xs">Semantic asset ID</Label>
-              <Input
-                value={slide.assetRef || ""}
-                onChange={(event) => setSemanticAssetRef(event.target.value)}
-                placeholder="capture:home-dashboard"
-                aria-label="Semantic asset ID"
-              />
-              <p className="text-[10px] leading-relaxed text-muted-foreground">
-                Stable refs let you refresh a capture without moving the composition.
-              </p>
-            </div>
             <Label className="text-xs">
               {slide.layout === "two-devices" ? "Front device screenshot" : "Screenshot"}
             </Label>
@@ -263,6 +282,23 @@ export function Inspector({
               locale={locale}
               onChange={(v) => setScreenshot(v)}
             />
+            <details className="rounded-md border bg-muted/20">
+              <summary className="cursor-pointer list-none px-2.5 py-2 text-[10px] font-medium text-muted-foreground">
+                Capture reference · advanced
+              </summary>
+              <div className="space-y-1.5 border-t p-2.5">
+                <Label className="text-xs">Semantic asset ID</Label>
+                <Input
+                  value={slide.assetRef || ""}
+                  onChange={(event) => setSemanticAssetRef(event.target.value)}
+                  placeholder="capture:home-dashboard"
+                  aria-label="Semantic asset ID"
+                />
+                <p className="text-[10px] leading-relaxed text-muted-foreground">
+                  Stable refs refresh a capture without moving its composition.
+                </p>
+              </div>
+            </details>
           </div>
         )}
 
@@ -417,7 +453,7 @@ function ConnectedArtworkPanel({
       </div>
 
       {(slide.connectedArtworks || []).map((artwork, index) => (
-        <details key={artwork.id} open className="rounded-md bg-background/75 px-2.5 py-2 shadow-[0_0_0_1px_hsl(var(--border)/.55)]">
+        <details key={artwork.id} className="rounded-md bg-background/75 px-2.5 py-2 shadow-[0_0_0_1px_hsl(var(--border)/.55)]">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-[11px] font-medium">
             <span>Seam artwork {index + 1}</span><span className="text-[10px] font-normal text-muted-foreground">{artwork.spanSlots} screens</span>
           </summary>
@@ -452,6 +488,10 @@ function ConnectedArtworkPanel({
                 <span className="flex h-8 items-center rounded-md border bg-muted/35 px-2 text-[10px] font-medium">OpenAI · API key</span>
                 <Input type="password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder="Personal API key" aria-label="Artwork OpenAI API key" className="h-8 text-xs" autoComplete="off" />
               </div>
+              <p className="mt-1.5 text-[9px] leading-relaxed text-muted-foreground">
+                ChatGPT Plus/Pro cannot authorize API usage because billing is separate. Use a temporary key from{" "}
+                <a className="underline underline-offset-2 hover:text-foreground" href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer">OpenAI Platform</a>.
+              </p>
               <div className="mt-2 flex items-center justify-between gap-2">
                 <p className="text-[9px] text-muted-foreground">The key is sent per request; it is never stored. Generation covers {artwork.spanSlots} screen{artwork.spanSlots === 1 ? "" : "s"}.</p>
                 <Button type="button" size="sm" className="h-7 px-2 text-[10px]" disabled={generatingId !== null || prompt.trim().length < 12 || !apiKey.trim()} onClick={() => generate(artwork)} aria-label={`Generate connected artwork ${index + 1}`}>

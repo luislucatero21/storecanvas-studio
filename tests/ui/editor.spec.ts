@@ -319,6 +319,12 @@ test.describe("StoreCanvas editor", () => {
     await expect(page.locator('[data-device-angle="tilt-left"]').first()).toHaveAttribute("data-device-rig", "optical");
   });
 
+  test("uses the full connected deck when rendering sidebar thumbnails", async ({ page }) => {
+    await page.goto("/");
+    const secondScreen = page.getByRole("button", { name: /Screen 2 ·/ });
+    await expect(secondScreen.locator('[data-connected-artwork="demo-opening-orbit"]')).toHaveCount(1);
+  });
+
   test("applies contrast to each slot of a shared example caption", async ({ page }) => {
     await page.goto("/render?device=iphone&locale=es-MX&size=1320x2868");
 
@@ -358,8 +364,14 @@ test.describe("StoreCanvas editor", () => {
     const initial = await editable.boundingBox();
     expect(initial).not.toBeNull();
 
+    await caption.locator("[data-caption-headline]").click();
+    const moveHandle = editable.getByRole("button", { name: "Move text" });
+    await expect(moveHandle).toBeVisible();
+    const handle = await moveHandle.boundingBox();
+    expect(handle).not.toBeNull();
+
     const delta = { x: 36, y: 18 };
-    const start = { x: initial!.x + 18, y: initial!.y + initial!.height * 0.68 };
+    const start = { x: handle!.x + handle!.width / 2, y: handle!.y + handle!.height / 2 };
     await page.mouse.move(start.x, start.y);
     await page.mouse.down();
     await page.mouse.move(start.x + delta.x, start.y + delta.y, { steps: 6 });
@@ -373,6 +385,21 @@ test.describe("StoreCanvas editor", () => {
     expect(Math.abs(actualDelta.y - delta.y), `y moved ${actualDelta.y}px; expected ${delta.y}px`).toBeLessThan(4);
     expect(Math.abs(after!.width - initial!.width), "shared caption width changed after drag").toBeLessThan(2);
     expect(Math.abs(after!.height - initial!.height), "shared caption height changed after drag").toBeLessThan(2);
+  });
+
+  test("refits a shared caption when it returns to one screen", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: /Screen 8 ·/ }).click();
+    await page.getByRole("button", { name: "Set message width to 1 screen" }).click();
+
+    await expect.poll(async () => {
+      const response = await page.request.get("/api/project");
+      const body = await response.json();
+      const slide = body.state.slidesByDevice.iphone[7];
+      return { span: slide.captionSpan || 1, width: slide.transforms.caption.width };
+    }).toEqual({ span: 1, width: 1108.8 });
+    const headline = page.locator('.store-canvas-well [data-caption-headline]').filter({ hasText: "One clear idea." });
+    await expect(headline).toHaveAttribute("data-caption-contrast", "single-slot");
   });
 
   test("template palette and placement overrides remain opt-in", async ({ page }) => {
@@ -412,6 +439,7 @@ test.describe("StoreCanvas editor", () => {
     });
     await page.goto("/");
     await page.getByRole("button", { name: /Screen 4 ·/ }).click();
+    await page.getByText("Seam artwork 1", { exact: true }).click();
     await page.getByRole("textbox", { name: "Artwork OpenAI API key" }).fill("sk-artwork-ui-test");
     await page.getByRole("button", { name: "Generate connected artwork 1" }).click();
 
@@ -427,6 +455,7 @@ test.describe("StoreCanvas editor", () => {
   test("lets a connected background span the full ten-screen deck", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: /Screen 1 ·/ }).click();
+    await page.getByText("Seam artwork 1", { exact: true }).click();
     await page.getByRole("combobox", { name: "Set connected artwork 1 span" }).click();
     await expect(page.getByRole("option", { name: "10 screens" })).toBeVisible();
     await page.getByRole("option", { name: "10 screens" }).click();

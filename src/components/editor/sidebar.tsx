@@ -15,7 +15,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { CircleCheck, Image, Plus } from "lucide-react";
+import { ChevronDown, CircleCheck, Image, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { AssetLibrary, Device, Orientation, Slide, Theme } from "@/lib/types";
 import { newSlide } from "@/lib/defaults";
@@ -119,18 +119,17 @@ export function Sidebar({
       </div>
 
       <div className="border-t bg-card/70 px-3 py-3">
-        <div className="mb-2 flex items-center justify-between">
-          <div>
-            <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-foreground/80">
-              Capture library
-            </h3>
-            <p className="text-[10px] text-muted-foreground">Semantic refs stay stable as captures refresh.</p>
-          </div>
-          <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] tabular-nums text-muted-foreground">
-            {Object.keys(assets || {}).length}
-          </span>
-        </div>
-        <div data-testid="asset-library" className="store-scrollbar mb-3 max-h-28 space-y-1 overflow-y-auto">
+        <details className="group mb-2 rounded-md border bg-background/55">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-2.5 py-2">
+            <span className="flex items-center gap-2 text-[11px] font-semibold text-foreground/80">
+              <Image className="h-3.5 w-3.5" /> Captures
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-normal tabular-nums text-muted-foreground">
+                {Object.keys(assets || {}).length}
+              </span>
+            </span>
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform group-open:rotate-180" />
+          </summary>
+          <div data-testid="asset-library" className="store-scrollbar max-h-36 space-y-1 overflow-y-auto border-t p-2">
           {Object.values(assets || {}).slice(0, 8).map((asset) => (
             <div key={asset.id} className="store-asset-row flex items-center gap-2 rounded-md border bg-background/50 px-2 py-1.5">
               <div className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded border bg-muted">
@@ -144,7 +143,8 @@ export function Sidebar({
             </div>
           ))}
           {!Object.keys(assets || {}).length && <p className="text-[10px] text-muted-foreground">No semantic captures yet.</p>}
-        </div>
+          </div>
+        </details>
         <Button
           type="button"
           className="w-full"
