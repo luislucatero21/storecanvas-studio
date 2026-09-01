@@ -1,4 +1,5 @@
 import { CAMPAIGN_TEMPLATES, applyCampaignTemplateDefinition, applyCustomColors } from "./campaign-presets";
+import { cloneDeckToDevice, shouldInheritDeviceDeck } from "./device-sync";
 import type { BrandTokens, CampaignTemplate, ProjectState } from "./types";
 
 export type AppStoreListing = {
@@ -456,8 +457,12 @@ export function applyCampaignImport(
     };
   });
 
-  return {
+  const imported = {
     ...next,
     slidesByDevice: { ...next.slidesByDevice, [project.device]: slides },
   };
+  return project.device === "iphone"
+    && shouldInheritDeviceDeck(imported.slidesByDevice.iphone || [], imported.slidesByDevice.ipad || [])
+    ? cloneDeckToDevice(imported, "iphone", "ipad")
+    : imported;
 }

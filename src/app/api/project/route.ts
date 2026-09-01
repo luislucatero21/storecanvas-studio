@@ -7,6 +7,7 @@ import {
   isProjectFileConfigured,
   projectFilePath,
 } from "@/lib/project-file";
+import { inheritDefaultDeviceDecks } from "@/lib/device-sync";
 import { isReadOnlyRuntime } from "@/lib/runtime";
 import { getLocalProject, setLocalProject } from "@/lib/local-project-server";
 import type { ProjectState } from "@/lib/types";
@@ -35,14 +36,15 @@ export async function GET(request: Request) {
   const fileAvailable = isProjectFileConfigured() || isLocalPrivateProjectAvailable();
   const localProject = browserOnly && (!preferFile || !fileAvailable) ? getLocalProject() : null;
   if (localProject) {
-    return noStoreJson({ ok: true, state: localProject, persisted: "browser", source: "browser" });
+    return noStoreJson({ ok: true, state: inheritDefaultDeviceDecks(localProject), persisted: "browser", source: "browser" });
   }
   try {
     const raw = await fs.readFile(filePath(), "utf8");
     const parsed = JSON.parse(raw);
+    const validated = ProjectStateSchema.safeParse(parsed);
     return noStoreJson({
       ok: true,
-      state: parsed,
+      state: validated.success ? inheritDefaultDeviceDecks(validated.data as ProjectState) : parsed,
       persisted: !isReadOnlyRuntime() && isProjectFileConfigured() ? "file" : "browser",
       source: source(),
     });
@@ -51,7 +53,7 @@ export async function GET(request: Request) {
     if (code === "ENOENT") {
       return noStoreJson({
         ok: true,
-        state: source() === "demo-file" ? CHECKED_IN_EXAMPLE_PROJECT : null,
+        state: source() === "demo-file" ? inheritDefaultDeviceDecks(CHECKED_IN_EXAMPLE_PROJECT) : null,
         persisted: !isReadOnlyRuntime() && isProjectFileConfigured() ? "file" : "browser",
         source: source(),
       });

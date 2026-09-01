@@ -121,6 +121,9 @@ export type SemanticAsset = {
 
 export type AssetLibrary = Record<string, SemanticAsset>;
 
+/** Export targets selected by the user, keyed by device. */
+export type ExportSizeSelection = Partial<Record<Device, string[]>>;
+
 export type BrandTokens = {
   colors?: {
     primary?: string;
@@ -263,6 +266,8 @@ export type ProjectState = {
   locale: string;
   device: Device;
   orientation: Orientation;
+  /** Optional export targets; omitted/empty selections fall back to Apple's global size. */
+  exportSizeIds?: ExportSizeSelection;
   // Per-device slide decks so platform switching preserves work
   slidesByDevice: Record<Device, Slide[]>;
   appIcon?: string;    // path under /public (e.g. /app-icon.svg)

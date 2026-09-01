@@ -41,6 +41,7 @@ import { AiPolish } from "./ai-polish";
 import { AppStoreImporter } from "./app-store-importer";
 import { CampaignWardrobe } from "./campaign-wardrobe";
 import { ProjectSwitcher } from "./project-switcher";
+import { ExportSizePicker } from "./export-size-picker";
 import type { LocalProjectSummary } from "@/lib/project-library";
 import type { ProjectState } from "@/lib/types";
 
@@ -67,6 +68,8 @@ type Props = {
   setDevice: (v: Device) => void;
   orientation: Orientation;
   setOrientation: (v: Orientation) => void;
+  exportSizeIds?: ProjectState["exportSizeIds"];
+  onExportSizeIdsChange: (device: Device, ids: string[]) => void;
   onExport: () => void;
   onResetAll: () => void;
   onResetDevice: () => void;
@@ -214,6 +217,14 @@ export function Toolbar(props: Props) {
         </Select>
       )}
 
+      <ExportSizePicker
+        device={props.device}
+        orientation={props.orientation}
+        selectedIds={props.exportSizeIds?.[props.device]}
+        onChange={(ids) => props.onExportSizeIdsChange(props.device, ids)}
+        disabled={props.busy}
+      />
+
       {showLocale && (
         <Select value={props.locale} onValueChange={props.setLocale} disabled={props.busy}>
           <SelectTrigger aria-label="Locale" className="h-8 w-20 text-xs">
@@ -310,7 +321,7 @@ export function Toolbar(props: Props) {
           disabled={!!props.exporting}
           size="sm"
           className="h-8"
-          title="Export every size × locale for this device as a zip"
+          title="Export selected sizes × locale for this device as a zip"
         >
           <Download className="h-4 w-4" />
           {props.exporting ? `Exporting ${props.exporting}` : "Export bundle"}

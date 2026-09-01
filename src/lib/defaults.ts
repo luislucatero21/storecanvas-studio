@@ -1,5 +1,5 @@
 import { DEFAULT_LOCALE } from "./locale";
-import { DEFAULT_THEME_ID, PROJECT_SCHEMA_VERSION } from "./constants";
+import { DEFAULT_EXPORT_SIZE_IDS, DEFAULT_THEME_ID, PROJECT_SCHEMA_VERSION } from "./constants";
 import type { Device, ProjectState, Slide } from "./types";
 
 let _id = 0;
@@ -49,33 +49,6 @@ function makeStarterSlides(): Slide[] {
   ];
 }
 
-function ipadStarter(): Slide[] {
-  return [
-    {
-      id: nid(),
-      layout: "hero",
-      label: en("MEET YOUR APP"),
-      headline: en("Made for\nthe big screen."),
-      screenshot: "",
-    },
-    {
-      id: nid(),
-      layout: "device-bottom",
-      label: en("FEATURE 01"),
-      headline: en("Built for\nfocus."),
-      screenshot: "",
-    },
-    {
-      id: nid(),
-      layout: "device-top",
-      label: en("FEATURE 02"),
-      headline: en("Always within reach."),
-      screenshot: "",
-      inverted: true,
-    },
-  ];
-}
-
 function tabletStarter(kind: "7" | "10"): Slide[] {
   return [
     {
@@ -118,11 +91,14 @@ export const DEFAULT_PROJECT: ProjectState = {
   locale: DEFAULT_LOCALE,
   device: "iphone",
   orientation: "portrait",
+  exportSizeIds: DEFAULT_EXPORT_SIZE_IDS,
   appIcon: "",
   slidesByDevice: {
     iphone: makeStarterSlides(),
     android: makeStarterSlides(),
-    ipad: ipadStarter(),
+    // iPad starts with the same story as iPhone. The decks remain independent
+    // after hydration, so a tablet-specific edit never moves the phone deck.
+    ipad: makeStarterSlides(),
     "android-7": tabletStarter("7"),
     "android-10": tabletStarter("10"),
     "feature-graphic": fgStarter(),

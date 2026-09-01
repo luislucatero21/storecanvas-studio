@@ -132,6 +132,7 @@ export const ProjectStateSchema = z.object({
   locale: z.string().trim().min(1),
   device: DeviceSchema,
   orientation: z.enum(["portrait", "landscape"]),
+  exportSizeIds: z.record(z.string(), z.array(z.string().trim().min(1))).optional(),
   slidesByDevice: z.record(z.string(), z.array(SlideSchema)),
   appIcon: z.string().optional(),
   assets: z.record(z.string(), AssetSchema).optional(),

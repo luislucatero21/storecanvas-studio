@@ -11,6 +11,7 @@ import {
 import { requestAiProposal } from "@/lib/ai-server";
 import { buildArtworkPrompt, requestArtworkImage, resolveArtworkProviderRequest } from "@/lib/artwork-ai-server";
 import { resolveAssetPath, replaceAssetPath } from "@/lib/asset-library";
+import { getSelectedExportSizes } from "@/lib/constants";
 import {
   CAMPAIGN_TEMPLATES,
   PALETTE_PRESETS,
@@ -20,6 +21,7 @@ import {
 } from "@/lib/campaign-presets";
 import { resolveResponsiveTransform } from "@/lib/constraints";
 import { createConnectedArtwork } from "@/lib/connected-artwork";
+import { cloneDeckToDevice, inheritDefaultDeviceDecks, shouldInheritDeviceDeck } from "@/lib/device-sync";
 import { setCopyLinking, writeLinkedCopy } from "@/lib/copy-sync";
 import { applyDeviceAngle, createDeviceSlot, setDeviceSlotLinking, setDeviceSlotSpan } from "@/lib/device-presentation";
 import { exportFileName, exportPath, slugify } from "@/lib/export-naming";
@@ -831,6 +833,62 @@ describe("StoreCanvas project contracts", () => {
       spanSlots: 10,
       transform: { x: 0, y: 0, width: 13200, height: 2868 },
     });
+  });
+
+  it("exports only Apple's global target until the user selects more sizes", () => {
+    expect(getSelectedExportSizes("iphone", "portrait")).toHaveLength(1);
+    expect(getSelectedExportSizes("iphone", "portrait")[0]).toMatchObject({
+      id: "iphone-6.9",
+      w: 1320,
+      h: 2868,
+    });
+    expect(getSelectedExportSizes("ipad", "portrait")).toHaveLength(1);
+    expect(getSelectedExportSizes("iphone", "portrait", { iphone: ["iphone-6.5", "iphone-6.1"] }).map((size) => size.id))
+      .toEqual(["iphone-6.5", "iphone-6.1"]);
+    expect(getSelectedExportSizes("iphone", "portrait", { iphone: ["missing"] })[0].id).toBe("iphone-6.9");
+  });
+
+  it("inherits an independent iPad copy of the iPhone story when the target is a placeholder deck", () => {
+    const project = {
+      ...DEFAULT_PROJECT,
+      slidesByDevice: {
+        ...DEFAULT_PROJECT.slidesByDevice,
+        iphone: [{
+          ...DEFAULT_PROJECT.slidesByDevice.iphone[0],
+          screenshot: "/screenshots/apple/iphone/{locale}/home.png",
+          assetRef: "capture:home",
+        }],
+        ipad: [{ ...DEFAULT_PROJECT.slidesByDevice.ipad[0], id: "starter-ipad" }],
+      },
+      assets: {
+        "capture:home": {
+          id: "capture:home",
+          type: "screen" as const,
+          paths: { "en-US": "/screenshots/apple/iphone/{locale}/home.png" },
+        },
+      },
+    };
+
+    expect(shouldInheritDeviceDeck(project.slidesByDevice.iphone, project.slidesByDevice.ipad)).toBe(true);
+    const inherited = inheritDefaultDeviceDecks(project);
+    expect(inherited.slidesByDevice.ipad).toHaveLength(1);
+    expect(inherited.slidesByDevice.ipad[0]).toMatchObject({
+      screenshot: "/screenshots/apple/ipad/{locale}/home.png",
+      assetRef: "capture:home:ipad",
+    });
+    expect(inherited.assets?.["capture:home:ipad"]?.paths["en-US"])
+      .toBe("/screenshots/apple/ipad/{locale}/home.png");
+    expect(inherited.slidesByDevice.ipad[0].id).not.toBe(project.slidesByDevice.iphone[0].id);
+    expect(project.slidesByDevice.ipad[0].id).toBe("starter-ipad");
+  });
+
+  it("does not replace a real iPad deck while syncing an iPhone project", () => {
+    const source = DEFAULT_PROJECT.slidesByDevice.iphone.slice(0, 1);
+    const target = [{ ...DEFAULT_PROJECT.slidesByDevice.ipad[0], screenshot: "/real/ipad.png" }];
+    expect(shouldInheritDeviceDeck(source, target)).toBe(false);
+    const project = { ...DEFAULT_PROJECT, slidesByDevice: { ...DEFAULT_PROJECT.slidesByDevice, iphone: source, ipad: target } };
+    expect(cloneDeckToDevice(project).slidesByDevice.ipad[0].screenshot).not.toBe("/real/ipad.png");
+    expect(inheritDefaultDeviceDecks(project).slidesByDevice.ipad[0].screenshot).toBe("/real/ipad.png");
   });
 
   it("propagates localized copy by screen order only while linking is enabled", () => {

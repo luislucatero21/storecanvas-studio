@@ -1,4 +1,4 @@
-import type { Device, Orientation, SlideLayout, Theme, ThemeId } from "./types";
+import type { Device, ExportSizeSelection, Orientation, SlideLayout, Theme, ThemeId } from "./types";
 
 // ---------- Canvas dimensions (design at largest required resolution) ----------
 export const CANVAS: Record<Device, { w: number; h: number; wL?: number; hL?: number }> = {
@@ -11,29 +11,29 @@ export const CANVAS: Record<Device, { w: number; h: number; wL?: number; hL?: nu
 };
 
 // ---------- Export sizes per device ----------
-export type ExportSize = { label: string; w: number; h: number };
+export type ExportSize = { id: string; label: string; w: number; h: number };
 
 export const EXPORT_SIZES: Record<Device, ExportSize[]> = {
   iphone: [
-    { label: '6.9"', w: 1320, h: 2868 },
-    { label: '6.5"', w: 1284, h: 2778 },
-    { label: '6.3"', w: 1206, h: 2622 },
-    { label: '6.1"', w: 1125, h: 2436 },
+    { id: "iphone-6.9", label: '6.9"', w: 1320, h: 2868 },
+    { id: "iphone-6.5", label: '6.5"', w: 1284, h: 2778 },
+    { id: "iphone-6.3", label: '6.3"', w: 1206, h: 2622 },
+    { id: "iphone-6.1", label: '6.1"', w: 1125, h: 2436 },
   ],
   ipad: [
-    { label: '13" iPad',       w: 2064, h: 2752 },
-    { label: '12.9" iPad Pro', w: 2048, h: 2732 },
+    { id: "ipad-13", label: '13" iPad',       w: 2064, h: 2752 },
+    { id: "ipad-12.9", label: '12.9" iPad Pro', w: 2048, h: 2732 },
   ],
-  android:       [{ label: "Phone",          w: 1080, h: 1920 }],
-  "android-7":   [{ label: '7" Portrait',    w: 1200, h: 1920 }],
-  "android-10":  [{ label: '10" Portrait',   w: 1600, h: 2560 }],
-  "feature-graphic": [{ label: "Feature Graphic", w: 1024, h: 500 }],
+  android:       [{ id: "android-phone", label: "Phone",          w: 1080, h: 1920 }],
+  "android-7":   [{ id: "android-7-portrait", label: '7" Portrait',    w: 1200, h: 1920 }],
+  "android-10":  [{ id: "android-10-portrait", label: '10" Portrait',   w: 1600, h: 2560 }],
+  "feature-graphic": [{ id: "feature-graphic", label: "Feature Graphic", w: 1024, h: 500 }],
 };
 
 // Landscape sizes (tablets only)
 export const EXPORT_SIZES_LANDSCAPE: Partial<Record<Device, ExportSize[]>> = {
-  "android-7":  [{ label: '7" Landscape',  w: 1920, h: 1200 }],
-  "android-10": [{ label: '10" Landscape', w: 2560, h: 1600 }],
+  "android-7":  [{ id: "android-7-landscape", label: '7" Landscape',  w: 1920, h: 1200 }],
+  "android-10": [{ id: "android-10-landscape", label: '10" Landscape', w: 2560, h: 1600 }],
 };
 
 export function supportsLandscape(device: Device): boolean {
@@ -45,6 +45,37 @@ export function getExportSizes(device: Device, orientation: Orientation): Export
     return EXPORT_SIZES_LANDSCAPE[device] || EXPORT_SIZES[device];
   }
   return EXPORT_SIZES[device];
+}
+
+/** The one Apple target selected on a new project and by legacy projects. */
+export const DEFAULT_EXPORT_SIZE_IDS: ExportSizeSelection = {
+  iphone: ["iphone-6.9"],
+  ipad: ["ipad-13"],
+  android: ["android-phone"],
+  "android-7": ["android-7-portrait"],
+  "android-10": ["android-10-portrait"],
+  "feature-graphic": ["feature-graphic"],
+};
+
+export function getDefaultExportSizeIds(device: Device, orientation: Orientation) {
+  return getExportSizes(device, orientation).slice(0, 1).map((size) => size.id);
+}
+
+/**
+ * Resolve a persisted selection against the current catalog. Invalid or empty
+ * selections intentionally fall back to Apple's global target so exports never
+ * silently become an empty bundle after a schema/catalog change.
+ */
+export function getSelectedExportSizes(
+  device: Device,
+  orientation: Orientation,
+  selection?: ExportSizeSelection,
+) {
+  const sizes = getExportSizes(device, orientation);
+  const requested = selection?.[device];
+  if (!Array.isArray(requested) || requested.length === 0) return sizes.slice(0, 1);
+  const selected = sizes.filter((size) => requested.includes(size.id));
+  return selected.length > 0 ? selected : sizes.slice(0, 1);
 }
 
 // ---------- Frame aspect ratios ----------

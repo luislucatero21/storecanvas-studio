@@ -11,17 +11,17 @@ const baseUrl = process.env.STORECANVAS_URL || "http://127.0.0.1:3100";
 const executablePath = process.env.PLAYWRIGHT_EXECUTABLE_PATH;
 
 const defaultSizes = {
-  iphone: [{ w: 1320, h: 2868 }],
-  ipad: [{ w: 2064, h: 2752 }],
-  android: [{ w: 1080, h: 1920 }],
-  "android-7": [{ w: 1200, h: 1920 }],
-  "android-10": [{ w: 1600, h: 2560 }],
-  "feature-graphic": [{ w: 1024, h: 500 }],
+  iphone: [{ id: "iphone-6.9", w: 1320, h: 2868 }],
+  ipad: [{ id: "ipad-13", w: 2064, h: 2752 }],
+  android: [{ id: "android-phone", w: 1080, h: 1920 }],
+  "android-7": [{ id: "android-7-portrait", w: 1200, h: 1920 }],
+  "android-10": [{ id: "android-10-portrait", w: 1600, h: 2560 }],
+  "feature-graphic": [{ id: "feature-graphic", w: 1024, h: 500 }],
 };
 
 const landscapeSizes = {
-  "android-7": [{ w: 1920, h: 1200 }],
-  "android-10": [{ w: 2560, h: 1600 }],
+  "android-7": [{ id: "android-7-landscape", w: 1920, h: 1200 }],
+  "android-10": [{ id: "android-10-landscape", w: 2560, h: 1600 }],
 };
 
 const SUPPORTED_DEVICES = new Set([
@@ -464,6 +464,17 @@ function devicesFor(project) {
   return [project.device];
 }
 
+function exportSizesFor(project, device, orientation) {
+  const catalog = orientation === "landscape"
+    ? landscapeSizes[device] || defaultSizes[device]
+    : defaultSizes[device];
+  if (!catalog) return undefined;
+  const requested = project.exportSizeIds?.[device];
+  if (!Array.isArray(requested) || requested.length === 0) return catalog.slice(0, 1);
+  const selected = catalog.filter((size) => requested.includes(size.id));
+  return selected.length > 0 ? selected : catalog.slice(0, 1);
+}
+
 async function renderCommand() {
   const { chromium } = await import("@playwright/test");
   const project = await loadProject(resolveProjectFile());
@@ -483,7 +494,7 @@ async function renderCommand() {
   try {
     for (const device of devicesFor(project)) {
       const orientation = project.orientation === "landscape" ? "landscape" : "portrait";
-      const sizes = orientation === "landscape" ? landscapeSizes[device] || defaultSizes[device] : defaultSizes[device];
+      const sizes = exportSizesFor(project, device, orientation);
       if (!sizes) throw new Error(`Unknown device: ${device}`);
       for (const locale of localesFor(project)) {
         for (const size of sizes) {

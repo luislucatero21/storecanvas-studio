@@ -3,10 +3,16 @@ import { buildAssetLibrary } from "@/lib/asset-library";
 import { DeckCanvas } from "@/components/editor/slide-canvas";
 import { getCanvas } from "@/lib/canvas";
 import { getExportSizes, themeById } from "@/lib/constants";
+import { inheritDefaultDeviceDecks } from "@/lib/device-sync";
 import { DEFAULT_PROJECT } from "@/lib/defaults";
 import { ProjectStateSchema } from "@/lib/schema";
 import { applyBrandTokens } from "@/lib/theme";
-import { CHECKED_IN_EXAMPLE_PROJECT, isProjectFileConfigured, projectFilePath } from "@/lib/project-file";
+import {
+  CHECKED_IN_EXAMPLE_PROJECT,
+  isLocalPrivateProjectAvailable,
+  isProjectFileConfigured,
+  projectFilePath,
+} from "@/lib/project-file";
 import { getLocalProject } from "@/lib/local-project-server";
 import type { Device, Orientation, ProjectState } from "@/lib/types";
 
@@ -26,17 +32,30 @@ function isOrientation(value: string | undefined): value is Orientation {
   return value === "portrait" || value === "landscape";
 }
 
-async function readProject(preferFile = false): Promise<ProjectState> {
+async function readProject(options: { preferFile?: boolean; preferExample?: boolean; preferBrowser?: boolean } = {}): Promise<ProjectState> {
+  if (options.preferExample) return inheritDefaultDeviceDecks(CHECKED_IN_EXAMPLE_PROJECT);
+  if (options.preferBrowser) {
+    const localProject = getLocalProject();
+    if (localProject) return inheritDefaultDeviceDecks(localProject);
+  }
+  const preferFile = options.preferFile ?? false;
   if (!preferFile && !isProjectFileConfigured()) {
     const localProject = getLocalProject();
-    if (localProject) return localProject;
+    // An ignored local campaign file is the refreshable source for local
+    // previews. It must win over an older browser snapshot after captures or
+    // generated artwork are refreshed on disk.
+    if (localProject && !isLocalPrivateProjectAvailable()) {
+      return inheritDefaultDeviceDecks(localProject);
+    }
   }
   try {
     const raw = await fs.readFile(projectFilePath(), "utf8");
     const parsed = ProjectStateSchema.safeParse(JSON.parse(raw));
-    return parsed.success ? (parsed.data as ProjectState) : DEFAULT_PROJECT;
+    return parsed.success ? inheritDefaultDeviceDecks(parsed.data as ProjectState) : DEFAULT_PROJECT;
   } catch {
-    return isProjectFileConfigured() ? DEFAULT_PROJECT : CHECKED_IN_EXAMPLE_PROJECT;
+    return isProjectFileConfigured()
+      ? DEFAULT_PROJECT
+      : inheritDefaultDeviceDecks(CHECKED_IN_EXAMPLE_PROJECT);
   }
 }
 
@@ -52,8 +71,12 @@ export default async function RenderPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  const preferFile = one(params.source) === "file";
-  const state = await readProject(preferFile);
+  const source = one(params.source);
+  const state = await readProject({
+    preferFile: source === "file",
+    preferExample: source === "example",
+    preferBrowser: source === "browser",
+  });
   const requestedDevice = one(params.device);
   const requestedOrientation = one(params.orientation);
   const requestedLocale = one(params.locale);

@@ -112,8 +112,8 @@ test.describe("StoreCanvas editor", () => {
     cached.appName = "Local campaign";
     cached.campaignSource = {
       provider: "app-store",
-      appId: "6757990035",
-      sourceUrl: "https://apps.apple.com/mx/app/rutmia/id6757990035",
+      appId: "1234567890",
+      sourceUrl: "https://apps.apple.com/mx/app/demo/id1234567890",
       country: "mx",
       screenshotPolicy: "reference-only",
     };
@@ -129,7 +129,7 @@ test.describe("StoreCanvas editor", () => {
     const projectMenu = page.getByRole("button", { name: "Project menu" });
     await projectMenu.click();
     await page.getByLabel("Import project JSON").setInputFiles({
-      name: "rutmia-cached.json",
+      name: "local-campaign-cached.json",
       mimeType: "application/json",
       buffer: Buffer.from(JSON.stringify(cached)),
     });
@@ -218,8 +218,40 @@ test.describe("StoreCanvas editor", () => {
     await expect(page.getByRole("button", { name: "Export bundle" })).toBeEnabled();
   });
 
+  test("defaults to Apple's global export size and lets the user opt into more targets", async ({ page }) => {
+    await page.goto("/");
+
+    await page.getByRole("button", { name: "Export sizes for iPhone" }).click();
+    await expect(page.getByRole("heading", { name: "Export sizes · iPhone" })).toBeVisible();
+    const globalSize = page.getByRole("checkbox", { name: /Export 6\.9/ });
+    const nextSize = page.getByRole("checkbox", { name: /Export 6\.5/ });
+    await expect(globalSize).toHaveAttribute("aria-checked", "true");
+    await expect(nextSize).toHaveAttribute("aria-checked", "false");
+
+    await nextSize.click();
+    await expect.poll(async () => {
+      const response = await page.request.get("/api/project");
+      const body = await response.json();
+      return body.state.exportSizeIds.iphone;
+    }).toEqual(["iphone-6.9", "iphone-6.5"]);
+
+    await globalSize.click();
+    await expect.poll(async () => {
+      const response = await page.request.get("/api/project");
+      const body = await response.json();
+      return body.state.exportSizeIds.iphone;
+    }).toEqual(["iphone-6.5"]);
+
+    await page.getByRole("button", { name: "Apple default" }).click();
+    await expect.poll(async () => {
+      const response = await page.request.get("/api/project");
+      const body = await response.json();
+      return body.state.exportSizeIds.iphone;
+    }).toEqual(["iphone-6.9"]);
+  });
+
   test("renders an exact-size export artboard", async ({ page }) => {
-    await gotoRender(page, "/render?device=iphone&locale=en-US&size=1320x2868");
+    await gotoRender(page, "/render?source=example&device=iphone&locale=en-US&size=1320x2868");
 
     const render = page.locator('[data-render-valid="true"]');
     await expect(render).toHaveAttribute("data-render-width", "1320");
@@ -234,7 +266,7 @@ test.describe("StoreCanvas editor", () => {
     const baseURL = test.info().project.use.baseURL as string;
 
     try {
-      await gotoRender(page, `${baseURL}/render?device=iphone&locale=es-MX&size=1320x2868`);
+      await gotoRender(page, `${baseURL}/render?source=example&device=iphone&locale=es-MX&size=1320x2868`);
       const firstSlide = page.locator('[data-slide-id="demo-1-route"]');
       await expect(firstSlide.getByText("UNA FORMA MÁS CLARA DE AVANZAR")).toBeVisible();
       await expect(firstSlide.getByText("Haz espacio para lo importante.")).toBeVisible();
@@ -284,7 +316,7 @@ test.describe("StoreCanvas editor", () => {
   });
 
   test("renders iPhone 17 Pro Max anatomy while editorial copy stays face-forward", async ({ page }) => {
-    await gotoRender(page, "/render?device=iphone&locale=es-MX&size=1320x2868");
+    await gotoRender(page, "/render?source=example&device=iphone&locale=es-MX&size=1320x2868");
 
     const firstSlide = page.locator('[data-slide-id="demo-1-route"]');
     const frame = firstSlide.locator('[data-device-model="iphone-17-pro-max"]').first();
@@ -303,7 +335,7 @@ test.describe("StoreCanvas editor", () => {
       },
     }];
     await page.request.post("/api/project", { data: androidProject });
-    await page.goto("/render?device=android&locale=en-US&size=1080x1920");
+    await page.goto("/render?source=browser&device=android&locale=en-US&size=1080x1920");
 
     const rig = page.locator('[data-device-type="android"][data-device-angle="tilt-right"]');
     await expect(rig).toBeVisible();
@@ -344,7 +376,7 @@ test.describe("StoreCanvas editor", () => {
   });
 
   test("preloads the example with connected art, independent phones and message continuity", async ({ page }) => {
-    await gotoRender(page, "/render?device=iphone&locale=es-MX&size=1320x2868");
+    await gotoRender(page, "/render?source=example&device=iphone&locale=es-MX&size=1320x2868");
 
     const opening = page.locator('[data-slide-id="demo-1-route"]');
     const paired = page.locator('[data-slide-id="demo-2-ai"]');
@@ -372,7 +404,7 @@ test.describe("StoreCanvas editor", () => {
   });
 
   test("applies contrast to each slot of a shared example caption", async ({ page }) => {
-    await page.goto("/render?device=iphone&locale=es-MX&size=1320x2868");
+    await page.goto("/render?source=example&device=iphone&locale=es-MX&size=1320x2868");
 
     const headline = page
       .locator('[data-slide-id="demo-8-routine"] [data-caption-headline]')
@@ -636,13 +668,23 @@ test.describe("StoreCanvas editor", () => {
   });
 
   test("renders the example's native iPad campaign at App Store size", async ({ page }) => {
-    await gotoRender(page, "/render?device=ipad&locale=en-US&size=2064x2752");
+    await gotoRender(page, "/render?source=example&device=ipad&locale=en-US&size=2064x2752");
 
     const render = page.locator('[data-render-valid="true"]');
     await expect(render).toHaveAttribute("data-render-width", "2064");
-    await expect(render.locator("[data-render-slide]")).toHaveCount(6);
+    await expect(render.locator("[data-render-slide]")).toHaveCount(10);
     await expect(render.locator("[data-render-slide]").first()).toHaveJSProperty("clientWidth", 2064);
     await expect(render.locator("[data-render-slide]").first()).toHaveJSProperty("clientHeight", 2752);
+  });
+
+  test("starts iPad with the same ten-screen story as iPhone", async ({ page }) => {
+    await page.goto("/");
+    const response = await page.request.get("/api/project");
+    const body = await response.json();
+    const headlines = (slides: Array<{ headline: Record<string, string> }>) => slides.map((slide) => slide.headline);
+    expect(headlines(body.state.slidesByDevice.ipad)).toEqual(headlines(body.state.slidesByDevice.iphone));
+    expect(body.state.slidesByDevice.ipad).toHaveLength(10);
+    expect(body.state.exportSizeIds.ipad).toEqual(["ipad-13"]);
   });
 
   test("opens an AI polish workspace that keeps a personal key out of project storage", async ({ page }) => {

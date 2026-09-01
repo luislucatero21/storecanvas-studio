@@ -1234,10 +1234,10 @@ function SlideElements({
     const rect = getElementTransform(slide, device, orientation, id, locale) || artwork.transform;
     const rotation = rect.rotation ?? 0;
     const zIndex = rect.zIndex ?? 1;
-    // A long panorama is authored for the full connected strip. Filling the
-    // wide artboard keeps the whole generated journey visible instead of
-    // cropping most of it inside a ten-screen portrait canvas.
-    const objectFit = artwork.spanSlots > 3 ? "fill" : "cover";
+    // Keep reused panoramas proportional across device canvases. Stretching a
+    // phone panorama to the much wider iPad strip makes the artwork visibly
+    // distorted; cover preserves its texture and focal rhythm instead.
+    const objectFit = "cover";
     const tones = artworkSegmentInverted?.slice(0, artwork.spanSlots);
     return (
       <Movable

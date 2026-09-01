@@ -57,7 +57,8 @@ The private filename, uploaded screenshots, generated backgrounds, and exports a
 2. Add real captures by dropping files into the inspector, choosing a checked-in fixture, or importing public App Store metadata.
 3. Select a template and palette. Manual placement, custom tokens, and connected artwork remain untouched unless the corresponding reset/reflow option is enabled.
 4. Arrange copy, device slots, hardware model, camera angle, crop, visibility, and locking on the canvas.
-5. Export the selected locale/device deck or use the CLI for repeatable render jobs.
+5. Use the **sizes** control beside the device selector to choose export targets. New iPhone and iPad projects start with Apple's global target only; additional sizes are opt-in and saved per device.
+6. Export the selected locale/device deck or use the CLI for repeatable render jobs. When an iPad deck is empty, it receives an independent copy of the iPhone story, including adapted device paths and connected artwork bounds.
 
 ### Explore the checked-in demo
 
@@ -96,7 +97,7 @@ Start the dev server, then run:
 pnpm storecanvas render --device iphone --locale en-US --output exports/rendered
 ```
 
-Use `--all` to render every configured locale and device deck with screens. Set `STORECANVAS_URL` when the server is not at `http://127.0.0.1:3100`. The renderer reads the same `STORECANVAS_PROJECT_FILE` setting as the editor.
+Use `--all` to render every configured locale and device deck with screens. The CLI follows each project's saved export-size selection and falls back to Apple's global target for legacy projects. Set `STORECANVAS_URL` when the server is not at `http://127.0.0.1:3100`. The renderer reads the same `STORECANVAS_PROJECT_FILE` setting as the editor.
 
 ## Agent workflow and CLI
 
@@ -129,7 +130,7 @@ OPENAI_API_KEY="$OPENAI_API_KEY" pnpm storecanvas generate-background \
   --start-slot 1 \
   --slots 10 \
   --prompt "A warm dusk horizon with subtle violet and amber motion, quiet negative space for phones and headlines" \
-  --artwork-id rutmia-panorama \
+  --artwork-id campaign-panorama \
   --json
 ```
 

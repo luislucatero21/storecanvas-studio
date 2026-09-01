@@ -1,7 +1,8 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { PROJECT_SCHEMA_VERSION, STORAGE_KEY } from "./constants";
+import { DEFAULT_EXPORT_SIZE_IDS, PROJECT_SCHEMA_VERSION, STORAGE_KEY } from "./constants";
 import { DEFAULT_PROJECT } from "./defaults";
+import { inheritDefaultDeviceDecks } from "./device-sync";
 import { coerceLocalized } from "./locale";
 import { ProjectStateSchema } from "./schema";
 import {
@@ -183,6 +184,17 @@ function mergeWithDefaults(parsed: Partial<ProjectState>): ProjectState {
     typeof parsed.paletteId === "string" && parsed.paletteId.trim()
       ? parsed.paletteId
       : DEFAULT_PROJECT.paletteId;
+  const exportSizeIds = parsed.exportSizeIds && typeof parsed.exportSizeIds === "object"
+    ? Object.fromEntries(
+        Object.entries(parsed.exportSizeIds)
+          .filter(([device, ids]) => device in DEFAULT_EXPORT_SIZE_IDS && Array.isArray(ids))
+          .map(([device, ids]) => [
+            device,
+            [...new Set((ids as unknown[]).filter((id): id is string => typeof id === "string" && Boolean(id.trim())).map((id) => id.trim()))],
+          ])
+          .filter(([, ids]) => (ids as string[]).length > 0),
+      ) as ProjectState["exportSizeIds"]
+    : {};
   const slidesByDevice = parsed.slidesByDevice
     ? Object.fromEntries(
         Object.entries(parsed.slidesByDevice).map(([device, slides]) => [
@@ -198,6 +210,10 @@ function mergeWithDefaults(parsed: Partial<ProjectState>): ProjectState {
     themeId,
     templateId,
     paletteId,
+    exportSizeIds: {
+      ...DEFAULT_EXPORT_SIZE_IDS,
+      ...exportSizeIds,
+    },
     connectedCanvas,
     slidesByDevice: {
       ...DEFAULT_PROJECT.slidesByDevice,
@@ -217,7 +233,7 @@ function mergeWithDefaults(parsed: Partial<ProjectState>): ProjectState {
   if (!merged.locales.includes(merged.locale)) {
     merged.locale = merged.locales[0];
   }
-  return merged;
+  return inheritDefaultDeviceDecks(merged);
 }
 
 function normalizeStoredProject(value: unknown): ProjectState | null {
@@ -328,6 +344,7 @@ export function hasExpandedLocalArtwork(cached: ProjectState | undefined, file: 
   if (cached.campaignSource.appId !== file.campaignSource.appId) return false;
   return Object.entries(file.slidesByDevice).some(([device, fileSlides]) => {
     const cachedSlides = cached.slidesByDevice[device as keyof ProjectState["slidesByDevice"]] || [];
+    if (fileSlides.length > cachedSlides.length) return true;
     const cachedMaxSpan = cachedSlides.reduce(
       (max, slide) => Math.max(max, ...(slide.connectedArtworks || []).map((artwork) => artwork.spanSlots || 1)),
       1,

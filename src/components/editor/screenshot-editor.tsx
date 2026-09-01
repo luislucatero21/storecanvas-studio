@@ -4,7 +4,7 @@ import JSZip from "jszip";
 import { toPng } from "html-to-image";
 import { Toaster, toast } from "sonner";
 import {
-  getExportSizes,
+  getSelectedExportSizes,
   hasTheme,
   supportsLandscape,
   themeById,
@@ -447,7 +447,7 @@ export function ScreenshotEditor() {
       return;
     }
 
-    const sizes = getExportSizes(state.device, state.orientation);
+    const sizes = getSelectedExportSizes(state.device, state.orientation, state.exportSizeIds);
     if (!sizes.length) {
       toast.error("Nothing to export");
       return;
@@ -659,6 +659,11 @@ export function ScreenshotEditor() {
         setDevice={(v) => setState((p) => ({ ...p, device: v }))}
         orientation={state.orientation}
         setOrientation={(v) => setState((p) => ({ ...p, orientation: v }))}
+        exportSizeIds={state.exportSizeIds}
+        onExportSizeIdsChange={(device, ids) => setState((p) => ({
+          ...p,
+          exportSizeIds: { ...(p.exportSizeIds || {}), [device]: ids },
+        }))}
         onExport={exportAll}
         onResetAll={() => {
           reset();

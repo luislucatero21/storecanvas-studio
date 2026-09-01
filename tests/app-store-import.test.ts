@@ -142,6 +142,8 @@ describe("App Store campaign imports", () => {
       label: { "es-MX": "LA IDEA PRINCIPAL" },
       headline: { "es-MX": "Haz clara tu próxima acción." },
     });
+    expect(applied.slidesByDevice.ipad).toHaveLength(applied.slidesByDevice.iphone.length);
+    expect(applied.slidesByDevice.ipad[0].id).not.toBe(applied.slidesByDevice.iphone[0].id);
 
     const withStoreComposites = applyCampaignImport(project, proposal, {
       applyTemplate: false,
