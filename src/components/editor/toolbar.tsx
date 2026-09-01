@@ -112,7 +112,7 @@ export function Toolbar(props: Props) {
   const deviceLabel = DEVICE_LABEL[props.device];
 
   return (
-    <div className="store-toolbar flex flex-wrap items-center gap-x-2 gap-y-1.5 border-b px-4 py-2">
+    <div className="store-toolbar flex flex-wrap items-center gap-x-1.5 gap-y-2 border-b px-3 py-2 sm:px-4 md:gap-x-2 md:gap-y-1.5">
       <div className="store-wordmark mr-1 hidden items-center gap-2 lg:flex" aria-label="StoreCanvas">
         <span className="store-wordmark-mark">S</span>
         <span className="text-xs font-semibold tracking-[0.12em]">STORECANVAS</span>
@@ -129,14 +129,14 @@ export function Toolbar(props: Props) {
       <Input
         value={props.appName}
         onChange={(e) => props.setAppName(e.target.value)}
-        className="h-8 w-40 border-dashed text-sm font-semibold focus-visible:border-input focus-visible:border-solid focus-visible:bg-background"
+        className="h-8 w-32 border-dashed text-sm font-semibold focus-visible:border-input focus-visible:border-solid focus-visible:bg-background sm:w-40"
         placeholder="App name"
         aria-label="App name"
         title="App name (click to edit)"
         disabled={props.busy}
       />
 
-      <span aria-hidden className="mx-1 h-5 w-px bg-border" />
+      <span aria-hidden className="mx-1 hidden h-5 w-px bg-border md:block" />
 
       <Button
         type="button"
@@ -156,7 +156,7 @@ export function Toolbar(props: Props) {
         {props.connectedCanvas ? "Connected" : "Isolated"}
       </Button>
 
-      <span aria-hidden className="mx-1 h-5 w-px bg-border" />
+      <span aria-hidden className="mx-1 hidden h-5 w-px bg-border md:block" />
 
       <Tabs
         value={platform}
@@ -286,9 +286,9 @@ export function Toolbar(props: Props) {
         onApplyPalette={props.onPaletteChange}
       />
 
-      <div className="ml-auto flex shrink-0 items-center gap-2">
+      <div className="flex w-full shrink-0 items-center justify-between gap-1.5 md:ml-auto md:w-auto md:justify-end md:gap-2">
         <SaveStatus savedAt={props.savedAt} saveError={props.saveError} fileSyncAvailable={props.fileSyncAvailable} />
-        <span aria-hidden className="h-5 w-px bg-border" />
+        <span aria-hidden className="hidden h-5 w-px bg-border md:block" />
         <Button
           type="button"
           variant={props.validation.valid ? "ghost" : "outline"}
@@ -324,7 +324,9 @@ export function Toolbar(props: Props) {
           title="Export selected sizes × locale for this device as a zip"
         >
           <Download className="h-4 w-4" />
-          {props.exporting ? `Exporting ${props.exporting}` : "Export bundle"}
+          <span className="hidden sm:inline">
+            {props.exporting ? `Exporting ${props.exporting}` : "Export bundle"}
+          </span>
         </Button>
       </div>
 

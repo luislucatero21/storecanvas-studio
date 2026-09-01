@@ -69,11 +69,15 @@ export function PreviewStage({
 
   React.useEffect(() => {
     const el = containerRef.current;
-    if (!el) return;
+    const scroller = scrollerRef.current;
+    if (!el || !scroller) return;
     const update = () => {
       const rect = el.getBoundingClientRect();
-      const sx = (rect.width - 96) / cW;
-      const sy = (rect.height - 96) / cH;
+      const styles = window.getComputedStyle(scroller);
+      const horizontalPadding = parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
+      const verticalPadding = parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom);
+      const sx = (rect.width - horizontalPadding) / cW;
+      const sy = (rect.height - verticalPadding) / cH;
       setFitScale(Math.max(0.05, Math.min(sx, sy)));
     };
     update();
@@ -130,7 +134,7 @@ export function PreviewStage({
     >
       <div
         ref={scrollerRef}
-        className="h-full w-full overflow-auto p-12"
+        className="h-full w-full overscroll-contain overflow-auto p-4 sm:p-8 md:p-12"
         onPointerDownCapture={cancelAutoPan}
       >
         <div

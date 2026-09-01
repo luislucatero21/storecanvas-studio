@@ -58,6 +58,41 @@ test.describe("StoreCanvas editor", () => {
     await expect(page.getByText("10 screens")).toBeVisible();
   });
 
+  test("keeps the canvas usable and exposes every editor panel on mobile", async ({ page }) => {
+    for (const viewport of [
+      { width: 390, height: 844 },
+      { width: 320, height: 568 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto("/");
+
+      await expect(page.getByTestId("mobile-editor-nav")).toBeVisible();
+      const layout = await page.evaluate(() => {
+        const main = document.querySelector("main");
+        const exportButton = document.querySelector('button[title^="Export selected sizes"]');
+        const exportBox = exportButton?.getBoundingClientRect();
+        return {
+          horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth,
+          canvasHeight: main?.getBoundingClientRect().height || 0,
+          exportFits: !exportBox || exportBox.right <= window.innerWidth + 1,
+          navTabHeights: [...document.querySelectorAll('[data-testid="mobile-editor-nav"] [role="tab"]')]
+            .map((tab) => tab.getBoundingClientRect().height),
+        };
+      });
+      expect(layout.horizontalOverflow).toBe(false);
+      expect(layout.canvasHeight).toBeGreaterThan(200);
+      expect(layout.exportFits).toBe(true);
+      expect(layout.navTabHeights.every((height) => height >= 40)).toBe(true);
+
+      await page.getByRole("tab", { name: "Screens", exact: true }).click();
+      await expect(page.getByRole("heading", { name: "Screens", exact: true })).toBeVisible();
+      await page.getByRole("tab", { name: "Settings", exact: true }).click();
+      await expect(page.getByRole("heading", { name: "Screen settings", exact: true })).toBeVisible();
+      await page.getByRole("tab", { name: "Canvas", exact: true }).click();
+      await expect(page.locator(".store-canvas-well")).toBeVisible();
+    }
+  });
+
   test("imports a private project and switches local campaigns from the visible selector", async ({ page }) => {
     await page.goto("/");
     const projectMenu = page.getByRole("button", { name: "Project menu" });

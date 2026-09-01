@@ -43,6 +43,8 @@ import { Sidebar } from "./sidebar";
 import { DeckCanvas, getCanvas } from "./slide-canvas";
 import { Toolbar } from "./toolbar";
 
+type MobileEditorPanel = "canvas" | "screens" | "settings";
+
 export function ScreenshotEditor() {
   const {
     state,
@@ -65,6 +67,7 @@ export function ScreenshotEditor() {
   const [selectedElement, setSelectedElement] = React.useState<SelectedElement | null>(null);
   const [exporting, setExporting] = React.useState<string | null>(null);
   const [ready, setReady] = React.useState(false);
+  const [mobilePanel, setMobilePanel] = React.useState<MobileEditorPanel>("canvas");
   const [exportLocaleOverride, setExportLocaleOverride] = React.useState<string | null>(null);
   const [exportSlideIndex, setExportSlideIndex] = React.useState(0);
   const exportRef = React.useRef<HTMLDivElement | null>(null);
@@ -739,8 +742,12 @@ export function ScreenshotEditor() {
         validation={validation}
       />
 
-      <div className="flex flex-1 overflow-hidden md:flex-row flex-col">
-        <aside className="store-sidebar md:w-72 w-full shrink-0 border-r md:max-h-none max-h-64 overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
+        <MobileEditorNav activePanel={mobilePanel} onChange={setMobilePanel} />
+
+        <aside
+          className={`${mobilePanel === "screens" ? "flex" : "hidden"} store-sidebar min-h-0 w-full min-w-0 flex-1 shrink-0 overflow-hidden border-b md:flex md:h-auto md:w-72 md:flex-none md:border-b-0 md:border-r`}
+        >
           <Sidebar
             slides={currentSlides}
             activeId={activeSlide?.id || null}
@@ -754,14 +761,19 @@ export function ScreenshotEditor() {
             connectedCanvas={state.connectedCanvas}
             disabled={busy}
             onReorder={reorderSlides}
-            onSelect={setActiveSlideId}
+            onSelect={(id) => {
+              setActiveSlideId(id);
+              setMobilePanel("canvas");
+            }}
             onDelete={deleteSlide}
             onDuplicate={duplicateSlide}
             onAdd={addSlide}
           />
         </aside>
 
-        <main className="flex flex-1 items-stretch overflow-hidden min-h-0">
+        <main
+          className={`${mobilePanel === "canvas" ? "flex" : "hidden"} min-h-0 min-w-0 flex-1 items-stretch overflow-hidden md:flex`}
+        >
           {activeSlide && currentSlides.length > 0 ? (
             <PreviewStage
               slides={currentSlides}
@@ -790,7 +802,9 @@ export function ScreenshotEditor() {
           )}
         </main>
 
-        <aside className="store-sidebar md:w-80 w-full shrink-0 border-l md:max-h-none max-h-96 overflow-hidden">
+        <aside
+          className={`${mobilePanel === "settings" ? "flex" : "hidden"} store-sidebar min-h-0 w-full min-w-0 flex-1 shrink-0 overflow-hidden border-t md:flex md:h-auto md:w-80 md:flex-none md:border-l md:border-t-0`}
+        >
           {activeSlide ? (
             <Inspector
               slide={activeSlide}
@@ -869,6 +883,50 @@ export function ScreenshotEditor() {
         )}
       </div>
     </div>
+  );
+}
+
+function MobileEditorNav({
+  activePanel,
+  onChange,
+}: {
+  activePanel: MobileEditorPanel;
+  onChange: (panel: MobileEditorPanel) => void;
+}) {
+  const panels: Array<{ id: MobileEditorPanel; label: string }> = [
+    { id: "canvas", label: "Canvas" },
+    { id: "screens", label: "Screens" },
+    { id: "settings", label: "Settings" },
+  ];
+
+  return (
+    <nav
+      aria-label="Editor sections"
+      className="border-b bg-card/80 p-2 shadow-[0_1px_0_hsl(var(--border)/.55)] backdrop-blur md:hidden"
+      data-testid="mobile-editor-nav"
+    >
+      <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted/70 p-1" role="tablist">
+        {panels.map((panel) => {
+          const selected = activePanel === panel.id;
+          return (
+            <button
+              key={panel.id}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              className={`min-h-10 rounded-md px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 ${
+                selected
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-background/70 hover:text-foreground"
+              }`}
+              onClick={() => onChange(panel.id)}
+            >
+              {panel.label}
+            </button>
+          );
+        })}
+      </div>
+    </nav>
   );
 }
 
