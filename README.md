@@ -1,7 +1,7 @@
 # StoreCanvas
 
 [![CI](https://github.com/luislucatero21/storecanvas-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/luislucatero21/storecanvas-studio/actions/workflows/ci.yml)
-[![Live demo](https://img.shields.io/badge/demo-Vercel-000000?logo=vercel&logoColor=white)](https://storecanvas-studio-7mizuftdo-luislucatero21s-projects.vercel.app)
+[![Live demo](https://img.shields.io/badge/demo-Vercel-000000?logo=vercel&logoColor=white)](https://storecanvas-studio.vercel.app/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## Build store screenshots that read like a product story
@@ -58,6 +58,16 @@ The private filename, uploaded screenshots, generated backgrounds, and exports a
 3. Select a template and palette. Manual placement, custom tokens, and connected artwork remain untouched unless the corresponding reset/reflow option is enabled.
 4. Arrange copy, device slots, hardware model, camera angle, crop, visibility, and locking on the canvas.
 5. Export the selected locale/device deck or use the CLI for repeatable render jobs.
+
+### Explore the checked-in demo
+
+The starter campaign is deliberately self-contained so the visual system is visible before importing any app:
+
+- Screens 1–2 open with a two-screen orbit, shared headline, an iPhone 17 Pro Max, and two independently angled companion models.
+- Screens 4–5 show connected artwork plus a large caption, a safe independent slot, and an explicitly linked slot repeated across the seam.
+- Screens 8–9 keep a second shared-caption example available for testing contrast and positioning.
+
+Select **Connected** in the toolbar, then click those thumbnails to inspect each composition and its opt-in controls. The neutral captures and backgrounds live in [`public/screenshots/demo`](public/screenshots/demo) and [`public/backgrounds`](public/backgrounds); no personal campaign assets are needed.
 
 ## What is included
 

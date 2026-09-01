@@ -141,6 +141,7 @@ describe("StoreCanvas project contracts", () => {
       expect(svg, name).toContain("<svg");
     }
     expect(readFileSync(resolve("public/backgrounds/demo-ribbon.svg"), "utf8")).toContain("<svg");
+    expect(readFileSync(resolve("public/backgrounds/demo-orbit.svg"), "utf8")).toContain("<svg");
   });
 
   it("starts projects with an explicit campaign template and palette", () => {
@@ -647,15 +648,18 @@ describe("StoreCanvas project contracts", () => {
     });
   });
 
-  it("ships the example with independent phones, premium connected artwork and message continuity", () => {
+  it("ships the example with rotated phones, connected art, multi-slot copy and opt-in linking", () => {
     const project = JSON.parse(readFileSync(resolve("example-project.json"), "utf8"));
     const slides = project.slidesByDevice.iphone;
     const heroRig = slides[0].presentations?.device;
-    const connectedArtwork = slides.find((slide: { connectedArtworks?: Array<{ spanSlots?: number }> }) =>
-      slide.connectedArtworks?.some((artwork) => artwork.spanSlots === 2));
+    const openingArtwork = slides[0].connectedArtworks?.[0];
+    const pairedSlide = slides[1];
+    const connectedArtwork = slides.find((slide: { id: string; connectedArtworks?: Array<{ spanSlots?: number }> }) =>
+      slide.id === "demo-4-recovery" && slide.connectedArtworks?.some((artwork) => artwork.spanSlots === 2));
     const recoverySlot = slides[3].deviceSlots?.[0];
+    const linkedRecoverySlot = slides[3].deviceSlots?.[1];
     const reflectionSlot = slides[4].deviceSlots?.[0];
-    const messageSpread = slides.find((slide: { captionSpan?: number }) => slide.captionSpan === 2);
+    const messageSpread = slides.find((slide: { id: string; captionSpan?: number }) => slide.id === "demo-8-routine");
 
     expect(heroRig).toMatchObject({
       rotateX: 2,
@@ -664,13 +668,38 @@ describe("StoreCanvas project contracts", () => {
       depth: 9,
       deviceModel: "iphone-17-pro-max",
     });
+    expect(slides[0]).toMatchObject({ captionSpan: 2 });
+    expect(openingArtwork).toMatchObject({
+      id: "demo-opening-orbit",
+      assetRef: "image:demo-orbit",
+      spanSlots: 2,
+      transform: { width: 2640, height: 2868 },
+    });
+    expect(pairedSlide).toMatchObject({
+      layout: "two-devices",
+      screenshotSecondary: "/screenshots/demo/insights.svg",
+      hiddenElements: ["caption"],
+      presentations: {
+        device: { preset: "tilt-right", deviceModel: "iphone-14-pro-max" },
+        deviceSecondary: { preset: "tilt-left", deviceModel: "iphone-13-pro-max" },
+      },
+    });
     expect(connectedArtwork?.connectedArtworks[0]).toMatchObject({
       id: "demo-dawn-ribbon",
       spanSlots: 2,
     });
     expect(recoverySlot).toMatchObject({ assetRef: "capture:focus", linkedTransforms: false });
+    expect(linkedRecoverySlot).toMatchObject({
+      id: "demo-recovery-companion",
+      assetRef: "capture:plan",
+      spanSlots: 2,
+      linkedTransforms: true,
+      presentation: { preset: "tilt-right", deviceModel: "iphone-14-pro-max" },
+    });
     expect(reflectionSlot).toMatchObject({ assetRef: "capture:progress", linkedTransforms: false });
     expect(recoverySlot.transform).not.toEqual(reflectionSlot.transform);
+    expect(slides[3]).toMatchObject({ captionSpan: 2 });
+    expect(slides[4].hiddenElements).toContain("caption");
     expect(messageSpread).toMatchObject({ id: "demo-8-routine", captionSpan: 2 });
   });
 
