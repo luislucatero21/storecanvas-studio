@@ -19,6 +19,7 @@ import {
   buildArtworkPrompt,
   requestArtworkImage,
 } from "@/lib/artwork-ai-server";
+import { inheritDefaultDeviceDecks } from "@/lib/device-sync";
 import { ProjectStateSchema } from "@/lib/schema";
 import { validateProject } from "@/lib/validation";
 import type { Device, ProjectState, SlotSpan } from "@/lib/types";
@@ -146,7 +147,8 @@ export async function POST(request: Request) {
   if ("error" in project) return errorResponse(project.error);
 
   if (action === "inspect") {
-    return noStoreJson({ ok: true, summary: summarizeProject(project) });
+    const hydrated = inheritDefaultDeviceDecks(project);
+    return noStoreJson({ ok: true, state: hydrated, summary: summarizeProject(hydrated) });
   }
 
   if (action === "validate") {

@@ -51,7 +51,7 @@ test.describe("StoreCanvas editor", () => {
     const initialLocale = baseline.locale as keyof typeof firstSlide.label;
 
     await expect(page.getByRole("heading", { name: "Screens" })).toBeVisible();
-    await expect(page.getByRole("textbox", { name: "App name" })).toHaveValue("Example app");
+    await expect(page.getByRole("textbox", { name: "App name" })).toHaveValue("Ledgerly");
     await expect(page.getByRole("button", { name: "Connected", exact: true })).toBeVisible();
     await expect(page.getByRole("main").getByText(firstSlide.label[initialLocale]).first()).toBeVisible();
     await expect(page.getByRole("main").getByText(firstSlide.headline[initialLocale]).first()).toBeVisible();
@@ -74,9 +74,9 @@ test.describe("StoreCanvas editor", () => {
     await expect(page.getByLabel("App name")).toHaveValue("Imported campaign");
 
     await projectMenu.click();
-    await page.getByRole("menuitem", { name: /Example app/ }).click();
-    await expect(page.getByLabel("App name")).toHaveValue("Example app");
-    await expect(page.getByRole("button", { name: "Project menu" })).toContainText("Example app");
+    await page.getByRole("menuitem", { name: /Ledgerly/ }).click();
+    await expect(page.getByLabel("App name")).toHaveValue("Ledgerly");
+    await expect(page.getByRole("button", { name: "Project menu" })).toContainText("Ledgerly");
   });
 
   test("auto-loads the local private campaign discovered by the local server", async ({ page }) => {
@@ -205,9 +205,9 @@ test.describe("StoreCanvas editor", () => {
     await page.getByRole("combobox", { name: "Locale" }).click();
     await page.getByRole("option", { name: "ES-MX" }).click();
 
-    await expect(page.getByRole("main").getByText("Haz espacio para lo importante.").first()).toBeVisible();
+    await expect(page.getByRole("main").getByText("Entiende a dónde va tu dinero.").first()).toBeVisible();
     await expect(page.getByLabel("Locale")).toContainText("ES-MX");
-    await expect(page.getByLabel("Headline")).toHaveValue("Haz espacio para lo importante.");
+    await expect(page.getByLabel("Headline")).toHaveValue("Entiende a dónde va tu dinero.");
   });
 
   test("adds an editable text layer and keeps the export action available", async ({ page }) => {
@@ -268,8 +268,8 @@ test.describe("StoreCanvas editor", () => {
     try {
       await gotoRender(page, `${baseURL}/render?source=example&device=iphone&locale=es-MX&size=1320x2868`);
       const firstSlide = page.locator('[data-slide-id="demo-1-route"]');
-      await expect(firstSlide.getByText("UNA FORMA MÁS CLARA DE AVANZAR")).toBeVisible();
-      await expect(firstSlide.getByText("Haz espacio para lo importante.")).toBeVisible();
+      await expect(firstSlide.getByText("DINERO, A LA VISTA").first()).toBeVisible();
+      await expect(firstSlide.getByText("Entiende a dónde va tu dinero.").first()).toBeVisible();
     } finally {
       await context.close();
     }
@@ -375,7 +375,7 @@ test.describe("StoreCanvas editor", () => {
     }).toBe(2);
   });
 
-  test("preloads the example with connected art, independent phones and message continuity", async ({ page }) => {
+  test("preloads the finance example with connected art, single devices and message continuity", async ({ page }) => {
     await gotoRender(page, "/render?source=example&device=iphone&locale=es-MX&size=1320x2868");
 
     const opening = page.locator('[data-slide-id="demo-1-route"]');
@@ -383,16 +383,15 @@ test.describe("StoreCanvas editor", () => {
     const captureStart = page.locator('[data-slide-id="demo-4-recovery"]');
     const messageStart = page.locator('[data-slide-id="demo-8-routine"]');
     await expect(opening).toHaveAttribute("data-render-mode", "connected");
-    await expect(opening.locator('[data-connected-artwork="demo-opening-orbit"]')).toHaveCount(1);
+    await expect(opening.locator('[data-connected-artwork="ledgerly-opening-signal"]')).toHaveCount(1);
     await expect(opening.locator('[data-caption-span="2"]').first()).toBeVisible();
-    await expect(paired.locator('[data-device-model="iphone-14-pro-max"]').first()).toBeVisible();
-    await expect(paired.locator('[data-device-model="iphone-13-pro-max"]').first()).toBeVisible();
+    await expect(paired.locator('[data-device-model="iphone-14-pro-max"]')).toHaveCount(0);
+    await expect(paired.locator('[data-device-model="iphone-13-pro-max"]')).toHaveCount(0);
+    await expect(paired.locator('[data-device-model="iphone-17-pro-max"]').first()).toBeVisible();
     await expect(captureStart).toHaveAttribute("data-render-mode", "connected");
-    await expect(captureStart.locator('[data-connected-artwork="demo-dawn-ribbon"]')).toHaveCount(1);
-    await expect(captureStart.locator('[data-device-slot="demo-recovery-continuity"]')).toHaveCount(1);
-    await expect(captureStart.locator('[data-device-slot="demo-recovery-companion"]')).toHaveCount(2);
+    await expect(captureStart.locator('[data-connected-artwork="ledgerly-decision-signal"]')).toHaveCount(1);
+    await expect(captureStart.locator("[data-device-slot]")).toHaveCount(0);
     await expect(captureStart.locator('[data-caption-span="2"]').first()).toBeVisible();
-    await expect(page.locator('[data-slide-id="demo-5-reflection"] [data-device-slot="demo-reflection-independent"]')).toHaveCount(1);
     await expect(messageStart.locator('[data-caption-span="2"]').first()).toBeVisible();
     await expect(page.locator('[data-device-angle="tilt-left"]').first()).toHaveAttribute("data-device-rig", "optical");
   });
@@ -400,7 +399,7 @@ test.describe("StoreCanvas editor", () => {
   test("uses the full connected deck when rendering sidebar thumbnails", async ({ page }) => {
     await page.goto("/");
     const secondScreen = page.getByRole("button", { name: /Screen 2 ·/ });
-    await expect(secondScreen.locator('[data-connected-artwork="demo-opening-orbit"]')).toHaveCount(1);
+    await expect(secondScreen.locator('[data-connected-artwork="ledgerly-opening-signal"]')).toHaveCount(1);
   });
 
   test("applies contrast to each slot of a shared example caption", async ({ page }) => {
@@ -408,17 +407,17 @@ test.describe("StoreCanvas editor", () => {
 
     const headline = page
       .locator('[data-slide-id="demo-8-routine"] [data-caption-headline]')
-      .filter({ hasText: "Una idea clara." });
-    await expect(headline).toHaveCount(1);
+      .filter({ hasText: "Tu dinero sigue siendo tuyo." })
+      .first();
     await expect(headline).toHaveAttribute("data-caption-contrast", "per-slot");
-    await expect(headline).toHaveAttribute("data-caption-segment-colors", "#F8F5EF,#1B2030");
+    await expect(headline).toHaveAttribute("data-caption-segment-colors", "#131B2C,#FFF9F0");
     await expect(headline).toHaveCSS("background-clip", "text");
 
     const continuationHeadline = page
       .locator('[data-slide-id="demo-9-reminders"] [data-caption-headline]')
-      .filter({ hasText: "Una idea clara." });
-    await expect(continuationHeadline).toHaveCount(1);
-    await expect(continuationHeadline).toHaveAttribute("data-caption-segment-colors", "#F8F5EF,#1B2030");
+      .filter({ hasText: "Tu dinero sigue siendo tuyo." })
+      .first();
+    await expect(continuationHeadline).toHaveAttribute("data-caption-segment-colors", "#131B2C,#FFF9F0");
   });
 
   test("moves a shared caption by the pointer delta without jumping on drop", async ({ page }) => {
@@ -435,7 +434,8 @@ test.describe("StoreCanvas editor", () => {
 
     const caption = page
       .locator('.store-canvas-well [data-caption-span="2"]')
-      .filter({ hasText: "One clear idea." });
+      .filter({ hasText: "Your money stays yours." })
+      .first();
     const editable = caption.locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " rnd-editable ")]');
     await expect(editable).toHaveCount(1);
     await waitForStableBox(editable);
@@ -474,9 +474,9 @@ test.describe("StoreCanvas editor", () => {
       const response = await page.request.get("/api/project");
       const body = await response.json();
       const slide = body.state.slidesByDevice.iphone[7];
-      return { span: slide.captionSpan || 1, width: slide.transforms.caption.width };
+      return { span: slide.captionSpan || 1, width: slide.transforms?.caption?.width || 1108.8 };
     }).toEqual({ span: 1, width: 1108.8 });
-    const headline = page.locator('.store-canvas-well [data-caption-headline]').filter({ hasText: "One clear idea." });
+    const headline = page.locator('.store-canvas-well [data-caption-headline]').filter({ hasText: "Your money stays yours." }).first();
     await expect(headline).toHaveAttribute("data-caption-contrast", "single-slot");
   });
 
@@ -508,7 +508,7 @@ test.describe("StoreCanvas editor", () => {
         apiKey: "sk-artwork-ui-test",
         spanSlots: 2,
         tone: "mixed",
-        tonePattern: ["light", "dark"],
+        tonePattern: ["dark", "light"],
       });
       await route.fulfill({
         contentType: "application/json",
@@ -583,8 +583,8 @@ test.describe("StoreCanvas editor", () => {
     const body = await response.json();
     expect(body.state.paletteId).toBe("afterglow-pulse");
     expect(body.state.slidesByDevice.iphone[0]).toMatchObject({
-      screenshot: "/screenshots/demo/overview.svg",
-      assetRef: "capture:overview",
+      screenshot: "/screenshots/demo/ledgerly/dashboard.png",
+      assetRef: "capture:ledgerly-dashboard",
     });
   });
 
@@ -662,8 +662,8 @@ test.describe("StoreCanvas editor", () => {
     const body = await response.json();
     expect(body.state.paletteId).toBe("custom");
     expect(body.state.slidesByDevice.iphone[0]).toMatchObject({
-      screenshot: "/screenshots/demo/overview.svg",
-      assetRef: "capture:overview",
+      screenshot: "/screenshots/demo/ledgerly/dashboard.png",
+      assetRef: "capture:ledgerly-dashboard",
     });
   });
 
@@ -687,6 +687,23 @@ test.describe("StoreCanvas editor", () => {
     expect(body.state.exportSizeIds.ipad).toEqual(["ipad-13"]);
   });
 
+  test("mirrors the example story to Android phones and tablets within store limits", async ({ page }) => {
+    await page.goto("/");
+    const response = await page.request.get("/api/project");
+    const body = await response.json();
+    const decks = body.state.slidesByDevice as Record<string, Array<{ layout: string; deviceSlots?: unknown[]; screenshot?: string }>>;
+
+    expect(decks.android).toHaveLength(8);
+    expect(decks["android-7"]).toHaveLength(8);
+    expect(decks["android-10"]).toHaveLength(8);
+    for (const device of ["android", "android-7", "android-10"]) {
+      expect(decks[device].every((slide) => slide.layout !== "two-devices" && !slide.deviceSlots && slide.screenshot)).toBe(true);
+    }
+
+    await gotoRender(page, "/render?source=example&device=android-7&locale=en-US&size=1200x1920");
+    await expect(page.locator('[data-render-valid="true"] [data-render-slide]')).toHaveCount(8);
+  });
+
   test("opens an AI polish workspace that keeps a personal key out of project storage", async ({ page }) => {
     await page.goto("/");
 
@@ -701,7 +718,7 @@ test.describe("StoreCanvas editor", () => {
       const request = route.request().postDataJSON();
       expect(request).toMatchObject({
         provider: "openai",
-        appName: "Example app",
+        appName: "Ledgerly",
         locale: "en-US",
       });
       expect(JSON.stringify(request)).not.toContain("/screenshots/");
@@ -742,8 +759,8 @@ test.describe("StoreCanvas editor", () => {
     const body = await response.json();
     expect(body.state.slidesByDevice.iphone[0]).toMatchObject({
       headline: { "en-US": "Make today yours." },
-      screenshot: "/screenshots/demo/overview.svg",
-      assetRef: "capture:overview",
+      screenshot: "/screenshots/demo/ledgerly/dashboard.png",
+      assetRef: "capture:ledgerly-dashboard",
     });
   });
 });

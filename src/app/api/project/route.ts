@@ -84,16 +84,17 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
+    const state = inheritDefaultDeviceDecks(parsed.data as ProjectState);
     const pretty = JSON.stringify(parsed.data, null, 2) + "\n";
     if (isReadOnlyRuntime()) {
-      return noStoreJson({ ok: true, persisted: "browser" });
+      return noStoreJson({ ok: true, state, persisted: "browser" });
     }
     if (!isProjectFileConfigured()) {
       setLocalProject(parsed.data as ProjectState);
-      return noStoreJson({ ok: true, persisted: "browser" });
+      return noStoreJson({ ok: true, state, persisted: "browser" });
     }
     await fs.writeFile(filePath(), pretty, "utf8");
-    return noStoreJson({ ok: true, persisted: "file" });
+    return noStoreJson({ ok: true, state, persisted: "file" });
   } catch (e) {
     return noStoreJson(
       { ok: false, error: e instanceof Error ? e.message : String(e) },

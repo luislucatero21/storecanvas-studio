@@ -93,6 +93,7 @@ function cloneSlide(
   sourceDevice: Device,
   targetDevice: Device,
   sourceSlideCount: number,
+  sourceSlideIndex: number,
   assets: AssetLibrary,
   clonedRefs: Map<string, string>,
 ): Slide {
@@ -121,6 +122,10 @@ function cloneSlide(
           { ...overrides },
         ]),
       ) as Slide["responsive"]
+    : undefined;
+  const remainingSlides = Math.max(1, sourceSlideCount - sourceSlideIndex);
+  const captionSpan = slide.captionSpan
+    ? Math.min(slide.captionSpan, remainingSlides) as Slide["captionSpan"]
     : undefined;
 
   return {
@@ -158,11 +163,12 @@ function cloneSlide(
               },
               targetDevice,
               "portrait",
-              Math.max(1, Math.min(artwork.spanSlots, sourceSlideCount)) as ConnectedArtwork["spanSlots"],
+              Math.max(1, Math.min(artwork.spanSlots, remainingSlides)) as ConnectedArtwork["spanSlots"],
             ),
           ),
         }
       : {}),
+    ...(captionSpan && captionSpan > 1 ? { captionSpan } : { captionSpan: undefined }),
     ...(transforms ? { transforms } : {}),
     ...(slide.textElements
       ? { textElements: slide.textElements.map((element) => cloneTextElement(element, sourceDevice, targetDevice)) }
@@ -201,15 +207,16 @@ export function cloneDeckToDevice(
   project: ProjectState,
   sourceDevice: Device = "iphone",
   targetDevice: Device = "ipad",
+  maxSlides?: number,
 ): ProjectState {
-  const sourceSlides = project.slidesByDevice[sourceDevice] || [];
+  const sourceSlides = (project.slidesByDevice[sourceDevice] || []).slice(0, maxSlides);
   if (!sourceSlides.length) return project;
   const assets: AssetLibrary = Object.fromEntries(
     Object.entries(project.assets || {}).map(([id, asset]) => [id, { ...asset, paths: { ...asset.paths } }]),
   );
   const clonedRefs = new Map<string, string>();
-  const slides = sourceSlides.map((slide) =>
-    cloneSlide(slide, sourceDevice, targetDevice, sourceSlides.length, assets, clonedRefs),
+  const slides = sourceSlides.map((slide, index) =>
+    cloneSlide(slide, sourceDevice, targetDevice, sourceSlides.length, index, assets, clonedRefs),
   );
   return {
     ...project,
@@ -221,11 +228,21 @@ export function cloneDeckToDevice(
   };
 }
 
-/** Apply the default iPhone story only when an iPad deck has no real content. */
+/**
+ * Apply the default iPhone story to empty device decks while keeping each
+ * target independent after hydration. This makes the checked-in example and
+ * a new local project useful on every supported portrait device without
+ * making users duplicate their captures by hand.
+ */
 export function inheritDefaultDeviceDecks(project: ProjectState) {
-  const sourceSlides = project.slidesByDevice.iphone || [];
-  const targetSlides = project.slidesByDevice.ipad || [];
-  return shouldInheritDeviceDeck(sourceSlides, targetSlides)
-    ? cloneDeckToDevice(project, "iphone", "ipad")
-    : project;
+  let next = project;
+  for (const targetDevice of ["ipad", "android", "android-7", "android-10"] as const) {
+    const sourceSlides = next.slidesByDevice.iphone || [];
+    const targetSlides = next.slidesByDevice[targetDevice] || [];
+    if (shouldInheritDeviceDeck(sourceSlides, targetSlides)) {
+      const maxSlides = targetDevice === "ipad" ? undefined : 8;
+      next = cloneDeckToDevice(next, "iphone", targetDevice, maxSlides);
+    }
+  }
+  return next;
 }

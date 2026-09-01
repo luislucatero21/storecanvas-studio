@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { DEFAULT_PROJECT } from "@/lib/defaults";
 import {
@@ -203,13 +203,12 @@ describe("StoreCanvas project contracts", () => {
     }
   });
 
-  it("includes self-contained demo captures for the checked-in example", () => {
-    for (const name of ["overview", "plan", "focus", "progress", "insights", "settings"]) {
-      const svg = readFileSync(resolve("public/screenshots/demo", `${name}.svg`), "utf8");
-      expect(svg, name).toContain("<svg");
+  it("includes self-contained generated captures for the checked-in finance example", () => {
+    for (const name of ["dashboard", "cash-flow", "accounts", "ask", "goals", "autopilot", "insights", "privacy", "bills"]) {
+      expect(existsSync(resolve("public/screenshots/demo/ledgerly", `${name}.png`)), name).toBe(true);
     }
-    expect(readFileSync(resolve("public/backgrounds/demo-ribbon.svg"), "utf8")).toContain("<svg");
-    expect(readFileSync(resolve("public/backgrounds/demo-orbit.svg"), "utf8")).toContain("<svg");
+    expect(existsSync(resolve("public/backgrounds/ledgerly-signal.png"))).toBe(true);
+    expect(existsSync(resolve("public/app-icons/ledgerly.png"))).toBe(true);
   });
 
   it("starts projects with an explicit campaign template and palette", () => {
@@ -224,8 +223,9 @@ describe("StoreCanvas project contracts", () => {
 
     expect(result.success).toBe(true);
     expect(CHECKED_IN_EXAMPLE_PROJECT).toMatchObject({
-      appName: "Example app",
+      appName: "Ledgerly",
       connectedCanvas: true,
+      paletteId: "custom",
       slidesByDevice: { iphone: expect.arrayContaining([expect.objectContaining({ id: "demo-1-route" })]) },
     });
   });
@@ -721,17 +721,13 @@ describe("StoreCanvas project contracts", () => {
     });
   });
 
-  it("ships the example with rotated phones, connected art, multi-slot copy and opt-in linking", () => {
+  it("ships the example with rotated phones, connected art, multi-slot copy and one device per slot", () => {
     const project = JSON.parse(readFileSync(resolve("example-project.json"), "utf8"));
     const slides = project.slidesByDevice.iphone;
     const heroRig = slides[0].presentations?.device;
     const openingArtwork = slides[0].connectedArtworks?.[0];
-    const pairedSlide = slides[1];
     const connectedArtwork = slides.find((slide: { id: string; connectedArtworks?: Array<{ spanSlots?: number }> }) =>
       slide.id === "demo-4-recovery" && slide.connectedArtworks?.some((artwork) => artwork.spanSlots === 2));
-    const recoverySlot = slides[3].deviceSlots?.[0];
-    const linkedRecoverySlot = slides[3].deviceSlots?.[1];
-    const reflectionSlot = slides[4].deviceSlots?.[0];
     const messageSpread = slides.find((slide: { id: string; captionSpan?: number }) => slide.id === "demo-8-routine");
 
     expect(heroRig).toMatchObject({
@@ -741,39 +737,28 @@ describe("StoreCanvas project contracts", () => {
       depth: 9,
       deviceModel: "iphone-17-pro-max",
     });
-    expect(slides[0]).toMatchObject({ captionSpan: 2 });
+    expect(slides[0]).toMatchObject({ captionSpan: 2, inverted: true, assetRef: "capture:ledgerly-dashboard" });
     expect(openingArtwork).toMatchObject({
-      id: "demo-opening-orbit",
-      assetRef: "image:demo-orbit",
+      id: "ledgerly-opening-signal",
+      assetRef: "image:ledgerly-signal",
       spanSlots: 2,
       transform: { width: 2640, height: 2868 },
     });
-    expect(pairedSlide).toMatchObject({
-      layout: "two-devices",
-      screenshotSecondary: "/screenshots/demo/insights.svg",
-      hiddenElements: ["caption"],
-      presentations: {
-        device: { preset: "tilt-right", deviceModel: "iphone-14-pro-max" },
-        deviceSecondary: { preset: "tilt-left", deviceModel: "iphone-13-pro-max" },
-      },
+    expect(slides[1]).toMatchObject({
+      layout: "device-bottom",
+      assetRef: "capture:ledgerly-cash-flow",
+      captionSpan: 2,
+      inverted: false,
     });
     expect(connectedArtwork?.connectedArtworks[0]).toMatchObject({
-      id: "demo-dawn-ribbon",
+      id: "ledgerly-decision-signal",
+      assetRef: "image:ledgerly-signal",
       spanSlots: 2,
     });
-    expect(recoverySlot).toMatchObject({ assetRef: "capture:focus", linkedTransforms: false });
-    expect(linkedRecoverySlot).toMatchObject({
-      id: "demo-recovery-companion",
-      assetRef: "capture:plan",
-      spanSlots: 2,
-      linkedTransforms: true,
-      presentation: { preset: "tilt-right", deviceModel: "iphone-14-pro-max" },
-    });
-    expect(reflectionSlot).toMatchObject({ assetRef: "capture:progress", linkedTransforms: false });
-    expect(recoverySlot.transform).not.toEqual(reflectionSlot.transform);
-    expect(slides[3]).toMatchObject({ captionSpan: 2 });
-    expect(slides[4].hiddenElements).toContain("caption");
+    expect(slides[3]).toMatchObject({ captionSpan: 2, assetRef: "capture:ledgerly-ask" });
+    expect(slides[4]).toMatchObject({ captionSpan: 2, assetRef: "capture:ledgerly-goals" });
     expect(messageSpread).toMatchObject({ id: "demo-8-routine", captionSpan: 2 });
+    expect(slides.every((slide: { layout: string; deviceSlots?: unknown[] }) => slide.layout !== "two-devices" && !slide.deviceSlots)).toBe(true);
   });
 
   it("resolves and saves a generated OpenAI artwork without persisting the personal key", async () => {

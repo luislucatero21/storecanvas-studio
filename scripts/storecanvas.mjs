@@ -173,6 +173,16 @@ async function agentRequest(method, pathname, body) {
   }
 }
 
+async function hydrateProject(project) {
+  try {
+    const payload = await agentRequest("POST", "/api/agent", { action: "inspect", project });
+    return payload.state || project;
+  } catch {
+    // Offline inspection and JSON-only workflows still work without the app.
+    return project;
+  }
+}
+
 function deckSummary(slides) {
   return {
     screens: Array.isArray(slides) ? slides.length : 0,
@@ -328,7 +338,7 @@ async function catalogCommand() {
 
 async function inspectCommand() {
   const projectFile = resolveProjectFile();
-  const project = await loadProject(projectFile);
+  const project = await hydrateProject(await loadProject(projectFile));
   const summary = summarizeProject(project, projectFile);
   output(summary, `${summary.appName} · ${summary.device} · ${summary.orientation}\n${Object.entries(summary.decks).map(([device, deck]) => `  ${device}: ${deck.screens} screens, ${deck.connectedArtworks.length} connected artwork`).join("\n")}`);
 }
@@ -477,10 +487,11 @@ function exportSizesFor(project, device, orientation) {
 
 async function renderCommand() {
   const { chromium } = await import("@playwright/test");
-  const project = await loadProject(resolveProjectFile());
+  let project = await hydrateProject(await loadProject(resolveProjectFile()));
   if (!hasFlag("--no-sync-app")) {
     try {
-      await agentRequest("POST", "/api/project", project);
+      const response = await agentRequest("POST", "/api/project", project);
+      project = response.state || project;
     } catch {
       // Rendering can still use the server's configured project when no app is running.
     }

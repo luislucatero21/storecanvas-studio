@@ -44,6 +44,22 @@ describe("StoreCanvas agent workflow", () => {
     });
   });
 
+  it("hydrates the checked-in story for every supported phone and tablet deck", async () => {
+    const response = await POST(new Request("http://localhost/api/agent", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "inspect", project: CHECKED_IN_EXAMPLE_PROJECT }),
+    }));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.state.slidesByDevice.iphone).toHaveLength(10);
+    expect(payload.state.slidesByDevice.ipad).toHaveLength(10);
+    expect(payload.state.slidesByDevice.android).toHaveLength(8);
+    expect(payload.state.slidesByDevice["android-7"]).toHaveLength(8);
+    expect(payload.state.slidesByDevice["android-10"]).toHaveLength(8);
+  });
+
   it("plans a ten-screen artwork with inferred template tone rhythm", () => {
     const project = {
       ...CHECKED_IN_EXAMPLE_PROJECT,

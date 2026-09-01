@@ -10,7 +10,7 @@ StoreCanvas is a free, open-source, local-first studio for turning real mobile-a
 
 **[Open the live Vercel demo](https://storecanvas-studio.vercel.app/)** · **[Read the architecture](docs/architecture.md)** · **[Contribute](CONTRIBUTING.md)**
 
-The public demo starts from a neutral, checked-in example. Your local projects, screenshots, generated backgrounds, and browser edits are not uploaded automatically.
+The public demo starts from a self-contained Ledgerly finance campaign. Your local projects, screenshots, generated backgrounds, and browser edits are not uploaded automatically.
 
 ## Why StoreCanvas?
 
@@ -58,17 +58,18 @@ The private filename, uploaded screenshots, generated backgrounds, and exports a
 3. Select a template and palette. Manual placement, custom tokens, and connected artwork remain untouched unless the corresponding reset/reflow option is enabled.
 4. Arrange copy, device slots, hardware model, camera angle, crop, visibility, and locking on the canvas.
 5. Use the **sizes** control beside the device selector to choose export targets. New iPhone and iPad projects start with Apple's global target only; additional sizes are opt-in and saved per device.
-6. Export the selected locale/device deck or use the CLI for repeatable render jobs. When an iPad deck is empty, it receives an independent copy of the iPhone story, including adapted device paths and connected artwork bounds.
+6. Export the selected locale/device deck or use the CLI for repeatable render jobs. When a supported phone, iPad, or tablet deck is empty, it receives an independent copy of the iPhone story, including adapted device paths and connected artwork bounds. iPad keeps all ten slots; Android phone/tablet decks mirror the first eight because Google Play's export limit is eight screenshots.
 
 ### Explore the checked-in demo
 
-The starter campaign is deliberately self-contained so the visual system is visible before importing any app:
+The starter campaign is deliberately self-contained so the visual system is visible before importing any app. It uses Ledgerly, a fictional personal-finance app, so the example demonstrates product storytelling instead of placeholder copy:
 
-- Screens 1–2 open with a two-screen orbit, shared headline, an iPhone 17 Pro Max, and two independently angled companion models.
-- Screens 4–5 show connected artwork plus a large caption, a safe independent slot, and an explicitly linked slot repeated across the seam.
-- Screens 8–9 keep a second shared-caption example available for testing contrast and positioning.
+- Screens 1–2 connect a generated signal artwork and one headline across a light/dark seam while showing the dashboard and cash-flow features in one device per slot.
+- Screens 3–7 walk through accounts, an AI money coach, goals, automation, and insights; the device frame rotates independently on selected slides.
+- Screens 8–9 connect privacy and recurring-bills features with a second shared caption, making per-slot text contrast visible without stacking devices.
+- The same story hydrates into iPad and Android phone/tablet decks, with the platform's valid screenshot limit preserved.
 
-Select **Connected** in the toolbar, then click those thumbnails to inspect each composition and its opt-in controls. The neutral captures and backgrounds live in [`public/screenshots/demo`](public/screenshots/demo) and [`public/backgrounds`](public/backgrounds); no personal campaign assets are needed.
+Select **Connected** in the toolbar, then click those thumbnails to inspect each composition and its opt-in controls. The Ledgerly captures and signal artwork live in [`public/screenshots/demo`](public/screenshots/demo) and [`public/backgrounds`](public/backgrounds); no personal campaign assets are needed.
 
 ## What is included
 
@@ -87,7 +88,7 @@ Select **Connected** in the toolbar, then click those thumbnails to inspect each
 
 StoreCanvas does not operate a hosted project database, account system, telemetry pipeline, billing flow, or usage meter. Local browser storage is the canonical library; local file sync is explicit; Vercel writes are disabled. AI requests go only to the provider selected by the user and may have that provider's own cost or terms.
 
-The repository contains only neutral, self-authored demo SVGs. App Store metadata, screenshots, app icons, logos, and downloaded/generated assets may belong to someone else. Only redistribute assets for which you have permission, and keep private campaign material in ignored paths.
+The repository contains a fictional Ledgerly fixture: its product screens, icon, and connected signal artwork are generated visual assets included for demonstration and testing. App Store metadata, screenshots, app icons, logos, and downloaded/generated assets from a user's own project may belong to someone else. Only redistribute assets for which you have permission, and keep private campaign material in ignored paths.
 
 ## Rendering from the command line
 
@@ -139,7 +140,7 @@ Useful automation commands:
 | Command | Purpose |
 | --- | --- |
 | `catalog --json` | List supported devices, templates, palettes and capabilities. |
-| `inspect --json` | Summarize the selected project and every connected artwork span. |
+| `inspect --json` | Summarize the selected project and every connected artwork span; with the app running, also expands empty iPad/Android decks using the editor defaults. |
 | `validate --json` | Run schema and export-readiness checks; exits non-zero on errors. |
 | `apply-template --template <id>` | Recompose one device deck with optional palette/reset flags. |
 | `generate-background --slots <1-10>` | Generate and attach one connected artwork to adjacent slots. |
@@ -158,7 +159,7 @@ pnpm build
 pnpm audit --audit-level high
 ```
 
-CI runs dependency audit, typecheck, 53 unit tests, Playwright browser tests, and a production build on pushes and pull requests to `main`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution workflow and [docs/OPEN_SOURCE_AUDIT.md](docs/OPEN_SOURCE_AUDIT.md) for the current audit snapshot.
+CI runs dependency audit, typecheck, 57 unit tests, Playwright browser tests, and a production build on pushes and pull requests to `main`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution workflow and [docs/OPEN_SOURCE_AUDIT.md](docs/OPEN_SOURCE_AUDIT.md) for the current audit snapshot.
 
 ## Project map
 

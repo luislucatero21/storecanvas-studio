@@ -20,7 +20,7 @@ describe("StoreCanvas agent CLI", () => {
 
     expect(payload).toMatchObject({
       projectFile: resolve(process.cwd(), "example-project.json"),
-      appName: "Example app",
+      appName: "Ledgerly",
       device: "iphone",
     });
     expect(payload.decks.iphone).toMatchObject({ screens: 10 });
