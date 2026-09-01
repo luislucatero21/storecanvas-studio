@@ -11,7 +11,7 @@ pnpm install   # bun install also works
 pnpm dev       # http://localhost:3000
 ```
 
-Open `http://localhost:3000`. The editor loads `example-project.json` as a read-only seed and autosaves changes to the browser-local project library.
+Open `http://localhost:3000`. If the ignored `app-store-screenshots.json` exists in the local checkout, the editor discovers it and loads it automatically on first use; otherwise it loads `example-project.json` as a read-only seed. Changes are autosaved to the browser-local project library.
 
 To work on a private project without adding it to Git, create `.env.local`:
 
@@ -19,7 +19,7 @@ To work on a private project without adding it to Git, create `.env.local`:
 STORECANVAS_PROJECT_FILE=app-store-screenshots.json
 ```
 
-`app-store-screenshots.json`, uploaded screenshots, generated backgrounds and exports are ignored by Git. This keeps private app captures out of an open-source checkout while preserving the existing local file.
+`app-store-screenshots.json`, uploaded screenshots, generated backgrounds and exports are ignored by Git. This keeps private app captures out of an open-source checkout while preserving the existing local file. Automatic discovery is a read-only bootstrap: browser storage keeps edits, while the environment variable above opts into writing changes back to the file.
 
 The checked-in demo is never overwritten by default. Configure `STORECANVAS_PROJECT_FILE` only when you want local file sync for a private campaign or CLI render.
 
@@ -58,7 +58,7 @@ AI copy polish and connected artwork are optional bring-your-own-key helpers. Ke
 
 ## Local-first deployment
 
-The editor uses browser local storage as its canonical project library. This keeps projects, imported captures, generated data URLs and edits available without a remote database. The local `/api/project` endpoint remains a convenience for git-trackable development files; on Vercel it becomes read-only and autosaves stay in the current browser. Use the visible **Project** selector to create projects, import a private `app-store-screenshots.json`, switch between campaigns, or download a backup JSON.
+The editor uses browser local storage as its canonical project library. This keeps projects, imported captures, generated data URLs and edits available without a remote database. The local `/api/project` endpoint remains a convenience for git-trackable development files; on Vercel it becomes read-only and autosaves stay in the current browser. Use the visible **Project** selector to create projects, switch between campaigns, import a private `app-store-screenshots.json`, or download a backup JSON. A Vercel page can restore projects already saved in that same browser origin, but browser security does not allow it to read a `localhost` file automatically; moving a file between origins requires a one-time import.
 
 ## Tests
 

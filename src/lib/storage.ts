@@ -272,19 +272,37 @@ function loadFromLocalStorage(): ProjectState | null {
 }
 
 async function loadFromFile(): Promise<
-  { ok: true; state: ProjectState | null; persisted?: "file" | "browser" } | { ok: false; error: string }
+  | {
+      ok: true;
+      state: ProjectState | null;
+      persisted?: "file" | "browser";
+      source?: "browser" | "configured-file" | "local-private-file" | "demo-file";
+    }
+  | { ok: false; error: string }
 > {
   if (typeof window === "undefined") return { ok: false, error: "Window is not available" };
   try {
     const resp = await fetch("/api/project", { cache: "no-store" });
     if (!resp.ok) return { ok: false, error: `HTTP ${resp.status}` };
-    const json = (await resp.json()) as { ok: boolean; state: Partial<ProjectState> | null; persisted?: "file" | "browser" };
+    const json = (await resp.json()) as {
+      ok: boolean;
+      state: Partial<ProjectState> | null;
+      persisted?: "file" | "browser";
+      source?: "browser" | "configured-file" | "local-private-file" | "demo-file";
+    };
     if (!json.ok) return { ok: false, error: "Project response was not ok" };
-    if (!json.state) return { ok: true, state: null, persisted: json.persisted };
-    return { ok: true, state: mergeWithDefaults(json.state), persisted: json.persisted };
+    if (!json.state) return { ok: true, state: null, persisted: json.persisted, source: json.source };
+    return { ok: true, state: mergeWithDefaults(json.state), persisted: json.persisted, source: json.source };
   } catch {
     return { ok: false, error: "Project file could not be loaded" };
   }
+}
+
+function isStarterOrDemoProject(state: ProjectState | undefined) {
+  if (!state || state.campaignSource) return false;
+  return state.appName === DEFAULT_PROJECT.appName
+    || state.appName === "Example app"
+    || state.slidesByDevice.iphone?.[0]?.id?.startsWith("demo-");
 }
 
 function saveToLocalStorage(
@@ -350,9 +368,10 @@ export function useProject() {
   const futureRef = useRef<ProjectState[]>([]);
   const lastPushAt = useRef(0);
 
-  // Hydrate the active browser project first. A file is only the initial seed
-  // when this browser has no project yet; it must not overwrite a selected
-  // local campaign on every deploy or refresh.
+  // Hydrate the active browser project first. A local private campaign file is
+  // also an automatic seed when the browser only contains the shareable blank
+  // or demo project. Once a user has a real campaign in this browser, that
+  // campaign wins and is never overwritten by a local file on refresh.
   useEffect(() => {
     let cancelled = false;
     const localLibrary = loadProjectLibrary();
@@ -364,10 +383,23 @@ export function useProject() {
     void (async () => {
       const fromFile = await loadFromFile();
       if (cancelled) return;
-      let nextState = cached || (fromFile.ok ? fromFile.state : null) || DEFAULT_PROJECT;
+      const autoLocalState = fromFile.ok && fromFile.source === "local-private-file"
+        ? fromFile.state
+        : null;
+      const shouldAutoLoadLocalProject = !!autoLocalState
+        && (!active || isStarterOrDemoProject(cached || active.state));
+      let nextState = shouldAutoLoadLocalProject
+        ? autoLocalState!
+        : cached || (fromFile.ok ? fromFile.state : null) || DEFAULT_PROJECT;
       let nextLibrary = localLibrary;
       let activeProjectId = active?.id || localLibrary.activeProjectId;
-      if (!activeProjectId) {
+      if (shouldAutoLoadLocalProject) {
+        const seed = makeLocalProject(nextState, {
+          id: active?.id || "project-local-private",
+        });
+        nextLibrary = upsertLocalProject(localLibrary, seed);
+        activeProjectId = seed.id;
+      } else if (!activeProjectId) {
         const seed = makeLocalProject(nextState, {
           id: cached ? "project-recovered" : createProjectId(nextState.appName),
         });

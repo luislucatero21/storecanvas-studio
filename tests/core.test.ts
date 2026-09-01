@@ -27,7 +27,11 @@ import { getElementTransform } from "@/components/editor/slide-canvas";
 import { ProjectStateSchema } from "@/lib/schema";
 import { validateProject } from "@/lib/validation";
 import { isReadOnlyRuntime } from "@/lib/runtime";
-import { isProjectFileConfigured } from "@/lib/project-file";
+import {
+  isLocalPrivateProjectAvailable,
+  isProjectFileConfigured,
+  projectFilePath,
+} from "@/lib/project-file";
 import {
   createProjectId,
   emptyProjectLibrary,
@@ -47,6 +51,17 @@ describe("StoreCanvas project contracts", () => {
   it("keeps the checked-in demo read-only unless file sync is opted in", () => {
     expect(isProjectFileConfigured({})).toBe(false);
     expect(isProjectFileConfigured({ ["STORECANVAS_PROJECT_FILE"]: "app-store-screenshots.json" })).toBe(true);
+  });
+
+  it("auto-discovers the ignored private project only in a local runtime", () => {
+    const root = "/tmp/storecanvas-local-checkout";
+    const exists = () => true;
+
+    expect(isLocalPrivateProjectAvailable(root, {}, exists)).toBe(true);
+    expect(projectFilePath(root, {}, exists)).toBe(resolve(root, "app-store-screenshots.json"));
+    expect(isLocalPrivateProjectAvailable(root, { VERCEL: "1" }, exists)).toBe(false);
+    expect(projectFilePath(root, { VERCEL: "1" }, exists)).toBe(resolve(root, "example-project.json"));
+    expect(isLocalPrivateProjectAvailable(root, { STORECANVAS_PROJECT_FILE: "private.json" }, exists)).toBe(false);
   });
 
   it("keeps local projects portable and switches the active record predictably", () => {

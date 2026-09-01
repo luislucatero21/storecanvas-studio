@@ -54,6 +54,52 @@ test.describe("StoreCanvas editor", () => {
     await expect(page.getByRole("button", { name: "Project menu" })).toContainText("Example app");
   });
 
+  test("auto-loads the local private campaign discovered by the local server", async ({ page }) => {
+    const rutmia = {
+      ...baseline,
+      appName: "Rutmia",
+      campaignSource: {
+        provider: "app-store" as const,
+        appId: "6757990035",
+        sourceUrl: "https://apps.apple.com/mx/app/rutmia/id6757990035",
+        country: "mx",
+        screenshotPolicy: "reference-only" as const,
+      },
+    };
+    await page.route("**/api/project", async (route) => {
+      if (route.request().method() !== "GET") {
+        await route.continue();
+        return;
+      }
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true, state: rutmia, persisted: "browser", source: "local-private-file" }),
+      });
+    });
+    await page.goto("/");
+
+    await expect(page.getByLabel("App name")).toHaveValue("Rutmia");
+    await expect(page.getByRole("button", { name: "Project menu" })).toContainText("Rutmia");
+  });
+
+  test("restores the active local project after reload without importing again", async ({ page }) => {
+    await page.goto("/");
+    const projectMenu = page.getByRole("button", { name: "Project menu" });
+    await projectMenu.click();
+
+    await page.getByLabel("Import project JSON").setInputFiles({
+      name: "rutmia-local.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify({ ...baseline, appName: "Rutmia" })),
+    });
+    await expect(projectMenu).toContainText("Rutmia");
+    await page.waitForTimeout(800);
+    await page.reload();
+
+    await expect(page.getByLabel("App name")).toHaveValue("Rutmia");
+    await expect(page.getByRole("button", { name: "Project menu" })).toContainText("Rutmia");
+  });
+
   test("switches locale and edits the active headline", async ({ page }) => {
     await page.goto("/");
 

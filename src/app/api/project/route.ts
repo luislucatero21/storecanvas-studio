@@ -1,7 +1,11 @@
 import { promises as fs } from "node:fs";
 import { NextResponse } from "next/server";
 import { ProjectStateSchema } from "@/lib/schema";
-import { isProjectFileConfigured, projectFilePath } from "@/lib/project-file";
+import {
+  isLocalPrivateProjectAvailable,
+  isProjectFileConfigured,
+  projectFilePath,
+} from "@/lib/project-file";
 import { isReadOnlyRuntime } from "@/lib/runtime";
 import { getLocalProject, setLocalProject } from "@/lib/local-project-server";
 import type { ProjectState } from "@/lib/types";
@@ -12,11 +16,17 @@ function filePath() {
   return projectFilePath();
 }
 
+function source() {
+  if (isProjectFileConfigured()) return "configured-file" as const;
+  if (isLocalPrivateProjectAvailable()) return "local-private-file" as const;
+  return "demo-file" as const;
+}
+
 export async function GET() {
   const browserOnly = !isReadOnlyRuntime() && !isProjectFileConfigured();
   const localProject = browserOnly ? getLocalProject() : null;
   if (localProject) {
-    return NextResponse.json({ ok: true, state: localProject, persisted: "browser" });
+    return NextResponse.json({ ok: true, state: localProject, persisted: "browser", source: "browser" });
   }
   try {
     const raw = await fs.readFile(filePath(), "utf8");
@@ -25,6 +35,7 @@ export async function GET() {
       ok: true,
       state: parsed,
       persisted: !isReadOnlyRuntime() && isProjectFileConfigured() ? "file" : "browser",
+      source: source(),
     });
   } catch (e) {
     const code = (e as NodeJS.ErrnoException).code;
@@ -33,6 +44,7 @@ export async function GET() {
         ok: true,
         state: null,
         persisted: !isReadOnlyRuntime() && isProjectFileConfigured() ? "file" : "browser",
+        source: source(),
       });
     }
     return NextResponse.json(

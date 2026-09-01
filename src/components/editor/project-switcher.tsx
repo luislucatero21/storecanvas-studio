@@ -110,7 +110,7 @@ export function ProjectSwitcher({
           Local projects
         </DropdownMenuLabel>
         <p className="px-2 pb-2 pt-1 text-[11px] leading-relaxed text-muted-foreground">
-          Saved in this browser · no remote database
+          Local dev auto-loads <span className="font-medium text-foreground">app-store-screenshots.json</span>; Vercel restores projects saved in this browser.
         </p>
 
         <div className="max-h-56 overflow-y-auto">
@@ -155,7 +155,7 @@ export function ProjectSwitcher({
           <span>Download current project</span>
         </DropdownMenuItem>
         <p className="px-2 pb-1 pt-2 text-[10px] leading-relaxed text-muted-foreground">
-          To recover a private campaign, choose its <span className="font-medium text-foreground">app-store-screenshots.json</span> here.
+          Import once to move a private campaign between localhost and Vercel. Nothing is uploaded to a StoreCanvas database.
         </p>
       </DropdownMenuContent>
       </DropdownMenu>
