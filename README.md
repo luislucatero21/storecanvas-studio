@@ -59,6 +59,16 @@ The private filename, uploaded screenshots, generated backgrounds, and exports a
 4. Arrange copy, device slots, hardware model, camera angle, crop, visibility, and locking on the canvas.
 5. Export the selected locale/device deck or use the CLI for repeatable render jobs.
 
+### Explore the checked-in demo
+
+The starter campaign is deliberately self-contained so the visual system is visible before importing any app:
+
+- Screens 1–2 open with a two-screen orbit, shared headline, an iPhone 17 Pro Max, and two independently angled companion models.
+- Screens 4–5 show connected artwork plus a large caption, a safe independent slot, and an explicitly linked slot repeated across the seam.
+- Screens 8–9 keep a second shared-caption example available for testing contrast and positioning.
+
+Select **Connected** in the toolbar, then click those thumbnails to inspect each composition and its opt-in controls. The neutral captures and backgrounds live in [`public/screenshots/demo`](public/screenshots/demo) and [`public/backgrounds`](public/backgrounds); no personal campaign assets are needed.
+
 ## What is included
 
 - Connected or isolated canvas composition with exact export-time crops.
