@@ -8,7 +8,7 @@ Please read the [Code of Conduct](CODE_OF_CONDUCT.md) before participating. For 
 
 Requirements:
 
-- Node.js `>=20.9.0`
+- Node.js `>=22.13.0`
 - pnpm `11.9.0` (the repository pins this through `packageManager`)
 - Chromium for Playwright UI tests
 

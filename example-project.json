@@ -27,6 +27,7 @@
         },
         "screenshot": "/screenshots/demo/overview.svg",
         "assetRef": "capture:overview",
+        "captionSpan": 2,
         "presentations": {
           "device": {
             "preset": "tilt-left",
@@ -36,11 +37,27 @@
             "depth": 9,
             "deviceModel": "iphone-17-pro-max"
           }
-        }
+        },
+        "connectedArtworks": [
+          {
+            "id": "demo-opening-orbit",
+            "image": "/backgrounds/demo-orbit.svg",
+            "assetRef": "image:demo-orbit",
+            "transform": {
+              "x": 0,
+              "y": 0,
+              "width": 2640,
+              "height": 2868,
+              "zIndex": 1
+            },
+            "spanSlots": 2,
+            "opacity": 0.94
+          }
+        ]
       },
       {
         "id": "demo-2-ai",
-        "layout": "device-top",
+        "layout": "two-devices",
         "label": {
           "en-US": "FROM THOUGHT TO MOMENTUM",
           "es-MX": "DE IDEA A IMPULSO"
@@ -50,8 +67,31 @@
           "es-MX": "Convierte ideas en un plan."
         },
         "screenshot": "/screenshots/demo/plan.svg",
+        "screenshotSecondary": "/screenshots/demo/insights.svg",
         "assetRef": "capture:plan",
-        "inverted": true
+        "assetRefSecondary": "capture:insights",
+        "presentations": {
+          "device": {
+            "preset": "tilt-right",
+            "rotateX": 2,
+            "rotateY": 11,
+            "perspective": 2100,
+            "depth": 9,
+            "deviceModel": "iphone-14-pro-max"
+          },
+          "deviceSecondary": {
+            "preset": "tilt-left",
+            "rotateX": 2,
+            "rotateY": -11,
+            "perspective": 2100,
+            "depth": 9,
+            "deviceModel": "iphone-13-pro-max"
+          }
+        },
+        "inverted": true,
+        "hiddenElements": [
+          "caption"
+        ]
       },
       {
         "id": "demo-3-focus",
@@ -103,6 +143,30 @@
             },
             "spanSlots": 2,
             "linkedTransforms": false
+          },
+          {
+            "id": "demo-recovery-companion",
+            "screenshot": "/screenshots/demo/plan.svg",
+            "assetRef": "capture:plan",
+            "transform": {
+              "x": 70,
+              "y": 1240,
+              "width": 430,
+              "height": 876,
+              "rotation": 4,
+              "zIndex": 6
+            },
+            "presentation": {
+              "preset": "tilt-right",
+              "rotateX": 2,
+              "rotateY": 11,
+              "perspective": 1900,
+              "depth": 8,
+              "deviceModel": "iphone-14-pro-max"
+            },
+            "spanSlots": 2,
+            "linkedTransforms": true,
+            "opacity": 0.9
           }
         ],
         "connectedArtworks": [
@@ -121,6 +185,7 @@
             "opacity": 0.92
           }
         ],
+        "captionSpan": 2,
         "hiddenElements": [
           "device"
         ]
@@ -167,7 +232,8 @@
         ],
         "inverted": true,
         "hiddenElements": [
-          "device"
+          "device",
+          "caption"
         ]
       },
       {
@@ -448,6 +514,16 @@
       "paths": {
         "en-US": "/backgrounds/demo-ribbon.svg",
         "es-MX": "/backgrounds/demo-ribbon.svg"
+      }
+    },
+    "image:demo-orbit": {
+      "id": "image:demo-orbit",
+      "type": "image",
+      "label": "Connected orbit",
+      "platform": "ios",
+      "paths": {
+        "en-US": "/backgrounds/demo-orbit.svg",
+        "es-MX": "/backgrounds/demo-orbit.svg"
       }
     }
   },

@@ -1,14 +1,14 @@
 # StoreCanvas
 
 [![CI](https://github.com/luislucatero21/storecanvas-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/luislucatero21/storecanvas-studio/actions/workflows/ci.yml)
-[![Live demo](https://img.shields.io/badge/demo-Vercel-000000?logo=vercel&logoColor=white)](https://storecanvas-studio-7mizuftdo-luislucatero21s-projects.vercel.app)
+[![Live demo](https://img.shields.io/badge/demo-Vercel-000000?logo=vercel&logoColor=white)](https://storecanvas-studio.vercel.app/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## Build store screenshots that read like a product story
 
 StoreCanvas is a free, open-source, local-first studio for turning real mobile-app captures into App Store and Google Play campaign assets. Compose a sequence where one visual idea can continue into the next frame, then export deterministic, store-sized images without giving your project to a hosted design platform.
 
-**[Open the live Vercel demo](https://storecanvas-studio-7mizuftdo-luislucatero21s-projects.vercel.app)** · **[Read the architecture](docs/architecture.md)** · **[Contribute](CONTRIBUTING.md)**
+**[Open the live Vercel demo](https://storecanvas-studio.vercel.app/)** · **[Read the architecture](docs/architecture.md)** · **[Contribute](CONTRIBUTING.md)**
 
 The public demo starts from a neutral, checked-in example. Your local projects, screenshots, generated backgrounds, and browser edits are not uploaded automatically.
 
@@ -26,7 +26,7 @@ Most screenshot tools treat each frame as a separate poster. StoreCanvas treats 
 
 ## Quick start
 
-Requirements: Node.js `>=20.9.0` and pnpm `11.9.0`.
+Requirements: Node.js `>=22.13.0` and pnpm `11.9.0`.
 
 ```bash
 pnpm install
@@ -58,6 +58,16 @@ The private filename, uploaded screenshots, generated backgrounds, and exports a
 3. Select a template and palette. Manual placement, custom tokens, and connected artwork remain untouched unless the corresponding reset/reflow option is enabled.
 4. Arrange copy, device slots, hardware model, camera angle, crop, visibility, and locking on the canvas.
 5. Export the selected locale/device deck or use the CLI for repeatable render jobs.
+
+### Explore the checked-in demo
+
+The starter campaign is deliberately self-contained so the visual system is visible before importing any app:
+
+- Screens 1–2 open with a two-screen orbit, shared headline, an iPhone 17 Pro Max, and two independently angled companion models.
+- Screens 4–5 show connected artwork plus a large caption, a safe independent slot, and an explicitly linked slot repeated across the seam.
+- Screens 8–9 keep a second shared-caption example available for testing contrast and positioning.
+
+Select **Connected** in the toolbar, then click those thumbnails to inspect each composition and its opt-in controls. The neutral captures and backgrounds live in [`public/screenshots/demo`](public/screenshots/demo) and [`public/backgrounds`](public/backgrounds); no personal campaign assets are needed.
 
 ## What is included
 
