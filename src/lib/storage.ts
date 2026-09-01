@@ -327,15 +327,16 @@ async function loadFromFile(preferFile = false): Promise<
 }
 
 function hasProjectContent(state: ProjectState) {
-  if (state.appIcon?.trim() || Object.keys(state.assets || {}).length > 0) return true;
+  const hasAssetPath = Object.values(state.assets || {}).some((asset) =>
+    Object.values(asset.paths || {}).some((path) => Boolean(path?.trim())),
+  );
+  if (state.appIcon?.trim() || hasAssetPath) return true;
   return Object.values(state.slidesByDevice).some((slides) => slides.some((slide) => (
     Boolean(slide.screenshot?.trim())
     || Boolean(slide.screenshotSecondary?.trim())
-    || Boolean(slide.deviceSlots?.length)
-    || Boolean(slide.connectedArtworks?.length)
-    || Boolean(slide.textElements?.length)
-    || Boolean(slide.transforms && Object.keys(slide.transforms).length > 0)
-    || Boolean(slide.presentations && Object.keys(slide.presentations).length > 0)
+    || Boolean(slide.deviceSlots?.some((slot) => slot.screenshot?.trim()))
+    || Boolean(slide.connectedArtworks?.some((artwork) => artwork.image?.trim()))
+    || Boolean(slide.textElements?.some((element) => Object.values(element.text || {}).some((text) => Boolean(text?.trim()))))
   )));
 }
 
