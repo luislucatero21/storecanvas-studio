@@ -26,7 +26,7 @@ Most screenshot tools treat each frame as a separate poster. StoreCanvas treats 
 
 ## Quick start
 
-Requirements: Node.js `>=20.9.0` and pnpm `11.9.0`.
+Requirements: Node.js `>=22.13.0` and pnpm `11.9.0`.
 
 ```bash
 pnpm install
