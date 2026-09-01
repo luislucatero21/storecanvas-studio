@@ -377,8 +377,10 @@ export function useProject() {
 
   // Hydrate the active browser project first. A local private campaign file is
   // also an automatic seed when the browser only contains the shareable blank
-  // or demo project. Once a user has a real campaign in this browser, that
-  // campaign wins and is never overwritten by a local file on refresh.
+  // or demo project. An explicitly configured project file is authoritative;
+  // this lets a local preview switch to the file even when an older project
+  // remains in the browser cache. Vercel and ordinary local-first sessions
+  // continue to prefer their browser project.
   useEffect(() => {
     let cancelled = false;
     const localLibrary = loadProjectLibrary();
@@ -393,16 +395,20 @@ export function useProject() {
       const autoLocalState = fromFile.ok && fromFile.source === "local-private-file"
         ? fromFile.state
         : null;
+      const configuredFileState = fromFile.ok && fromFile.source === "configured-file"
+        ? fromFile.state
+        : null;
       const shouldAutoLoadLocalProject = !!autoLocalState
         && (!active || isStarterOrDemoProject(cached || active.state));
-      let nextState = shouldAutoLoadLocalProject
-        ? autoLocalState!
+      const shouldUseFileProject = !!configuredFileState || shouldAutoLoadLocalProject;
+      let nextState = shouldUseFileProject
+        ? (configuredFileState || autoLocalState)!
         : cached || (fromFile.ok ? fromFile.state : null) || DEFAULT_PROJECT;
       let nextLibrary = localLibrary;
       let activeProjectId = active?.id || localLibrary.activeProjectId;
-      if (shouldAutoLoadLocalProject) {
+      if (shouldUseFileProject) {
         const seed = makeLocalProject(nextState, {
-          id: active?.id || "project-local-private",
+          id: active?.id || (configuredFileState ? createProjectId(nextState.appName) : "project-local-private"),
         });
         nextLibrary = upsertLocalProject(localLibrary, seed);
         activeProjectId = seed.id;
