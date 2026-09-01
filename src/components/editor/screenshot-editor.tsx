@@ -831,6 +831,10 @@ export function ScreenshotEditor() {
               onAssetLibraryChange={(assets) => setState((p) => ({ ...p, assets }))}
               maxArtworkSpan={maxArtworkSpan}
               artworkTonePattern={artworkTonePattern}
+              theme={theme}
+              connectedCanvas={state.connectedCanvas}
+              deckInverted={currentSlides.map((currentSlide) => !!currentSlide.inverted)}
+              activeSlideIndex={activeSlideIndex}
               onSelectElement={(elementId) =>
                 setSelectedElement(
                   elementId ? { slideId: activeSlide.id, elementId } : null,

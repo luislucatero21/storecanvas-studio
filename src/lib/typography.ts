@@ -1,4 +1,5 @@
-import type { TypographyStyle, TypographyTokens } from "./types";
+import { accessibleColor, accentForBackground, normalizeHex } from "./color";
+import type { Theme, TypographyStyle, TypographyTokens } from "./types";
 
 export type FontOption = {
   id: string;
@@ -161,6 +162,43 @@ export function typographyForRole(
 ): TypographyStyle {
   const base = role === "headline" ? typography?.display : typography?.body;
   return { ...(base || {}), ...(typography?.[role] || {}) };
+}
+
+type TypographyColorTheme = Pick<Theme, "bg" | "bgAlt" | "fg" | "fgAlt" | "accent" | "accentMode">;
+
+/** The color the user selected, before adaptive contrast is applied. */
+export function preferredTypographyColor(
+  role: "label" | "headline" | "text",
+  style: TypographyStyle,
+  theme: TypographyColorTheme,
+  inverted: boolean,
+) {
+  if (style.color) return style.color;
+  if (role === "label") return theme.accent;
+  return inverted ? theme.fgAlt : theme.fg;
+}
+
+/**
+ * Resolve the color that the renderer actually paints for a typography role.
+ * Keeping this next to the typography tokens prevents the inspector and
+ * canvas from drifting apart when adaptive contrast is enabled.
+ */
+export function effectiveTypographyColor(
+  role: "label" | "headline" | "text",
+  style: TypographyStyle,
+  theme: TypographyColorTheme,
+  inverted: boolean,
+) {
+  const preferred = preferredTypographyColor(role, style, theme, inverted);
+  if (style.adaptiveColor === false) {
+    return normalizeHex(preferred, role === "label" ? theme.accent : inverted ? theme.fgAlt : theme.fg);
+  }
+
+  const background = inverted ? theme.bgAlt : theme.bg;
+  if (role === "label") {
+    return accentForBackground(preferred, background, theme.accentMode || "adaptive");
+  }
+  return accessibleColor(preferred, background, 4.5);
 }
 
 export function clampSizeScale(value: number | undefined) {

@@ -69,6 +69,7 @@ import type {
   SlideLayout,
   TextElement,
   SlotSpan,
+  Theme,
   TypographyStyle,
 } from "@/lib/types";
 import { SLOT_SPAN_OPTIONS } from "@/lib/types";
@@ -76,11 +77,16 @@ import { cn } from "@/lib/utils";
 import { ScreenshotPicker } from "./screenshot-picker";
 import { getCanvas, getElementTransform } from "./slide-canvas";
 import {
-  DEFAULT_TYPOGRAPHY,
+  clampSizeScale,
+  effectiveTypographyColor,
   FONT_OPTIONS,
   FONT_WEIGHT_OPTIONS,
   fontOptionId,
+  preferredTypographyColor,
+  typographyForRole,
 } from "@/lib/typography";
+import { normalizeHex } from "@/lib/color";
+import { captionContrastForRect } from "@/lib/caption-contrast";
 
 type Props = {
   slide: Slide;
@@ -95,6 +101,10 @@ type Props = {
   onAssetLibraryChange?: (assets: AssetLibrary) => void;
   maxArtworkSpan?: number;
   artworkTonePattern?: Array<"light" | "dark">;
+  theme: Theme;
+  connectedCanvas?: boolean;
+  deckInverted?: readonly boolean[];
+  activeSlideIndex?: number;
 };
 
 const ELEMENT_LABEL: Record<BuiltInElementId, string> = {
@@ -116,6 +126,10 @@ export function Inspector({
   onAssetLibraryChange,
   maxArtworkSpan,
   artworkTonePattern,
+  theme,
+  connectedCanvas = true,
+  deckInverted = [],
+  activeSlideIndex = 0,
 }: Props) {
   const isFeatureGraphic = device === "feature-graphic" || slide.layout === "feature-graphic";
   const isNoDevice = slide.layout === "no-device";
@@ -368,6 +382,10 @@ export function Inspector({
             selectedElementId={selectedElementId}
             onChange={onChange}
             onSelectElement={onSelectElement}
+            theme={theme}
+            connectedCanvas={connectedCanvas}
+            deckInverted={deckInverted}
+            activeSlideIndex={activeSlideIndex}
           />
         )}
 
@@ -670,6 +688,10 @@ function ElementTransformControls({
   selectedElementId,
   onChange,
   onSelectElement,
+  theme,
+  connectedCanvas,
+  deckInverted,
+  activeSlideIndex,
 }: {
   slide: Slide;
   device: Device;
@@ -678,6 +700,10 @@ function ElementTransformControls({
   selectedElementId: ElementId | null;
   onChange: (patch: Partial<Slide>) => void;
   onSelectElement: (id: ElementId | null) => void;
+  theme: Theme;
+  connectedCanvas: boolean;
+  deckInverted: readonly boolean[];
+  activeSlideIndex: number;
 }) {
   const present: ElementId[] = ["caption"];
   if (slide.layout !== "no-device") present.push("device");
@@ -705,6 +731,8 @@ function ElementTransformControls({
       ? slide.presentations?.[activeId]
       : undefined
   );
+  const { cW, cH } = getCanvas(device, orientation);
+  const canvasUnit = Math.min(cW, cH);
 
   function getTransform(id: ElementId) {
     return getElementTransform(slide, device, orientation, id, locale);
@@ -965,6 +993,7 @@ function ElementTransformControls({
         <>
           <ActiveElementPanel
             activeId={activeId}
+            slide={slide}
             transform={activeTransform}
             textElement={activeTextElement || undefined}
             locale={locale}
@@ -977,6 +1006,12 @@ function ElementTransformControls({
               if (activeTextElement) patchTextElement(activeTextElement.id, patch);
             }}
             captionStyles={slide.textStyles}
+            theme={theme}
+            canvasUnit={canvasUnit}
+            inverted={!!slide.inverted}
+            connectedCanvas={connectedCanvas}
+            deckInverted={deckInverted}
+            activeSlideIndex={activeSlideIndex}
             onCaptionStylePatch={patchCaptionStyle}
             onCaptionStyleReset={resetCaptionStyle}
             onDeleteText={() => {
@@ -984,6 +1019,7 @@ function ElementTransformControls({
             }}
             presentation={activePresentation}
             device={device}
+            orientation={orientation}
             isDevice={activeId === "device" || activeId === "deviceSecondary" || isDeviceSlotElementId(activeId)}
             onAnglePreset={setAnglePreset}
             onDeviceModelChange={setDeviceModel}
@@ -1098,6 +1134,7 @@ function ResponsiveControls({
 
 function ActiveElementPanel({
   activeId,
+  slide,
   transform,
   textElement,
   locale,
@@ -1106,6 +1143,12 @@ function ActiveElementPanel({
   onTextChange,
   onTextPatch,
   captionStyles,
+  theme,
+  canvasUnit,
+  inverted,
+  connectedCanvas,
+  deckInverted,
+  activeSlideIndex,
   onCaptionStylePatch,
   onCaptionStyleReset,
   onDeleteText,
@@ -1115,12 +1158,14 @@ function ActiveElementPanel({
   onToggleLocked,
   presentation,
   device,
+  orientation,
   isDevice,
   onAnglePreset,
   onDeviceModelChange,
   onPresentationChange,
 }: {
   activeId: ElementId;
+  slide: Slide;
   transform: ElementTransform | undefined;
   textElement?: TextElement;
   locale: string;
@@ -1129,6 +1174,12 @@ function ActiveElementPanel({
   onTextChange: (value: string) => void;
   onTextPatch: (patch: Partial<TextElement>) => void;
   captionStyles?: Slide["textStyles"];
+  theme: Theme;
+  canvasUnit: number;
+  inverted: boolean;
+  connectedCanvas: boolean;
+  deckInverted: readonly boolean[];
+  activeSlideIndex: number;
   onCaptionStylePatch: (role: "label" | "headline", patch: Partial<TypographyStyle>) => void;
   onCaptionStyleReset: (role: "label" | "headline") => void;
   onDeleteText: () => void;
@@ -1138,6 +1189,7 @@ function ActiveElementPanel({
   onToggleLocked: () => void;
   presentation?: DevicePresentation;
   device: Device;
+  orientation: Orientation;
   isDevice: boolean;
   onAnglePreset: (preset: Exclude<DeviceAnglePreset, "custom">) => void;
   onDeviceModelChange: (model: DeviceModel) => void;
@@ -1210,6 +1262,9 @@ function ActiveElementPanel({
         <TextElementPanel
           element={textElement}
           locale={locale}
+          theme={theme}
+          canvasUnit={canvasUnit}
+          inverted={inverted}
           onTextChange={onTextChange}
           onTextPatch={onTextPatch}
         />
@@ -1218,6 +1273,14 @@ function ActiveElementPanel({
       {activeId === "caption" ? (
         <CaptionTypographyPanel
           styles={captionStyles}
+          theme={theme}
+          slide={slide}
+          device={device}
+          orientation={orientation}
+          connectedCanvas={connectedCanvas}
+          deckInverted={deckInverted}
+          activeSlideIndex={activeSlideIndex}
+          canvasUnit={canvasUnit}
           onPatch={onCaptionStylePatch}
           onReset={onCaptionStyleReset}
         />
@@ -1383,18 +1446,35 @@ function RigRange({
 function TextElementPanel({
   element,
   locale,
+  theme,
+  canvasUnit,
+  inverted,
   onTextChange,
   onTextPatch,
 }: {
   element: TextElement;
   locale: string;
+  theme: Theme;
+  canvasUnit: number;
+  inverted: boolean;
   onTextChange: (value: string) => void;
   onTextPatch: (patch: Partial<TextElement>) => void;
 }) {
   const text = element.text?.[locale] ?? pickText(element.text, locale);
-  const fontId = fontOptionId(element.fontFamily, "dm-sans");
+  const textDefaults = typographyForRole(theme.typography, "text");
+  const fontId = fontOptionId(element.fontFamily || textDefaults.family, "dm-sans");
+  const fallbackSize = canvasUnit * 0.06 * clampSizeScale(textDefaults.sizeScale);
+  const fontWeight = element.fontWeight ?? textDefaults.weight ?? 700;
+  const fontStyle = element.fontStyle ?? textDefaults.style ?? "normal";
+  const textDecoration = element.textDecoration ?? textDefaults.decoration ?? "none";
   const adaptiveColor = element.adaptiveColor !== false;
-  const decoration = element.textDecoration ?? "none";
+  const preferredColor = preferredTypographyColor("text", { color: element.color }, theme, inverted);
+  const renderedColor = effectiveTypographyColor(
+    "text",
+    { color: element.color, adaptiveColor },
+    theme,
+    inverted,
+  );
   return (
     <div className="space-y-2 rounded border bg-muted/30 p-2" aria-label="Text styling">
       <div className="space-y-1">
@@ -1413,22 +1493,28 @@ function TextElementPanel({
             type="number"
             min={12}
             max={400}
-            value={Math.round(element.fontSize || 72)}
-            onChange={(event) => onTextPatch({ fontSize: Number(event.target.value) || 72 })}
+            value={Math.round(element.fontSize ?? fallbackSize)}
+            onChange={(event) => onTextPatch({ fontSize: Number(event.target.value) || Math.round(fallbackSize) })}
             aria-label="Text size"
           />
         </div>
         <div className="space-y-1">
-          <Label className="text-[11px] text-muted-foreground">Color</Label>
+          <Label className="text-[11px] text-muted-foreground">Preferred color</Label>
           <Input
             type="color"
-            value={/^#[0-9a-f]{6}$/i.test(element.color || "") ? element.color! : "#171717"}
+            value={normalizeHex(preferredColor, inverted ? theme.fgAlt : theme.fg)}
             className="h-9 p-1"
             onChange={(event) => onTextPatch({ color: event.target.value })}
             aria-label="Text color"
           />
         </div>
       </div>
+      <ResolvedColorIndicator
+        label="Text"
+        preferredColor={preferredColor}
+        effectiveColors={[renderedColor]}
+        adaptiveColor={adaptiveColor}
+      />
       <div className="grid gap-2 sm:grid-cols-2">
         <div className="space-y-1">
           <Label className="text-[11px] text-muted-foreground">Font</Label>
@@ -1441,7 +1527,7 @@ function TextElementPanel({
         </div>
         <div className="space-y-1">
           <Label className="text-[11px] text-muted-foreground">Weight</Label>
-          <Select value={String(element.fontWeight || 700)} onValueChange={(value) => onTextPatch({ fontWeight: Number(value) })}>
+          <Select value={String(fontWeight)} onValueChange={(value) => onTextPatch({ fontWeight: Number(value) })}>
             <SelectTrigger aria-label="Text weight" className="h-8 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               {FONT_WEIGHT_OPTIONS.map((option) => <SelectItem key={option.value} value={String(option.value)}>{option.label}</SelectItem>)}
@@ -1453,22 +1539,22 @@ function TextElementPanel({
         <button
           type="button"
           aria-label="Bold text"
-          aria-pressed={(element.fontWeight ?? 700) >= 700}
-          onClick={() => onTextPatch({ fontWeight: (element.fontWeight ?? 700) >= 700 ? 500 : 700 })}
-          className={cn("rounded-md border px-2.5 py-1.5 text-xs", (element.fontWeight ?? 700) >= 700 ? "border-[hsl(var(--accent))]/70 bg-[hsl(var(--accent))]/10 font-bold" : "border-border/70 text-muted-foreground hover:text-foreground")}
+          aria-pressed={fontWeight >= 700}
+          onClick={() => onTextPatch({ fontWeight: fontWeight >= 700 ? 500 : 700 })}
+          className={cn("rounded-md border px-2.5 py-1.5 text-xs", fontWeight >= 700 ? "border-[hsl(var(--accent))]/70 bg-[hsl(var(--accent))]/10 font-bold" : "border-border/70 text-muted-foreground hover:text-foreground")}
         >
           Bold
         </button>
         <button
           type="button"
           aria-label="Italic text"
-          aria-pressed={element.fontStyle === "italic"}
-          onClick={() => onTextPatch({ fontStyle: element.fontStyle === "italic" ? "normal" : "italic" })}
-          className={cn("rounded-md border px-2.5 py-1.5 text-xs", element.fontStyle === "italic" ? "border-[hsl(var(--accent))]/70 bg-[hsl(var(--accent))]/10" : "border-border/70 text-muted-foreground hover:text-foreground")}
+          aria-pressed={fontStyle === "italic"}
+          onClick={() => onTextPatch({ fontStyle: fontStyle === "italic" ? "normal" : "italic" })}
+          className={cn("rounded-md border px-2.5 py-1.5 text-xs", fontStyle === "italic" ? "border-[hsl(var(--accent))]/70 bg-[hsl(var(--accent))]/10" : "border-border/70 text-muted-foreground hover:text-foreground")}
         >
           <span className="italic">Italic</span>
         </button>
-        <Select value={decoration} onValueChange={(value) => onTextPatch({ textDecoration: value as TextElement["textDecoration"] })}>
+        <Select value={textDecoration} onValueChange={(value) => onTextPatch({ textDecoration: value as TextElement["textDecoration"] })}>
           <SelectTrigger aria-label="Text decoration" className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="none">No decoration</SelectItem>
@@ -1508,15 +1594,107 @@ function TextElementPanel({
   );
 }
 
+function ResolvedColorIndicator({
+  label,
+  preferredColor,
+  effectiveColors,
+  adaptiveColor,
+}: {
+  label: string;
+  preferredColor: string;
+  effectiveColors: readonly string[];
+  adaptiveColor: boolean;
+}) {
+  const preferred = normalizeHex(preferredColor, "#131B2C");
+  const rendered = (effectiveColors.length ? effectiveColors : [preferred]).map((color) => normalizeHex(color, preferred));
+  const renderedValue = rendered.join(",");
+  const changed = adaptiveColor && rendered.some((color) => color !== preferred);
+  return (
+    <div className="mt-2 space-y-1 rounded-md border border-dashed bg-muted/20 px-2 py-1.5">
+      <div className="flex items-center justify-between gap-2 text-[9px] text-muted-foreground">
+        <span>{rendered.length > 1 ? `Rendered across ${rendered.length} screens` : "Rendered on this surface"}</span>
+        <span className="flex items-center gap-1.5">
+          <span
+            aria-label={`${label} rendered color`}
+            data-typography-effective-color={renderedValue}
+            data-color={renderedValue}
+            className="inline-block h-3.5 w-8 rounded-sm border border-foreground/15"
+            style={{ backgroundColor: rendered[0] }}
+          />
+          <code className="font-mono text-[9px] text-foreground/75">{rendered.join(" · ")}</code>
+        </span>
+      </div>
+      {changed ? (
+        <p className="text-[9px] leading-relaxed text-muted-foreground">
+          Auto contrast changes the saved preferred color only where this surface needs it.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function CaptionTypographyPanel({
   styles,
+  theme,
+  slide,
+  device,
+  orientation,
+  connectedCanvas,
+  deckInverted,
+  activeSlideIndex,
+  canvasUnit,
   onPatch,
   onReset,
 }: {
   styles?: Slide["textStyles"];
+  theme: Theme;
+  slide: Slide;
+  device: Device;
+  orientation: Orientation;
+  connectedCanvas: boolean;
+  deckInverted: readonly boolean[];
+  activeSlideIndex: number;
+  canvasUnit: number;
   onPatch: (role: "label" | "headline", patch: Partial<TypographyStyle>) => void;
   onReset: (role: "label" | "headline") => void;
 }) {
+  const { cW, cH } = getCanvas(device, orientation);
+  const unit = canvasUnit || Math.min(cW, cH);
+  const labelStyle = {
+    ...typographyForRole(theme.typography, "label"),
+    ...(styles?.label || {}),
+  };
+  const headlineStyle = {
+    ...typographyForRole(theme.typography, "headline"),
+    ...(styles?.headline || {}),
+  };
+  const labelPreferredColor = preferredTypographyColor("label", labelStyle, theme, !!slide.inverted);
+  const labelEffectiveColor = effectiveTypographyColor("label", labelStyle, theme, !!slide.inverted);
+  const headlinePreferredColor = preferredTypographyColor("headline", headlineStyle, theme, !!slide.inverted);
+  const headlineAdaptive = headlineStyle.adaptiveColor !== false;
+  const captionRect = getElementTransform(slide, device, orientation, "caption");
+  const inversionPattern = connectedCanvas && deckInverted.length ? deckInverted : [!!slide.inverted];
+  const captionX = connectedCanvas
+    ? activeSlideIndex * cW + (captionRect?.x || 0)
+    : captionRect?.x || 0;
+  const headlineContrast = headlineAdaptive && captionRect
+    ? captionContrastForRect(
+        theme,
+        inversionPattern,
+        cW,
+        captionX,
+        captionRect.width,
+        (_baseColor, segmentInverted) => effectiveTypographyColor(
+          "headline",
+          headlineStyle,
+          theme,
+          segmentInverted,
+        ),
+      )
+    : undefined;
+  const headlineEffectiveColors = headlineContrast?.colors?.length
+    ? headlineContrast.colors
+    : [effectiveTypographyColor("headline", headlineStyle, theme, !!slide.inverted)];
   return (
     <div className="space-y-2 rounded border bg-muted/30 p-2" aria-label="Caption typography">
       <div className="flex items-baseline justify-between gap-2">
@@ -1526,22 +1704,28 @@ function CaptionTypographyPanel({
       <CaptionRoleControl
         role="label"
         label="Label / eyebrow"
-        style={{ ...DEFAULT_TYPOGRAPHY.body, ...(styles?.label || {}) }}
-        fallbackSize={38}
+        style={labelStyle}
+        fallbackSize={unit * 0.028 * clampSizeScale(labelStyle.sizeScale)}
         fallbackFamily="dm-sans"
+        preferredColor={labelPreferredColor}
+        effectiveColors={[labelEffectiveColor]}
         onPatch={onPatch}
         onReset={onReset}
       />
       <CaptionRoleControl
         role="headline"
         label="Headline"
-        style={{ ...DEFAULT_TYPOGRAPHY.display, ...(styles?.headline || {}) }}
-        fallbackSize={122}
+        style={headlineStyle}
+        fallbackSize={unit * 0.092 * clampSizeScale(headlineStyle.sizeScale)}
         fallbackFamily="fraunces"
+        preferredColor={headlinePreferredColor}
+        effectiveColors={headlineEffectiveColors}
         onPatch={onPatch}
         onReset={onReset}
       />
-      <p className="text-[10px] leading-relaxed text-muted-foreground">Auto contrast keeps the accent and headline readable when this slide is light, dark or connected across seams.</p>
+      <p className="text-[10px] leading-relaxed text-muted-foreground">
+        Controls show the resolved theme/template values. Preferred colors are saved; rendered colors show the exact contrast result on this surface or across connected seams.
+      </p>
     </div>
   );
 }
@@ -1552,6 +1736,8 @@ function CaptionRoleControl({
   style,
   fallbackSize,
   fallbackFamily,
+  preferredColor,
+  effectiveColors,
   onPatch,
   onReset,
 }: {
@@ -1560,11 +1746,14 @@ function CaptionRoleControl({
   style: TypographyStyle;
   fallbackSize: number;
   fallbackFamily: string;
+  preferredColor: string;
+  effectiveColors: readonly string[];
   onPatch: (role: "label" | "headline", patch: Partial<TypographyStyle>) => void;
   onReset: (role: "label" | "headline") => void;
 }) {
   const fontId = fontOptionId(style.family, fallbackFamily);
   const adaptiveColor = style.adaptiveColor !== false;
+  const preferred = normalizeHex(preferredColor, "#131B2C");
   return (
     <div className="rounded-md bg-background/70 p-2 shadow-[0_0_0_1px_hsl(var(--border)/.55)]">
       <div className="mb-2 flex items-center justify-between gap-2">
@@ -1599,16 +1788,22 @@ function CaptionRoleControl({
           </Select>
         </div>
         <div className="space-y-1">
-          <Label className="text-[9px] text-muted-foreground">Color</Label>
+          <Label className="text-[9px] text-muted-foreground">Preferred color</Label>
           <Input
             type="color"
-            value={/^#[0-9a-f]{6}$/i.test(style.color || "") ? style.color! : "#17213A"}
+            value={preferred}
             onChange={(event) => onPatch(role, { color: event.target.value.toUpperCase() })}
             aria-label={`${label} color`}
             className="h-8 p-1"
           />
         </div>
       </div>
+      <ResolvedColorIndicator
+        label={label}
+        preferredColor={preferred}
+        effectiveColors={effectiveColors}
+        adaptiveColor={adaptiveColor}
+      />
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
         <button
           type="button"

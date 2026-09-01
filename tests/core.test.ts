@@ -31,6 +31,11 @@ import { getElementTransform, isCaptionContinuation } from "@/components/editor/
 import { ProjectStateSchema } from "@/lib/schema";
 import { validateProject } from "@/lib/validation";
 import { isReadOnlyRuntime } from "@/lib/runtime";
+import {
+  effectiveTypographyColor,
+  preferredTypographyColor,
+  typographyForRole,
+} from "@/lib/typography";
 import { hasExpandedLocalArtwork, shouldUseCheckedInDemo } from "@/lib/storage";
 import type { ProjectState } from "@/lib/types";
 import {
@@ -227,6 +232,34 @@ describe("StoreCanvas project contracts", () => {
     expect(adaptive).not.toBe(preferred);
     expect(contrastRatio(adaptive, surface)).toBeGreaterThanOrEqual(3);
     expect(accentForBackground(preferred, surface, "fixed")).toBe(preferred);
+  });
+
+  it("keeps preferred and rendered typography colors explicit and consistent", () => {
+    const theme = {
+      bg: "#F6F1E9",
+      bgAlt: "#111827",
+      fg: "#131B2C",
+      fgAlt: "#FFF9F0",
+      accent: "#FFAA4D",
+      accentMode: "adaptive" as const,
+    };
+    const style = { color: "#FFAA4D", adaptiveColor: true };
+    const preferred = preferredTypographyColor("label", style, theme, false);
+    const rendered = effectiveTypographyColor("label", style, theme, false);
+
+    expect(preferred).toBe("#FFAA4D");
+    expect(rendered).not.toBe(preferred);
+    expect(contrastRatio(rendered, theme.bg)).toBeGreaterThanOrEqual(3);
+    expect(effectiveTypographyColor("label", { ...style, adaptiveColor: false }, theme, false)).toBe(preferred);
+  });
+
+  it("resolves inspector role defaults from the active theme instead of hardcoded fonts", () => {
+    const resolved = typographyForRole({
+      body: { family: "manrope", weight: 500 },
+      display: { family: "fraunces", weight: 700 },
+    }, "label");
+
+    expect(resolved).toMatchObject({ family: "manrope", weight: 500 });
   });
 
   it("includes self-contained generated captures for the checked-in finance example", () => {

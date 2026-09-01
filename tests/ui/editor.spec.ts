@@ -572,6 +572,9 @@ test.describe("StoreCanvas editor", () => {
     await page.goto("/");
     await page.getByRole("button", { name: /^Text$/ }).click();
     await expect(page.getByLabel("Text styling")).toBeVisible();
+    await expect(page.getByLabel("Text font")).toContainText("Manrope");
+    await page.getByLabel("Text font").click();
+    await page.getByRole("option", { name: "Space Grotesk" }).click();
     await page.getByLabel("Text font").click();
     await page.getByRole("option", { name: "Manrope" }).click();
     await page.getByLabel("Text weight").click();
@@ -586,6 +589,14 @@ test.describe("StoreCanvas editor", () => {
 
     await page.locator('.store-canvas-well [data-caption-headline]').first().click();
     await expect(page.getByLabel("Caption typography")).toBeVisible();
+    await expect(page.getByLabel("Label / eyebrow font")).toContainText("Manrope");
+    await expect(page.getByLabel("Headline font")).toContainText("Fraunces");
+    const renderedHeadlineColor = await page.locator('.store-canvas-well [data-caption-headline]').first().getAttribute("data-caption-effective-color");
+    expect(renderedHeadlineColor).toBeTruthy();
+    await expect(page.locator('[aria-label="Headline rendered color"]')).toHaveAttribute(
+      "data-typography-effective-color",
+      renderedHeadlineColor!,
+    );
     await page.getByLabel("Headline italic").click();
     await expect.poll(async () => {
       const response = await page.request.get("/api/project");

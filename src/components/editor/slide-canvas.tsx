@@ -32,8 +32,12 @@ import { pickText } from "@/lib/locale";
 import { constraintFor, resolveResponsiveTransform } from "@/lib/constraints";
 import { resolveAssetPath } from "@/lib/asset-library";
 import { captionContrastForRect } from "@/lib/caption-contrast";
-import { accessibleColor, accentForBackground } from "@/lib/color";
-import { clampSizeScale, fontFamilyCss, typographyForRole } from "@/lib/typography";
+import {
+  clampSizeScale,
+  effectiveTypographyColor,
+  fontFamilyCss,
+  typographyForRole,
+} from "@/lib/typography";
 import {
   AndroidPhone,
   AndroidTabletL,
@@ -246,8 +250,6 @@ function Caption({
   contrastGradient?: string;
   onFocus?: () => void;
 }) {
-  const fg = inverted ? theme.fgAlt : theme.fg;
-  const surface = inverted ? theme.bgAlt : theme.bg;
   const labelStyle = {
     ...typographyForRole(theme.typography, "label"),
     ...slide.textStyles?.label,
@@ -257,14 +259,9 @@ function Caption({
     ...slide.textStyles?.headline,
   };
   const adaptiveLabel = labelStyle.adaptiveColor !== false;
-  const labelColor = adaptiveLabel
-    ? accentForBackground(labelStyle.color || theme.accent, surface, theme.accentMode)
-    : labelStyle.color || theme.accent;
-  const preferredHeadlineColor = headlineStyle.color || fg;
+  const labelColor = effectiveTypographyColor("label", labelStyle, theme, !!inverted);
   const adaptiveHeadline = headlineStyle.adaptiveColor !== false;
-  const singleHeadlineColor = adaptiveHeadline
-    ? accessibleColor(preferredHeadlineColor, surface, 4.5)
-    : preferredHeadlineColor;
+  const singleHeadlineColor = effectiveTypographyColor("headline", headlineStyle, theme, !!inverted);
   const headlineGradient = adaptiveHeadline ? contrastGradient : undefined;
   // Scale typography off the *shorter* dimension so landscape layouts don't
   // produce headlines so tall they overlap the device frame.
@@ -280,6 +277,7 @@ function Caption({
         dataAttributes={{
           "data-caption-label": "true",
           "data-accent-adaptive": adaptiveLabel ? "true" : "false",
+          "data-caption-effective-color": labelColor,
         }}
         style={{
           fontFamily: fontFamilyCss(labelStyle.family, "body"),
@@ -306,6 +304,9 @@ function Caption({
           "data-caption-headline": "true",
           "data-caption-contrast": headlineGradient ? "per-slot" : "single-slot",
           "data-headline-adaptive": adaptiveHeadline ? "true" : "false",
+          "data-caption-effective-color": headlineGradient
+            ? segmentColors?.join(",") || singleHeadlineColor
+            : singleHeadlineColor,
           ...(segmentColors?.length
             ? { "data-caption-segment-colors": segmentColors.join(",") }
             : {}),
@@ -1104,7 +1105,6 @@ function SlideElements({
     ...slide.textStyles?.headline,
   };
   const headlineAdaptive = headlineStyle.adaptiveColor !== false;
-  const headlinePreferredColor = headlineStyle.color;
   const captionContrast = captionRect
     ? headlineAdaptive
       ? captionContrastForRect(
@@ -1113,10 +1113,11 @@ function SlideElements({
           cW,
           screenX + captionRect.x,
           captionRect.width,
-          (_baseColor, segmentInverted) => accessibleColor(
-            headlinePreferredColor || (segmentInverted ? theme.fgAlt : theme.fg),
-            segmentInverted ? theme.bgAlt : theme.bg,
-            4.5,
+          (_baseColor, segmentInverted) => effectiveTypographyColor(
+            "headline",
+            headlineStyle,
+            theme,
+            segmentInverted,
           ),
         )
       : undefined
@@ -1256,10 +1257,14 @@ function SlideElements({
     const rotation = rect.rotation ?? 0;
     const zIndex = rect.zIndex ?? 5 + index;
     const textDefaults = typographyForRole(theme.typography, "text");
-    const preferredColor = textElement.color || (inverted ? theme.fgAlt : theme.fg);
-    const textColor = textElement.adaptiveColor !== false
-      ? accessibleColor(preferredColor, inverted ? theme.bgAlt : theme.bg, 4.5)
-      : preferredColor;
+    const textStyle = {
+      ...textDefaults,
+      family: textElement.fontFamily || textDefaults.family,
+      color: textElement.color,
+      adaptiveColor: textElement.adaptiveColor,
+    };
+    const preferredColor = textStyle.color || (inverted ? theme.fgAlt : theme.fg);
+    const textColor = effectiveTypographyColor("text", textStyle, theme, inverted);
     return (
       <Movable
         key={textElement.id}
@@ -1310,6 +1315,10 @@ function SlideElements({
             onChange={(value) => edit?.onTextElementTextChange?.(textElement.id, value)}
             onFocus={() => edit?.onSelectElement?.(elementId)}
             placeholder="Text"
+            dataAttributes={{
+              "data-text-effective-color": textColor,
+              "data-text-preferred-color": preferredColor,
+            }}
             style={{
               width: "100%",
               fontFamily: fontFamilyCss(textElement.fontFamily || textDefaults.family, "body"),
