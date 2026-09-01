@@ -328,10 +328,17 @@ export function hasExpandedLocalArtwork(cached: ProjectState | undefined, file: 
   if (cached.campaignSource.appId !== file.campaignSource.appId) return false;
   return Object.entries(file.slidesByDevice).some(([device, fileSlides]) => {
     const cachedSlides = cached.slidesByDevice[device as keyof ProjectState["slidesByDevice"]] || [];
+    const cachedMaxSpan = cachedSlides.reduce(
+      (max, slide) => Math.max(max, ...(slide.connectedArtworks || []).map((artwork) => artwork.spanSlots || 1)),
+      1,
+    );
     return fileSlides.some((fileSlide, index) =>
       (fileSlide.connectedArtworks || []).some((fileArtwork) => {
         const cachedArtwork = cachedSlides[index]?.connectedArtworks?.find((candidate) => candidate.id === fileArtwork.id);
-        return !!cachedArtwork && fileArtwork.spanSlots > (cachedArtwork.spanSlots || 2);
+        // The generated artwork id may change between local runs. Compare the
+        // deck's largest span as a fallback so a refreshed 10-screen panorama
+        // still wins over an older 2-screen browser copy.
+        return fileArtwork.spanSlots > Math.max(cachedArtwork?.spanSlots || 1, cachedMaxSpan);
       }),
     );
   });

@@ -121,6 +121,7 @@ test.describe("StoreCanvas editor", () => {
     cached.slidesByDevice.iphone[0].connectedArtworks[0].transform.width = 2640;
 
     const expanded = JSON.parse(JSON.stringify(cached));
+    expanded.slidesByDevice.iphone[0].connectedArtworks[0].id = "local-campaign-panorama";
     expanded.slidesByDevice.iphone[0].connectedArtworks[0].spanSlots = 10;
     expanded.slidesByDevice.iphone[0].connectedArtworks[0].transform.width = 13200;
 
@@ -149,7 +150,7 @@ test.describe("StoreCanvas editor", () => {
       });
     });
     await page.reload();
-    await expect(page.locator('.store-canvas-well [data-connected-artwork="demo-opening-orbit"]').first()).toHaveAttribute("data-artwork-span", "10");
+    await expect(page.locator('.store-canvas-well [data-connected-artwork="local-campaign-panorama"]').first()).toHaveAttribute("data-artwork-span", "10");
   });
 
   test("configured project files override a stale browser project on reload", async ({ page }) => {

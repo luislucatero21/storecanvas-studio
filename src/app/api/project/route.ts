@@ -13,6 +13,12 @@ import type { ProjectState } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
+function noStoreJson(body: unknown, init?: ResponseInit) {
+  const response = NextResponse.json(body, init);
+  response.headers.set("Cache-Control", "no-store, max-age=0");
+  return response;
+}
+
 function filePath() {
   return projectFilePath();
 }
@@ -29,12 +35,12 @@ export async function GET(request: Request) {
   const fileAvailable = isProjectFileConfigured() || isLocalPrivateProjectAvailable();
   const localProject = browserOnly && (!preferFile || !fileAvailable) ? getLocalProject() : null;
   if (localProject) {
-    return NextResponse.json({ ok: true, state: localProject, persisted: "browser", source: "browser" });
+    return noStoreJson({ ok: true, state: localProject, persisted: "browser", source: "browser" });
   }
   try {
     const raw = await fs.readFile(filePath(), "utf8");
     const parsed = JSON.parse(raw);
-    return NextResponse.json({
+    return noStoreJson({
       ok: true,
       state: parsed,
       persisted: !isReadOnlyRuntime() && isProjectFileConfigured() ? "file" : "browser",
@@ -43,14 +49,14 @@ export async function GET(request: Request) {
   } catch (e) {
     const code = (e as NodeJS.ErrnoException).code;
     if (code === "ENOENT") {
-      return NextResponse.json({
+      return noStoreJson({
         ok: true,
         state: source() === "demo-file" ? CHECKED_IN_EXAMPLE_PROJECT : null,
         persisted: !isReadOnlyRuntime() && isProjectFileConfigured() ? "file" : "browser",
         source: source(),
       });
     }
-    return NextResponse.json(
+    return noStoreJson(
       { ok: false, error: e instanceof Error ? e.message : String(e) },
       { status: 500 },
     );
@@ -62,12 +68,12 @@ export async function POST(req: Request) {
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
+    return noStoreJson({ ok: false, error: "Invalid JSON" }, { status: 400 });
   }
   try {
     const parsed = ProjectStateSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
+      return noStoreJson(
         {
           ok: false,
           error: "Project does not match the StoreCanvas schema",
@@ -78,16 +84,16 @@ export async function POST(req: Request) {
     }
     const pretty = JSON.stringify(parsed.data, null, 2) + "\n";
     if (isReadOnlyRuntime()) {
-      return NextResponse.json({ ok: true, persisted: "browser" });
+      return noStoreJson({ ok: true, persisted: "browser" });
     }
     if (!isProjectFileConfigured()) {
       setLocalProject(parsed.data as ProjectState);
-      return NextResponse.json({ ok: true, persisted: "browser" });
+      return noStoreJson({ ok: true, persisted: "browser" });
     }
     await fs.writeFile(filePath(), pretty, "utf8");
-    return NextResponse.json({ ok: true, persisted: "file" });
+    return noStoreJson({ ok: true, persisted: "file" });
   } catch (e) {
-    return NextResponse.json(
+    return noStoreJson(
       { ok: false, error: e instanceof Error ? e.message : String(e) },
       { status: 500 },
     );

@@ -46,7 +46,13 @@ const ActionSchema = z.enum([
 type Body = Record<string, unknown>;
 
 function errorResponse(message: string, status = 400) {
-  return NextResponse.json({ ok: false, error: message }, { status });
+  return noStoreJson({ ok: false, error: message }, { status });
+}
+
+function noStoreJson(body: unknown, init?: ResponseInit) {
+  const response = NextResponse.json(body, init);
+  response.headers.set("Cache-Control", "no-store, max-age=0");
+  return response;
 }
 
 function bodyRecord(value: unknown): Body | null {
@@ -119,7 +125,7 @@ function catalog() {
 export async function GET(request: Request) {
   const view = new URL(request.url).searchParams.get("view") || "catalog";
   if (view !== "catalog") return errorResponse(`Unknown agent view: ${view}`, 404);
-  return NextResponse.json({ ok: true, ...catalog() });
+  return noStoreJson({ ok: true, ...catalog() });
 }
 
 export async function POST(request: Request) {
@@ -134,18 +140,18 @@ export async function POST(request: Request) {
   const action = actionOf(body);
   if (!action) return errorResponse("Unknown agent action.");
 
-  if (action === "catalog") return NextResponse.json({ ok: true, ...catalog() });
+  if (action === "catalog") return noStoreJson({ ok: true, ...catalog() });
 
   const project = projectOf(body.project);
   if ("error" in project) return errorResponse(project.error);
 
   if (action === "inspect") {
-    return NextResponse.json({ ok: true, summary: summarizeProject(project) });
+    return noStoreJson({ ok: true, summary: summarizeProject(project) });
   }
 
   if (action === "validate") {
     const strict = body.strict !== false;
-    return NextResponse.json({
+    return noStoreJson({
       ok: true,
       summary: summarizeProject(project),
       validation: validateProject(project, { strict }),
@@ -169,7 +175,7 @@ export async function POST(request: Request) {
         reflowConnectedArtwork: body.reflowConnectedArtwork !== false,
         paletteId: paletteId || undefined,
       });
-      return NextResponse.json({
+      return noStoreJson({
         ok: true,
         action,
         state,
@@ -245,7 +251,7 @@ export async function POST(request: Request) {
       artworkId: resolvedArtworkId,
       assetRef: assetRef || undefined,
     });
-    return NextResponse.json({
+    return noStoreJson({
       ok: true,
       action,
       state,

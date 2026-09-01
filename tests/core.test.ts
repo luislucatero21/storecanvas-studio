@@ -97,6 +97,22 @@ describe("StoreCanvas project contracts", () => {
     };
 
     expect(hasExpandedLocalArtwork(cached, file)).toBe(true);
+    const renamedArtworkFile: ProjectState = {
+      ...file,
+      slidesByDevice: {
+        ...file.slidesByDevice,
+        iphone: file.slidesByDevice.iphone.map((slide, index) => index === 0
+          ? {
+              ...slide,
+              connectedArtworks: slide.connectedArtworks?.map((artwork) => ({
+                ...artwork,
+                id: "new-ten-screen-panorama",
+              })),
+            }
+          : slide),
+      },
+    };
+    expect(hasExpandedLocalArtwork(cached, renamedArtworkFile)).toBe(true);
     expect(hasExpandedLocalArtwork(file, file)).toBe(false);
     expect(hasExpandedLocalArtwork({ ...cached, campaignSource: undefined }, file)).toBe(false);
   });
