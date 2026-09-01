@@ -26,7 +26,7 @@ import { setCopyLinking, writeLinkedCopy } from "@/lib/copy-sync";
 import { applyDeviceAngle, createDeviceSlot, setDeviceSlotLinking, setDeviceSlotSpan } from "@/lib/device-presentation";
 import { exportFileName, exportPath, slugify } from "@/lib/export-naming";
 import { captionContrastForRect, captionSegmentColors, captionTextGradient } from "@/lib/caption-contrast";
-import { getElementTransform } from "@/components/editor/slide-canvas";
+import { getElementTransform, isCaptionContinuation } from "@/components/editor/slide-canvas";
 import { ProjectStateSchema } from "@/lib/schema";
 import { validateProject } from "@/lib/validation";
 import { isReadOnlyRuntime } from "@/lib/runtime";
@@ -774,6 +774,18 @@ describe("StoreCanvas project contracts", () => {
     expect(slides[4]).toMatchObject({ captionSpan: 2, assetRef: "capture:ledgerly-goals" });
     expect(messageSpread).toMatchObject({ id: "demo-8-routine", captionSpan: 2 });
     expect(slides.every((slide: { layout: string; deviceSlots?: unknown[] }) => slide.layout !== "two-devices" && !slide.deviceSlots)).toBe(true);
+  });
+
+  it("identifies repeated captions as continuations instead of new visual layers", () => {
+    const slides = [
+      { ...DEFAULT_PROJECT.slidesByDevice.iphone[0], captionSpan: 2 as const, label: { en: "STORY" }, headline: { en: "One message." } },
+      { ...DEFAULT_PROJECT.slidesByDevice.iphone[1], captionSpan: 2 as const, label: { en: "STORY" }, headline: { en: "One message." } },
+      { ...DEFAULT_PROJECT.slidesByDevice.iphone[2], label: { en: "NEXT" }, headline: { en: "A new message." } },
+    ];
+
+    expect(isCaptionContinuation(slides, 0, "en")).toBe(false);
+    expect(isCaptionContinuation(slides, 1, "en")).toBe(true);
+    expect(isCaptionContinuation(slides, 2, "en")).toBe(false);
   });
 
   it("resolves and saves a generated OpenAI artwork without persisting the personal key", async () => {

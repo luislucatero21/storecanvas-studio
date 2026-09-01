@@ -514,6 +514,35 @@ function defaultsForCaptionSpan(slide: Slide, defaults: LayoutRects, cW: number)
   };
 }
 
+/**
+ * A connected caption may be serialized on every slot it crosses so each
+ * slot can still be edited and localized independently. Only its first slot
+ * should paint the visual layer, though; the following copies are metadata
+ * for the shared message and would otherwise render on top of one another.
+ */
+export function isCaptionContinuation(
+  slides: readonly Slide[],
+  index: number,
+  locale: string,
+) {
+  const current = slides[index];
+  if (!current || index === 0) return false;
+
+  const currentLabel = pickText(current.label, locale);
+  const currentHeadline = pickText(current.headline, locale);
+  const previous = slides[index - 1];
+  const previousSpan = previous?.captionSpan || 1;
+
+  if (!previous || previousSpan <= 1) {
+    return false;
+  }
+
+  return (
+    pickText(previous.label, locale) === currentLabel &&
+    pickText(previous.headline, locale) === currentHeadline
+  );
+}
+
 export function getElementTransform(
   slide: Slide,
   device: Device,
@@ -787,6 +816,7 @@ export function DeckCanvas({
             allowCrossScreen={connectedCanvas}
             deckInverted={connectedCanvas ? slides.map((segment) => !!segment.inverted) : [!!slide.inverted]}
             artworkSegmentInverted={artworkSegmentInverted}
+            showCaption={!connectedCanvas || !isCaptionContinuation(slides, index, locale)}
           />
         );
         if (connectedCanvas) return elements;
@@ -991,6 +1021,7 @@ function SlideElements({
   allowCrossScreen,
   deckInverted,
   artworkSegmentInverted,
+  showCaption = true,
 }: {
   slide: Slide;
   device: Device;
@@ -1009,6 +1040,7 @@ function SlideElements({
   allowCrossScreen: boolean;
   deckInverted: readonly boolean[];
   artworkSegmentInverted?: readonly boolean[];
+  showCaption?: boolean;
 }) {
   const isHidden = (id: ElementId) => slide.hiddenElements?.includes(id) ?? false;
   const isLocked = (id: ElementId) => slide.lockedElements?.includes(id) ?? false;
@@ -1044,7 +1076,7 @@ function SlideElements({
   }
 
   function renderCaption() {
-    if (!captionRect || isHidden("caption")) return null;
+    if (!showCaption || !captionRect || isHidden("caption")) return null;
     const saved = slide.transforms?.caption;
     const rotation = saved?.rotation ?? 0;
     const zIndex = saved?.zIndex ?? 4;

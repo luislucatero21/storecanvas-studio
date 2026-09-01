@@ -396,6 +396,20 @@ test.describe("StoreCanvas editor", () => {
     await expect(page.locator('[data-device-angle="tilt-left"]').first()).toHaveAttribute("data-device-rig", "optical");
   });
 
+  test("paints each shared demo caption once across its connected slots", async ({ page }) => {
+    await gotoRender(page, "/render?source=example&device=iphone&locale=en-US&size=1320x2868");
+
+    for (const headline of [
+      "Know where your money is going.",
+      "Make confident moves.",
+      "Your money stays yours.",
+    ]) {
+      await expect(
+        page.locator("[data-render-slide] [data-caption-headline]").filter({ hasText: headline }),
+      ).toHaveCount(10);
+    }
+  });
+
   test("uses the full connected deck when rendering sidebar thumbnails", async ({ page }) => {
     await page.goto("/");
     const secondScreen = page.getByRole("button", { name: /Screen 2 ·/ });
