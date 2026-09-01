@@ -121,8 +121,8 @@ importers:
         specifier: 3.2.7
         version: 3.2.7(@types/node@26.4.0)(jiti@1.21.7)(jsdom@30.0.1)(lightningcss@1.33.0)
       zod:
-        specifier: 3.23.8
-        version: 3.23.8
+        specifier: 4.5.2
+        version: 4.5.2
 
 packages:
 
@@ -2497,8 +2497,8 @@ packages:
   xmlchars@2.2.0:
     resolution: {integrity: sha512-JZnDKK8B0RCDw84FNdDAIpZK+JuJw+s7Lz8nksI7SIuU3UXJJslUthsi+uWBUYOwPFwW7W7PRLRfUKpxjtjFCw==}
 
-  zod@3.23.8:
-    resolution: {integrity: sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==}
+  zod@4.5.2:
+    resolution: {integrity: sha512-XkYXCol10+ba/6F/cueWV+TezUeOqXW0hdeJt5CdXjTYeAgAQg5N03RQdJ80mhfFE72+pblvYMW4wy2Qp4Qbrg==}
 
 snapshots:
 
@@ -4523,4 +4523,4 @@ snapshots:
 
   xmlchars@2.2.0: {}
 
-  zod@3.23.8: {}
+  zod@4.5.2: {}
