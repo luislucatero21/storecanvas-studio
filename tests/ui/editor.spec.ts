@@ -107,6 +107,34 @@ test.describe("StoreCanvas editor", () => {
     await expect(page.getByRole("button", { name: "Project menu" })).toContainText("Local campaign");
   });
 
+  test("configured project files override a stale browser project on reload", async ({ page }) => {
+    await page.goto("/");
+    const projectMenu = page.getByRole("button", { name: "Project menu" });
+    await projectMenu.click();
+    await page.getByLabel("Import project JSON").setInputFiles({
+      name: "cached-campaign.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify({ ...baseline, appName: "Cached campaign" })),
+    });
+    await expect(page.getByLabel("App name")).toHaveValue("Cached campaign");
+
+    const configuredCampaign = { ...baseline, appName: "Configured campaign" };
+    await page.route("**/api/project", async (route) => {
+      if (route.request().method() !== "GET") {
+        await route.continue();
+        return;
+      }
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true, state: configuredCampaign, persisted: "browser", source: "configured-file" }),
+      });
+    });
+    await page.reload();
+
+    await expect(page.getByLabel("App name")).toHaveValue("Configured campaign");
+    await expect(page.getByRole("button", { name: "Project menu" })).toContainText("Configured campaign");
+  });
+
   test("restores the active local project after reload without importing again", async ({ page }) => {
     await page.goto("/");
     const projectMenu = page.getByRole("button", { name: "Project menu" });
