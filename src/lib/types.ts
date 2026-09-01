@@ -52,7 +52,9 @@ export type DevicePresentation = {
   deviceModel?: DeviceModel;
 };
 
-export type SlotSpan = 1 | 2 | 3;
+/** Number of adjacent screen slots an element may intentionally span. */
+export const SLOT_SPAN_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
+export type SlotSpan = typeof SLOT_SPAN_OPTIONS[number];
 
 export type DeviceSlot = {
   id: string;

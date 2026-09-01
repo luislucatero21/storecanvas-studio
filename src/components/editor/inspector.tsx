@@ -70,6 +70,7 @@ import type {
   TextElement,
   SlotSpan,
 } from "@/lib/types";
+import { SLOT_SPAN_OPTIONS } from "@/lib/types";
 import { ScreenshotPicker } from "./screenshot-picker";
 import { getCanvas, getElementTransform } from "./slide-canvas";
 
@@ -84,6 +85,8 @@ type Props = {
   onSelectElement: (id: ElementId | null) => void;
   assets?: AssetLibrary;
   onAssetLibraryChange?: (assets: AssetLibrary) => void;
+  maxArtworkSpan?: number;
+  artworkTonePattern?: Array<"light" | "dark">;
 };
 
 const ELEMENT_LABEL: Record<BuiltInElementId, string> = {
@@ -103,6 +106,8 @@ export function Inspector({
   onSelectElement,
   assets,
   onAssetLibraryChange,
+  maxArtworkSpan,
+  artworkTonePattern,
 }: Props) {
   const isFeatureGraphic = device === "feature-graphic" || slide.layout === "feature-graphic";
   const isNoDevice = slide.layout === "no-device";
@@ -286,13 +291,15 @@ export function Inspector({
         )}
 
         {!isFeatureGraphic ? (
-          <ConnectedArtworkPanel
-            slide={slide}
-            device={device}
-            orientation={orientation}
-            onChange={onChange}
-            onSelectElement={onSelectElement}
-          />
+              <ConnectedArtworkPanel
+                slide={slide}
+                device={device}
+                orientation={orientation}
+                maxArtworkSpan={maxArtworkSpan}
+                artworkTonePattern={artworkTonePattern}
+                onChange={onChange}
+                onSelectElement={onSelectElement}
+              />
         ) : null}
 
         {!isFeatureGraphic && !isNoDevice ? (
@@ -334,12 +341,16 @@ function ConnectedArtworkPanel({
   slide,
   device,
   orientation,
+  maxArtworkSpan = 10,
+  artworkTonePattern = [],
   onChange,
   onSelectElement,
 }: {
   slide: Slide;
   device: Device;
   orientation: Orientation;
+  maxArtworkSpan?: number;
+  artworkTonePattern?: Array<"light" | "dark">;
   onChange: (patch: Partial<Slide>) => void;
   onSelectElement: (id: ElementId | null) => void;
 }) {
@@ -347,6 +358,7 @@ function ConnectedArtworkPanel({
   const [prompt, setPrompt] = React.useState("A calm editorial sunrise ribbon with soft indigo and coral forms, generous negative space, premium wellness campaign photography direction");
   const [generatingId, setGeneratingId] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const availableSpan = Math.max(1, Math.min(10, maxArtworkSpan));
 
   function patchArtwork(id: string, patch: Partial<ConnectedArtwork>) {
     onChange({
@@ -370,7 +382,17 @@ function ConnectedArtworkPanel({
       const response = await fetch("/api/ai/image", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ provider: "openai", apiKey, model: "gpt-image-2", prompt }),
+        body: JSON.stringify({
+          provider: "openai",
+          apiKey,
+          model: "gpt-image-2",
+          prompt,
+          spanSlots: artwork.spanSlots,
+          tone: new Set(artworkTonePattern.slice(0, artwork.spanSlots)).size > 1
+            ? "mixed"
+            : artworkTonePattern[0] || (slide.inverted ? "dark" : "light"),
+          tonePattern: artworkTonePattern.slice(0, artwork.spanSlots),
+        }),
       });
       const body = await response.json() as { ok?: boolean; path?: string; error?: string };
       if (!response.ok || !body.ok || !body.path) throw new Error(body.error || "Image generation failed");
@@ -387,7 +409,7 @@ function ConnectedArtworkPanel({
       <div className="flex items-start justify-between gap-3">
         <div>
           <Label className="flex items-center gap-1.5 text-xs font-semibold"><ImagePlus className="h-3.5 w-3.5" /> Connected artwork</Label>
-          <p className="mt-0.5 text-[10px] leading-relaxed text-muted-foreground">One image crosses the seam; phones and copy stay independent.</p>
+          <p className="mt-0.5 text-[10px] leading-relaxed text-muted-foreground">One AI image can span the selected screens; phones and copy stay independent.</p>
         </div>
         <Button type="button" variant="outline" size="sm" className="h-7 shrink-0 px-2 text-[10px]" onClick={addArtwork} aria-label="Add connected artwork">
           <Plus className="h-3.5 w-3.5" /> Add
@@ -401,23 +423,37 @@ function ConnectedArtworkPanel({
           </summary>
           <div className="mt-2 space-y-2 border-t border-border/60 pt-2">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] text-muted-foreground">Connected width</span>
-              <div className="flex gap-1">
-                {([2, 3] as SlotSpan[]).map((span) => (
-                  <Button key={span} type="button" variant={artwork.spanSlots === span ? "secondary" : "ghost"} size="sm" className="h-7 min-w-7 px-2 text-[10px]" onClick={() => patchArtwork(artwork.id, fitConnectedArtwork(artwork, device, orientation, span))} aria-label={`Set connected artwork ${index + 1} to ${span} screens`} aria-pressed={artwork.spanSlots === span}>{span}×</Button>
-                ))}
-              </div>
+              <span className="text-[10px] text-muted-foreground">Screens covered</span>
+              <Select
+                value={String(artwork.spanSlots)}
+                onValueChange={(value) => {
+                  const span = Number(value);
+                  if (!SLOT_SPAN_OPTIONS.includes(span as SlotSpan)) return;
+                  patchArtwork(artwork.id, fitConnectedArtwork(artwork, device, orientation, span as SlotSpan));
+                }}
+              >
+                <SelectTrigger className="h-8 w-32 text-[10px]" aria-label={`Set connected artwork ${index + 1} span`}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SLOT_SPAN_OPTIONS
+                    .filter((span) => span <= availableSpan || span === artwork.spanSlots)
+                    .map((span) => (
+                      <SelectItem key={span} value={String(span)}>{span} screen{span === 1 ? "" : "s"}</SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
             </div>
             <ScreenshotPicker label="Panorama / background" value={artwork.image} onChange={(image) => patchArtwork(artwork.id, { image, assetRef: undefined })} />
             <div className="rounded-md border border-dashed border-border/70 bg-muted/25 p-2.5">
               <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"><WandSparkles className="h-3.5 w-3.5 text-[hsl(var(--accent))]" /> Generate seam artwork</div>
               <Textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} rows={3} aria-label={`Connected artwork ${index + 1} prompt`} />
               <div className="mt-2 grid grid-cols-[110px_1fr] gap-2">
-                <span className="flex h-8 items-center rounded-md border bg-muted/35 px-2 text-[10px] font-medium">OpenAI · own key</span>
+                <span className="flex h-8 items-center rounded-md border bg-muted/35 px-2 text-[10px] font-medium">OpenAI · API key</span>
                 <Input type="password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder="Personal API key" aria-label="Artwork OpenAI API key" className="h-8 text-xs" autoComplete="off" />
               </div>
               <div className="mt-2 flex items-center justify-between gap-2">
-                <p className="text-[9px] text-muted-foreground">Keys are sent per request and never stored in the project.</p>
+                <p className="text-[9px] text-muted-foreground">The key is sent per request; it is never stored. Generation covers {artwork.spanSlots} screen{artwork.spanSlots === 1 ? "" : "s"}.</p>
                 <Button type="button" size="sm" className="h-7 px-2 text-[10px]" disabled={generatingId !== null || prompt.trim().length < 12 || !apiKey.trim()} onClick={() => generate(artwork)} aria-label={`Generate connected artwork ${index + 1}`}>
                   <WandSparkles className="h-3.5 w-3.5" /> {generatingId === artwork.id ? "Generating…" : "Generate"}
                 </Button>

@@ -72,6 +72,11 @@ export function ScreenshotEditor() {
   const currentSlides = state.slidesByDevice[state.device] || [];
   const activeSlide =
     currentSlides.find((s) => s.id === activeSlideId) || currentSlides[0] || null;
+  const activeSlideIndex = Math.max(0, currentSlides.findIndex((slide) => slide.id === activeSlide?.id));
+  const maxArtworkSpan = Math.max(1, Math.min(10, currentSlides.length - activeSlideIndex));
+  const artworkTonePattern = currentSlides
+    .slice(activeSlideIndex, activeSlideIndex + maxArtworkSpan)
+    .map((slide): "light" | "dark" => (slide.inverted ? "dark" : "light"));
   const theme = applyBrandTokens(themeById(state.themeId), state.brand);
   const assetLibrary = React.useMemo(() => buildAssetLibrary(state), [state]);
   const validation = React.useMemo(() => validateProject(state, { strict: true }), [state]);
@@ -794,6 +799,8 @@ export function ScreenshotEditor() {
               onLocalizedChange={(key, value) => patchLocalized(activeSlide, key, value)}
               assets={assetLibrary}
               onAssetLibraryChange={(assets) => setState((p) => ({ ...p, assets }))}
+              maxArtworkSpan={maxArtworkSpan}
+              artworkTonePattern={artworkTonePattern}
               onSelectElement={(elementId) =>
                 setSelectedElement(
                   elementId ? { slideId: activeSlide.id, elementId } : null,

@@ -15,7 +15,7 @@ import {
   upsertLocalProject,
   type ProjectLibrary,
 } from "./project-library";
-import type { ConnectedArtwork, Device, DeviceModel, DevicePresentation, DeviceSlot, ElementTransform, ProjectState, Slide, TextElement } from "./types";
+import type { ConnectedArtwork, Device, DeviceModel, DevicePresentation, DeviceSlot, ElementTransform, ProjectState, Slide, SlotSpan, TextElement } from "./types";
 
 const HISTORY_LIMIT = 50;
 // Coalesce rapid edits (typing, slider drags) into a single undo step.
@@ -83,6 +83,12 @@ function cleanPresentation(value: unknown): DevicePresentation | undefined {
   };
 }
 
+function cleanSlotSpan(value: unknown, fallback: SlotSpan): SlotSpan {
+  return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 10
+    ? value as SlotSpan
+    : fallback;
+}
+
 function cleanDeviceSlot(value: unknown): DeviceSlot | undefined {
   if (!value || typeof value !== "object") return undefined;
   const raw = value as Partial<DeviceSlot>;
@@ -90,7 +96,7 @@ function cleanDeviceSlot(value: unknown): DeviceSlot | undefined {
   const transform = cleanTransform(raw.transform);
   if (!transform) return undefined;
   const presentation = cleanPresentation(raw.presentation);
-  const spanSlots = raw.spanSlots === 2 || raw.spanSlots === 3 ? raw.spanSlots : 1;
+  const spanSlots = cleanSlotSpan(raw.spanSlots, 1);
   return {
     id: raw.id,
     screenshot: raw.screenshot,
@@ -113,7 +119,7 @@ function cleanConnectedArtwork(value: unknown): ConnectedArtwork | undefined {
     id: raw.id,
     image: raw.image,
     transform,
-    spanSlots: raw.spanSlots === 3 ? 3 : 2,
+    spanSlots: cleanSlotSpan(raw.spanSlots, 2),
     ...(typeof raw.assetRef === "string" && raw.assetRef.trim() ? { assetRef: raw.assetRef } : {}),
     ...(typeof raw.opacity === "number" && Number.isFinite(raw.opacity) ? { opacity: Math.max(0, Math.min(1, raw.opacity)) } : {}),
   };
@@ -122,6 +128,7 @@ function cleanConnectedArtwork(value: unknown): ConnectedArtwork | undefined {
 // Migrate older projects into the current schema while keeping legacy decks
 // visually stable until they explicitly opt into connected canvas.
 function migrateSlide(slide: Slide): Slide {
+  const captionSpan = cleanSlotSpan(slide.captionSpan, 1);
   const transforms = slide.transforms
     ? Object.fromEntries(
         Object.entries(slide.transforms)
@@ -155,7 +162,7 @@ function migrateSlide(slide: Slide): Slide {
     ...(deviceSlots && deviceSlots.length > 0 ? { deviceSlots } : { deviceSlots: undefined }),
     ...(connectedArtworks && connectedArtworks.length > 0 ? { connectedArtworks } : { connectedArtworks: undefined }),
     ...(presentations && Object.keys(presentations).length > 0 ? { presentations } : { presentations: undefined }),
-    captionSpan: slide.captionSpan === 2 || slide.captionSpan === 3 ? slide.captionSpan : undefined,
+    captionSpan: captionSpan > 1 ? captionSpan : undefined,
   };
 }
 
