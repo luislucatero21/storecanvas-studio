@@ -7,9 +7,15 @@ export const ArtworkImageRequestSchema = z.object({
   apiKey: z.string().trim().optional(),
   model: z.string().trim().min(1).default("gpt-image-2"),
   prompt: z.string().trim().min(12).max(2400),
+  spanSlots: z.number().int().min(1).max(10).default(2),
+  tone: z.enum(["light", "dark", "mixed"]).default("mixed"),
+  tonePattern: z.array(z.enum(["light", "dark"])).max(10).optional(),
 }).superRefine((value, context) => {
   if (value.provider === "openai" && !value.apiKey) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ["apiKey"], message: "Add a personal OpenAI API key." });
+  }
+  if (value.tonePattern && value.tonePattern.length > value.spanSlots) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["tonePattern"], message: "Tone pattern cannot exceed the selected screen span." });
   }
 });
 
@@ -33,6 +39,18 @@ export function resolveArtworkProviderRequest(
 ): ArtworkProviderRequest {
   const input = ArtworkImageRequestSchema.parse(raw);
   return { endpoint: "https://api.openai.com/v1/images/generations", apiKey: input.apiKey!, model: input.model };
+}
+
+/** Builds the provider prompt without ever including the user's API key. */
+export function buildArtworkPrompt(raw: ArtworkImageRequest): string {
+  const input = ArtworkImageRequestSchema.parse(raw);
+  const pattern = input.tonePattern?.slice(0, input.spanSlots);
+  const toneGuidance = pattern?.length
+    ? `Preserve this surface rhythm from left to right: ${pattern.map((tone, index) => `slot ${index + 1} ${tone}`).join(", ")}. Make each transition soft and intentional.`
+    : input.tone === "mixed"
+      ? "Use a gentle light-to-dark rhythm that remains compatible with alternating light and inverted template slides."
+      : `Keep the whole artwork in a ${input.tone} tonal register that supports the selected template.`;
+  return `${input.prompt}\n\nCreate one continuous, text-free advertising artwork intended to span ${input.spanSlots} adjacent portrait App Store screenshots. Keep the visual flow continuous across every slot boundary, leave useful negative space for real device mockups and headline overlays, and preserve the chosen template's light/dark rhythm. ${toneGuidance} Do not draw phones, UI, logos, lettering, badges or watermarks.`;
 }
 
 async function providerError(response: Response) {
@@ -65,7 +83,7 @@ export async function requestArtworkImage(
       headers: { "content-type": "application/json", Authorization: `Bearer ${provider.apiKey}` },
       body: JSON.stringify({
         model: provider.model,
-        prompt: `${input.prompt}\n\nCreate one continuous, text-free advertising artwork intended to span two adjacent portrait App Store screenshots. Keep the central seam visually continuous and leave useful negative space for real device mockups and headline overlays. Do not draw phones, UI, logos, lettering, badges or watermarks.`,
+        prompt: buildArtworkPrompt(input),
         size: "1536x1024",
         quality: "high",
         output_format: "png",

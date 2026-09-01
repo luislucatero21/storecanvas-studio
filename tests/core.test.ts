@@ -9,7 +9,7 @@ import {
   validateAiRequest,
 } from "@/lib/ai";
 import { requestAiProposal } from "@/lib/ai-server";
-import { requestArtworkImage, resolveArtworkProviderRequest } from "@/lib/artwork-ai-server";
+import { buildArtworkPrompt, requestArtworkImage, resolveArtworkProviderRequest } from "@/lib/artwork-ai-server";
 import { resolveAssetPath, replaceAssetPath } from "@/lib/asset-library";
 import {
   CAMPAIGN_TEMPLATES,
@@ -19,6 +19,7 @@ import {
   applyPalette,
 } from "@/lib/campaign-presets";
 import { resolveResponsiveTransform } from "@/lib/constraints";
+import { createConnectedArtwork } from "@/lib/connected-artwork";
 import { setCopyLinking, writeLinkedCopy } from "@/lib/copy-sync";
 import { applyDeviceAngle, createDeviceSlot, setDeviceSlotLinking, setDeviceSlotSpan } from "@/lib/device-presentation";
 import { exportFileName, exportPath, slugify } from "@/lib/export-naming";
@@ -552,7 +553,7 @@ describe("StoreCanvas project contracts", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects unsafe 3D rigs, invalid extra device slots and spans beyond three screens", () => {
+  it("rejects unsafe 3D rigs, invalid extra device slots and spans beyond ten screens", () => {
     const slide = DEFAULT_PROJECT.slidesByDevice.iphone[0];
     const result = ProjectStateSchema.safeParse({
       ...DEFAULT_PROJECT,
@@ -560,7 +561,7 @@ describe("StoreCanvas project contracts", () => {
         ...DEFAULT_PROJECT.slidesByDevice,
         iphone: [{
           ...slide,
-          captionSpan: 4,
+          captionSpan: 11,
           deviceSlots: [{ id: "", screenshot: slide.screenshot, transform: { x: 0, y: 0, width: 100, height: 200 } }],
           presentations: {
             device: { preset: "custom", rotateX: 0, rotateY: 200, perspective: 100, depth: 80 },
@@ -741,6 +742,31 @@ describe("StoreCanvas project contracts", () => {
     );
 
     expect(result.path).toBe("/screenshots/uploaded/generated.png");
+  });
+
+  it("builds a tone-aware prompt for a panorama spanning up to ten screens", () => {
+    const prompt = buildArtworkPrompt({
+      provider: "openai",
+      apiKey: "sk-private",
+      model: "gpt-image-2",
+      prompt: "A calm editorial ribbon for a routine app",
+      spanSlots: 10,
+      tone: "mixed",
+      tonePattern: ["light", "dark", "light", "light", "dark", "light", "dark", "light", "dark", "light"],
+    });
+
+    expect(prompt).toContain("span 10 adjacent portrait App Store screenshots");
+    expect(prompt).toContain("slot 10 light");
+    expect(prompt).not.toContain("sk-private");
+  });
+
+  it("fits a connected artwork to the full ten-screen canvas", () => {
+    const panorama = createConnectedArtwork("iphone", "portrait", "ten-screen", "", 10);
+
+    expect(panorama).toMatchObject({
+      spanSlots: 10,
+      transform: { x: 0, y: 0, width: 13200, height: 2868 },
+    });
   });
 
   it("propagates localized copy by screen order only while linking is enabled", () => {

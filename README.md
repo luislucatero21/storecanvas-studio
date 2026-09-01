@@ -18,7 +18,7 @@ Most screenshot tools treat each frame as a separate poster. StoreCanvas treats 
 
 | | StoreCanvas approach |
 | --- | --- |
-| **Story** | Connected captions and artwork can span two or three adjacent screens while keeping each slot editable. |
+| **Story** | Connected captions and artwork can span up to ten adjacent screens while keeping each slot editable. |
 | **Real product UI** | Use your actual captures inside hardware-aware iPhone, iPad, and Android frames. |
 | **Precision** | Device slots are independent by default; shared transforms and copy continuity are explicit opt-ins. |
 | **Ownership** | Projects live in browser storage or an explicitly configured local JSON file. Vercel stays read-only and needs no remote database. |
@@ -72,14 +72,14 @@ Select **Connected** in the toolbar, then click those thumbnails to inspect each
 ## What is included
 
 - Connected or isolated canvas composition with exact export-time crops.
-- Captions and artwork that span two or three screens with per-slot contrast controls.
+- Captions and artwork that span up to ten screens with per-slot contrast controls and light/dark surface guidance.
 - Independent device slots, plus explicit opt-in transform linking when repeated captures should move together.
 - iPhone 17 Pro Max, iPhone 14 Pro Max, and iPhone 13 Pro Max frames with Dynamic Island/cutout and physical controls.
 - Flat, optical-tilt, low-angle, high-angle, and custom camera controls.
 - Ten campaign templates and twelve palette presets, with custom brand tokens and accessible contrast guidance.
 - Per-slide text layers, responsive constraints, hiding/locking, undo/redo, multiple locales, and JSON backups.
 - App Store URL import that creates a project-owned template, palette, and copy direction from listing metadata and screenshot color signals. Published composites stay reference-only unless the user opts into using them as captures.
-- Optional bring-your-own-key copy polish through OpenAI or OpenRouter, plus connected-artwork generation through OpenAI. Keys remain in memory for the current dialog session.
+- Optional bring-your-own-key copy polish through OpenAI or OpenRouter, plus connected-artwork generation through OpenAI. Choose 1–10 covered screens; the API prompt receives the requested span and light/dark tone pattern. Keys remain in memory for the current dialog session.
 - Deterministic Playwright rendering for exact storefront sizes and a CLI that can render every configured locale/device deck.
 
 ## Privacy and asset rights
@@ -132,6 +132,10 @@ CI runs dependency audit, typecheck, 42 unit tests, Playwright browser tests, an
 - [Third-party open-source attribution](THIRD_PARTY.md)
 
 StoreCanvas is not affiliated with Apple, Google, Vercel, OpenAI, or any app whose assets a user imports.
+
+### Connected artwork API
+
+`POST /api/ai/image` accepts `spanSlots` from `1` to `10`, plus optional `tone` (`light`, `dark`, or `mixed`) and `tonePattern` (an ordered array of light/dark surfaces). The server adds those constraints to the image prompt, sends the request directly to OpenAI, and saves the returned image only in the local upload path. The API key is request-scoped and never written to project JSON or browser storage.
 
 ## License
 

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SLOT_SPAN_OPTIONS } from "./types";
 
 const DeviceSchema = z.enum(["iphone", "ipad", "android", "android-7", "android-10", "feature-graphic"]);
 const LayoutSchema = z.enum(["hero", "device-bottom", "device-top", "two-devices", "no-device", "split-landscape", "feature-graphic"]);
@@ -11,7 +12,7 @@ const TransformSchema = z.object({
   rotation: z.number().finite().optional(),
   zIndex: z.number().finite().optional(),
 }).passthrough();
-const SlotSpanSchema = z.union([z.literal(1), z.literal(2), z.literal(3)]);
+const SlotSpanSchema = z.number().int().min(SLOT_SPAN_OPTIONS[0]).max(SLOT_SPAN_OPTIONS[SLOT_SPAN_OPTIONS.length - 1]);
 const CampaignTemplateSchema = z.object({
   id: z.string().trim().min(1),
   name: z.string().trim().min(1),

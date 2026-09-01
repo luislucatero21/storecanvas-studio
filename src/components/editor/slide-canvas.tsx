@@ -648,6 +648,7 @@ export function SlideCanvas({
         boundsW={cW}
         boundsH={cH}
         allowCrossScreen={false}
+        artworkSegmentInverted={[!!slide.inverted]}
       />
     </div>
   );
@@ -752,6 +753,9 @@ export function DeckCanvas({
           connectedCanvas && captionSpan > 1
             ? slides.slice(index, index + captionSpan).map((segment) => !!segment.inverted)
             : undefined;
+        const artworkSegmentInverted = connectedCanvas
+          ? slides.slice(index, index + 10).map((segment) => !!segment.inverted)
+          : [!!slide.inverted];
         const selectedElementId =
           selectedElement?.slideId === slide.id ? selectedElement.elementId : null;
         const perSlideEdit: EditHandlers | undefined = editable
@@ -786,6 +790,7 @@ export function DeckCanvas({
             boundsH={cH}
             allowCrossScreen={connectedCanvas}
             captionSegmentInverted={captionSegmentInverted}
+            artworkSegmentInverted={artworkSegmentInverted}
           />
         );
         if (connectedCanvas) return elements;
@@ -989,6 +994,7 @@ function SlideElements({
   boundsH,
   allowCrossScreen,
   captionSegmentInverted,
+  artworkSegmentInverted,
 }: {
   slide: Slide;
   device: Device;
@@ -1006,6 +1012,7 @@ function SlideElements({
   boundsH: number;
   allowCrossScreen: boolean;
   captionSegmentInverted?: readonly boolean[];
+  artworkSegmentInverted?: readonly boolean[];
 }) {
   const isHidden = (id: ElementId) => slide.hiddenElements?.includes(id) ?? false;
   const isLocked = (id: ElementId) => slide.lockedElements?.includes(id) ?? false;
@@ -1228,6 +1235,11 @@ function SlideElements({
     const rect = getElementTransform(slide, device, orientation, id, locale) || artwork.transform;
     const rotation = rect.rotation ?? 0;
     const zIndex = rect.zIndex ?? 1;
+    // A long panorama is authored for the full connected strip. Filling the
+    // wide artboard keeps the whole generated journey visible instead of
+    // cropping most of it inside a ten-screen portrait canvas.
+    const objectFit = artwork.spanSlots > 3 ? "fill" : "cover";
+    const tones = artworkSegmentInverted?.slice(0, artwork.spanSlots);
     return (
       <Movable
         key={artwork.id}
@@ -1244,14 +1256,36 @@ function SlideElements({
         onSelect={() => edit?.onSelectElement?.(id)}
         allowOverflow={allowCrossScreen}
       >
-        <img
-          src={renderedSource}
-          alt=""
-          draggable={false}
-          data-connected-artwork={artwork.id}
-          data-artwork-span={artwork.spanSlots}
-          style={{ width: "100%", height: "100%", objectFit: "cover", opacity: artwork.opacity ?? 1 }}
-        />
+        <div style={{ position: "relative", width: "100%", height: "100%" }}>
+          <img
+            src={renderedSource}
+            alt=""
+            draggable={false}
+            data-connected-artwork={artwork.id}
+            data-artwork-span={artwork.spanSlots}
+            data-artwork-fit={objectFit}
+            style={{ width: "100%", height: "100%", objectFit, opacity: artwork.opacity ?? 1 }}
+          />
+          {tones?.map((inverted, index) => (
+            <div
+              key={`${artwork.id}-tone-${index}`}
+              aria-hidden
+              data-artwork-tone={inverted ? "dark" : "light"}
+              style={{
+                position: "absolute",
+                left: `${(index / tones.length) * 100}%`,
+                top: 0,
+                width: `${100 / tones.length}%`,
+                height: "100%",
+                pointerEvents: "none",
+                background: inverted
+                  ? `linear-gradient(160deg, ${theme.bgAlt} 0%, ${shade(theme.bgAlt, -8)} 100%)`
+                  : `linear-gradient(160deg, ${theme.bg} 0%, ${shade(theme.bg, -6)} 100%)`,
+                opacity: 0.18,
+              }}
+            />
+          ))}
+        </div>
       </Movable>
     );
   }

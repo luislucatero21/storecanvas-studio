@@ -369,7 +369,14 @@ test.describe("StoreCanvas editor", () => {
   test("generates a two-screen artwork without storing the personal key", async ({ page }) => {
     await page.route("**/api/ai/image", async (route) => {
       const request = route.request().postDataJSON();
-      expect(request).toMatchObject({ provider: "openai", model: "gpt-image-2", apiKey: "sk-artwork-ui-test" });
+      expect(request).toMatchObject({
+        provider: "openai",
+        model: "gpt-image-2",
+        apiKey: "sk-artwork-ui-test",
+        spanSlots: 2,
+        tone: "mixed",
+        tonePattern: ["light", "dark"],
+      });
       await route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({ ok: true, path: "/screenshots/uploaded/generated-seam.png" }),
@@ -387,6 +394,20 @@ test.describe("StoreCanvas editor", () => {
     }).toBe("/screenshots/uploaded/generated-seam.png");
     const saved = await (await page.request.get("/api/project")).text();
     expect(saved).not.toContain("sk-artwork-ui-test");
+  });
+
+  test("lets a connected background span the full ten-screen deck", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: /Screen 1 ·/ }).click();
+    await page.getByRole("combobox", { name: "Set connected artwork 1 span" }).click();
+    await expect(page.getByRole("option", { name: "10 screens" })).toBeVisible();
+    await page.getByRole("option", { name: "10 screens" }).click();
+
+    await expect.poll(async () => {
+      const response = await page.request.get("/api/project");
+      const body = await response.json();
+      return body.state.slidesByDevice.iphone[0].connectedArtworks[0].spanSlots;
+    }).toBe(10);
   });
 
   test("links localized copy across iPhone and iPad when the user enables continuity", async ({ page }) => {
