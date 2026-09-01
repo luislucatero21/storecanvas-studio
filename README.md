@@ -1,7 +1,7 @@
 # StoreCanvas
 
 [![CI](https://github.com/luislucatero21/storecanvas-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/luislucatero21/storecanvas-studio/actions/workflows/ci.yml)
-[![Live demo](https://img.shields.io/badge/demo-Vercel-000000?logo=vercel&logoColor=white)](https://storecanvas-studio-7mizuftdo-luislucatero21s-projects.vercel.app)
+[![Live demo](https://img.shields.io/badge/demo-Vercel-000000?logo=vercel&logoColor=white)](https://storecanvas-studio.vercel.app/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## Build store screenshots that read like a product story
