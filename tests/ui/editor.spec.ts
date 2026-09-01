@@ -7,6 +7,31 @@ async function gotoRender(page: Page, url: string) {
   await page.goto(url);
 }
 
+function firstDeviceEditor(page: Page) {
+  return page.locator(".rnd-editable").filter({ has: page.locator("[data-device-model]") }).first();
+}
+
+async function waitForStableBox(locator: ReturnType<Page["locator"]>) {
+  let previous: { x: number; y: number; width: number; height: number } | null = null;
+  await expect
+    .poll(
+      async () => {
+        const box = await locator.boundingBox();
+        if (!box) return "missing";
+        const current = { x: box.x, y: box.y, width: box.width, height: box.height };
+        const stable = previous &&
+          Math.abs(current.x - previous.x) < 0.25 &&
+          Math.abs(current.y - previous.y) < 0.25 &&
+          Math.abs(current.width - previous.width) < 0.25 &&
+          Math.abs(current.height - previous.height) < 0.25;
+        previous = current;
+        return stable ? "stable" : "moving";
+      },
+      { timeout: 5_000, intervals: [100, 150, 250] },
+    )
+    .toBe("stable");
+}
+
 test.describe("StoreCanvas editor", () => {
   test.describe.configure({ mode: "serial" });
 
@@ -147,7 +172,7 @@ test.describe("StoreCanvas editor", () => {
   test("supports hiding and locking the selected canvas element", async ({ page }) => {
     await page.goto("/");
 
-    await page.getByRole("button", { name: "Rotate element" }).first().click();
+    await firstDeviceEditor(page).getByRole("button", { name: "Rotate element" }).click();
     await expect(page.getByRole("button", { name: "Hide element" })).toBeVisible();
     await page.getByRole("button", { name: "Hide element" }).click();
     await expect(page.getByRole("button", { name: "Show element" })).toBeVisible();
@@ -159,7 +184,7 @@ test.describe("StoreCanvas editor", () => {
   test("applies a dimensional camera angle to the selected phone", async ({ page }) => {
     await page.goto("/");
 
-    await page.getByRole("button", { name: "Rotate element" }).first().click();
+    await firstDeviceEditor(page).getByRole("button", { name: "Rotate element" }).click();
     await expect(page.getByText("Camera angle")).toBeVisible();
     await page.getByRole("button", { name: "Apply left tilt angle" }).click();
 
@@ -173,7 +198,7 @@ test.describe("StoreCanvas editor", () => {
   test("lets the user choose an iPhone hardware model", async ({ page }) => {
     await page.goto("/");
 
-    await page.getByRole("button", { name: "Rotate element" }).first().click();
+    await firstDeviceEditor(page).getByRole("button", { name: "Rotate element" }).click();
     await page.getByRole("combobox", { name: "Device model" }).click();
     await page.getByRole("option", { name: "iPhone 13 Pro Max" }).click();
 
@@ -247,13 +272,22 @@ test.describe("StoreCanvas editor", () => {
   test("preloads the example with connected art, independent phones and message continuity", async ({ page }) => {
     await gotoRender(page, "/render?device=iphone&locale=es-MX&size=1320x2868");
 
+    const opening = page.locator('[data-slide-id="demo-1-route"]');
+    const paired = page.locator('[data-slide-id="demo-2-ai"]');
     const captureStart = page.locator('[data-slide-id="demo-4-recovery"]');
     const messageStart = page.locator('[data-slide-id="demo-8-routine"]');
+    await expect(opening).toHaveAttribute("data-render-mode", "connected");
+    await expect(opening.locator('[data-connected-artwork="demo-opening-orbit"]')).toHaveCount(1);
+    await expect(opening.locator('[data-caption-span="2"]').first()).toBeVisible();
+    await expect(paired.locator('[data-device-model="iphone-14-pro-max"]').first()).toBeVisible();
+    await expect(paired.locator('[data-device-model="iphone-13-pro-max"]').first()).toBeVisible();
     await expect(captureStart).toHaveAttribute("data-render-mode", "connected");
     await expect(captureStart.locator('[data-connected-artwork="demo-dawn-ribbon"]')).toHaveCount(1);
     await expect(captureStart.locator('[data-device-slot="demo-recovery-continuity"]')).toHaveCount(1);
+    await expect(captureStart.locator('[data-device-slot="demo-recovery-companion"]')).toHaveCount(2);
+    await expect(captureStart.locator('[data-caption-span="2"]').first()).toBeVisible();
     await expect(page.locator('[data-slide-id="demo-5-reflection"] [data-device-slot="demo-reflection-independent"]')).toHaveCount(1);
-    await expect(messageStart.locator('[data-caption-span="2"]')).toHaveCount(1);
+    await expect(messageStart.locator('[data-caption-span="2"]').first()).toBeVisible();
     await expect(page.locator('[data-device-angle="tilt-left"]').first()).toHaveAttribute("data-device-rig", "optical");
   });
 
@@ -287,9 +321,12 @@ test.describe("StoreCanvas editor", () => {
     await page.getByRole("button", { name: /Screen 8 ·/ }).click();
     await page.waitForTimeout(650);
 
-    const caption = page.locator('.store-canvas-well [data-caption-span="2"]');
+    const caption = page
+      .locator('.store-canvas-well [data-caption-span="2"]')
+      .filter({ hasText: "One clear idea." });
     const editable = caption.locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " rnd-editable ")]');
     await expect(editable).toHaveCount(1);
+    await waitForStableBox(editable);
     const initial = await editable.boundingBox();
     expect(initial).not.toBeNull();
 
@@ -299,7 +336,7 @@ test.describe("StoreCanvas editor", () => {
     await page.mouse.down();
     await page.mouse.move(start.x + delta.x, start.y + delta.y, { steps: 6 });
     await page.mouse.up();
-    await page.waitForTimeout(250);
+    await waitForStableBox(editable);
 
     const after = await editable.boundingBox();
     expect(after).not.toBeNull();

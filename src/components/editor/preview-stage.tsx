@@ -100,6 +100,19 @@ export function PreviewStage({
     scroller.scrollTo({ left: targetLeft, behavior: "smooth" });
   }, [activeIndex, activeSlide, cW, scale]);
 
+  // A screen change uses a smooth pan for orientation, but that animation
+  // must yield as soon as the user starts editing. Otherwise a quick drag
+  // after selecting a distant screen would combine the pointer delta with
+  // the remaining scroll delta and make the layer appear to jump on drop.
+  const cancelAutoPan = React.useCallback(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    const { scrollLeft, scrollTop } = scroller;
+    scroller.style.scrollBehavior = "auto";
+    scroller.scrollLeft = scrollLeft;
+    scroller.scrollTop = scrollTop;
+  }, []);
+
   const handleCanvasActiveSlideChange = React.useCallback(
     (id: string) => {
       if (id !== activeSlideId) {
@@ -115,7 +128,11 @@ export function PreviewStage({
       ref={containerRef}
       className="store-canvas-well relative h-full w-full overflow-hidden"
     >
-      <div ref={scrollerRef} className="h-full w-full overflow-auto p-12">
+      <div
+        ref={scrollerRef}
+        className="h-full w-full overflow-auto p-12"
+        onPointerDownCapture={cancelAutoPan}
+      >
         <div
           style={{
             width: totalW * scale,

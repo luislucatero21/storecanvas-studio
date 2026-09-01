@@ -6,7 +6,7 @@ import { getExportSizes, themeById } from "@/lib/constants";
 import { DEFAULT_PROJECT } from "@/lib/defaults";
 import { ProjectStateSchema } from "@/lib/schema";
 import { applyBrandTokens } from "@/lib/theme";
-import { isProjectFileConfigured, projectFilePath } from "@/lib/project-file";
+import { CHECKED_IN_EXAMPLE_PROJECT, isProjectFileConfigured, projectFilePath } from "@/lib/project-file";
 import { getLocalProject } from "@/lib/local-project-server";
 import type { Device, Orientation, ProjectState } from "@/lib/types";
 
@@ -36,7 +36,7 @@ async function readProject(): Promise<ProjectState> {
     const parsed = ProjectStateSchema.safeParse(JSON.parse(raw));
     return parsed.success ? (parsed.data as ProjectState) : DEFAULT_PROJECT;
   } catch {
-    return DEFAULT_PROJECT;
+    return isProjectFileConfigured() ? DEFAULT_PROJECT : CHECKED_IN_EXAMPLE_PROJECT;
   }
 }
 
