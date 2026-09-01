@@ -17,6 +17,8 @@ CLAUDE.md
 
 # Private/local campaign state and user-provided assets.
 app-store-screenshots.json
+public/screenshots/apple/
 public/screenshots/uploaded/
 public/screenshots/imported/
 public/backgrounds/generated/
+public/backgrounds/rutmia-*.png
