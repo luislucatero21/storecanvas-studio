@@ -253,6 +253,36 @@ describe("StoreCanvas project contracts", () => {
     expect(effectiveTypographyColor("label", { ...style, adaptiveColor: false }, theme, false)).toBe(preferred);
   });
 
+  it("uses the sampled connected-artwork tone for adaptive typography", () => {
+    const theme = {
+      bg: "#F6F1E9",
+      bgAlt: "#111827",
+      fg: "#131B2C",
+      fgAlt: "#FFF9F0",
+      accent: "#FFAA4D",
+      accentMode: "adaptive" as const,
+    };
+    const style = { color: "#FFF9F0", adaptiveColor: true };
+    const renderedOnLightArtwork = effectiveTypographyColor(
+      "headline",
+      style,
+      theme,
+      true,
+      "#D9E7F5",
+    );
+    const renderedOnDarkArtwork = effectiveTypographyColor(
+      "headline",
+      style,
+      theme,
+      false,
+      "#18213A",
+    );
+
+    expect(renderedOnLightArtwork).not.toBe(theme.fgAlt);
+    expect(contrastRatio(renderedOnLightArtwork, "#D9E7F5")).toBeGreaterThanOrEqual(4.5);
+    expect(renderedOnDarkArtwork).toBe(theme.fgAlt);
+  });
+
   it("resolves inspector role defaults from the active theme instead of hardcoded fonts", () => {
     const resolved = typographyForRole({
       body: { family: "manrope", weight: 500 },

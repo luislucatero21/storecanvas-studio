@@ -469,6 +469,44 @@ test.describe("StoreCanvas editor", () => {
     await expect(continuationHeadline).toHaveAttribute("data-caption-segment-colors", "#131B2C,#FFF9F0");
   });
 
+  test("samples a connected artwork instead of trusting an inverted slot hint", async ({ page }) => {
+    const toneProject = JSON.parse(JSON.stringify(baseline));
+    const lightArtwork = `data:image/svg+xml,${encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="2640" height="2868" viewBox="0 0 2640 2868"><rect width="1320" height="2868" fill="#F8EEDB"/><rect x="1320" width="1320" height="2868" fill="#D9E7F5"/></svg>',
+    )}`;
+    const first = toneProject.slidesByDevice.iphone[0];
+    first.inverted = false;
+    first.captionSpan = 2;
+    first.connectedArtworks = [{
+      id: "light-two-slot-artwork",
+      image: lightArtwork,
+      spanSlots: 2,
+      opacity: 1,
+      transform: { x: 0, y: 0, width: 2640, height: 2868 },
+    }];
+    first.textStyles = {
+      ...(first.textStyles || {}),
+      headline: {
+        ...(first.textStyles?.headline || {}),
+        color: "#FFFFFF",
+        adaptiveColor: true,
+      },
+    };
+    toneProject.slidesByDevice.iphone[1].inverted = true;
+
+    await page.request.post("/api/project", { data: toneProject });
+    await page.goto("/");
+
+    const headline = page.locator('.store-canvas-well [data-caption-headline]').first();
+    await expect.poll(
+      async () => headline.getAttribute("data-caption-segment-colors"),
+      { timeout: 8_000 },
+    ).toMatch(/^#[0-9A-F]{6},#[0-9A-F]{6}$/i);
+    const colors = (await headline.getAttribute("data-caption-segment-colors"))!.split(",");
+    expect(colors).toHaveLength(2);
+    expect(colors.every((color) => color.toUpperCase() !== "#FFFFFF")).toBe(true);
+  });
+
   test("moves a shared caption by the pointer delta without jumping on drop", async ({ page }) => {
     const dragProject = JSON.parse(JSON.stringify(baseline));
     dragProject.slidesByDevice.iphone[7] = {
@@ -553,6 +591,10 @@ test.describe("StoreCanvas editor", () => {
     await page.getByRole("button", { name: "Campaign wardrobe" }).click();
     await page.getByRole("tab", { name: "Type", exact: true }).click();
     await expect(page.getByLabel("Display font")).toBeVisible();
+    await expect(page.getByLabel("Display / headlines")).toHaveAttribute("data-typography-effective-family", "fraunces");
+    await expect(page.getByLabel("Body / labels")).toHaveAttribute("data-typography-effective-family", "manrope");
+    await expect(page.getByLabel("Body / labels")).toHaveAttribute("data-typography-effective-color", "#FF765D");
+    await expect(page.getByLabel("Body / labels")).toContainText("Adaptive per surface");
     await page.getByLabel("Display font").click();
     await page.getByRole("option", { name: "Space Grotesk" }).click();
     await page.getByLabel("Adaptive accent color").uncheck();

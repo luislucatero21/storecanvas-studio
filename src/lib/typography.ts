@@ -188,13 +188,14 @@ export function effectiveTypographyColor(
   style: TypographyStyle,
   theme: TypographyColorTheme,
   inverted: boolean,
+  backgroundOverride?: string,
 ) {
   const preferred = preferredTypographyColor(role, style, theme, inverted);
   if (style.adaptiveColor === false) {
     return normalizeHex(preferred, role === "label" ? theme.accent : inverted ? theme.fgAlt : theme.fg);
   }
 
-  const background = inverted ? theme.bgAlt : theme.bg;
+  const background = backgroundOverride || (inverted ? theme.bgAlt : theme.bg);
   if (role === "label") {
     return accentForBackground(preferred, background, theme.accentMode || "adaptive");
   }

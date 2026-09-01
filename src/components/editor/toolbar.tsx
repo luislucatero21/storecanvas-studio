@@ -35,7 +35,7 @@ import {
 import { detectPlatform } from "@/lib/defaults";
 import type { AiProposal } from "@/lib/ai";
 import type { CampaignImportOptions, CampaignImportProposal } from "@/lib/app-store-import";
-import type { AccentMode, BrandTokens, CampaignTemplate, Device, Orientation, Slide, TemplateApplyOptions, TypographyTokens } from "@/lib/types";
+import type { AccentMode, BrandTokens, CampaignTemplate, Device, Orientation, Slide, TemplateApplyOptions, Theme, TypographyTokens } from "@/lib/types";
 import type { ValidationResult } from "@/lib/validation";
 import { AiPolish } from "./ai-polish";
 import { AppStoreImporter } from "./app-store-importer";
@@ -85,6 +85,7 @@ type Props = {
   campaignSourceUrl?: string;
   brandColors?: BrandTokens["colors"];
   brandTypography?: BrandTokens["typography"];
+  theme: Theme;
   accentMode?: AccentMode;
   onTemplateChange: (templateId: string, options?: TemplateApplyOptions) => void;
   onPaletteChange: (paletteId: string) => void;
@@ -273,6 +274,7 @@ export function Toolbar(props: Props) {
         customPaletteName={props.customPaletteName}
         colors={props.brandColors}
         typography={props.brandTypography}
+        theme={props.theme}
         accentMode={props.accentMode}
         disabled={props.busy}
         onTemplateChange={props.onTemplateChange}

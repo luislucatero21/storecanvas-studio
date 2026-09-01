@@ -25,7 +25,7 @@ import {
   campaignTemplateById,
   paletteById,
 } from "@/lib/campaign-presets";
-import { contrastRatio } from "@/lib/color";
+import { contrastRatio, normalizeHex } from "@/lib/color";
 import {
   DEFAULT_TYPOGRAPHY,
   FONT_OPTIONS,
@@ -33,8 +33,10 @@ import {
   TYPOGRAPHY_SCALE_OPTIONS,
   fontOptionById,
   fontOptionId,
+  preferredTypographyColor,
+  typographyForRole,
 } from "@/lib/typography";
-import type { AccentMode, BrandTokens, CampaignTemplate, Device, PalettePreset, TemplateApplyOptions, TypographyStyle, TypographyTokens } from "@/lib/types";
+import type { AccentMode, BrandTokens, CampaignTemplate, Device, PalettePreset, TemplateApplyOptions, Theme, TypographyStyle, TypographyTokens } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -45,6 +47,7 @@ type Props = {
   customPaletteName?: string;
   colors?: BrandTokens["colors"];
   typography?: BrandTokens["typography"];
+  theme: Theme;
   accentMode?: AccentMode;
   disabled?: boolean;
   onTemplateChange: (templateId: string, options?: TemplateApplyOptions) => void;
@@ -62,6 +65,7 @@ export function CampaignWardrobe({
   customPaletteName,
   colors,
   typography,
+  theme,
   accentMode = "adaptive",
   disabled,
   onTemplateChange,
@@ -200,6 +204,7 @@ export function CampaignWardrobe({
           <TabsContent value="typography" className="mt-5">
             <TypographyTune
               typography={typography}
+              theme={theme}
               accentMode={accentMode}
               disabled={disabled}
               onApply={(next, nextAccentMode) => {
@@ -244,11 +249,13 @@ const TYPOGRAPHY_GROUPS: TypographyGroup[] = [
 
 function TypographyTune({
   typography,
+  theme,
   accentMode,
   disabled,
   onApply,
 }: {
   typography?: BrandTokens["typography"];
+  theme: Theme;
   accentMode: AccentMode;
   disabled?: boolean;
   onApply: (typography: TypographyTokens, accentMode: AccentMode) => void;
@@ -265,7 +272,16 @@ function TypographyTune({
   }, [accentMode, typography]);
 
   function groupStyle(group: TypographyGroup): TypographyStyle {
-    return { ...DEFAULT_TYPOGRAPHY[group.key], ...(draft[group.key] || {}), };
+    const role = group.key === "display" ? "headline" : "label";
+    // The canvas resolves role-specific values (headline/label/text) after the
+    // campaign tokens are applied. Keep the wardrobe preview on that same
+    // resolution path, while still letting an in-progress group edit win.
+    return {
+      ...DEFAULT_TYPOGRAPHY[group.key],
+      ...typographyForRole(theme.typography, role),
+      ...(draft[group.key] || {}),
+      ...(draft[role] || {}),
+    };
   }
 
   function patchGroup(group: TypographyGroup, patch: Partial<TypographyStyle>) {
@@ -293,13 +309,27 @@ function TypographyTune({
       <div className="grid gap-4 p-5 lg:grid-cols-2">
         {TYPOGRAPHY_GROUPS.map((group) => {
           const style = groupStyle(group);
+          const role = group.key === "display" ? "headline" : "label";
           const family = fontOptionId(style.family, group.fallbackFamily);
           const font = fontOptionById(family);
           const scale = String(style.sizeScale ?? 1);
           const weight = String(style.weight ?? (group.key === "display" ? 700 : 500));
           const adaptive = style.adaptiveColor !== false;
+          const preferredColor = preferredTypographyColor(role, style, theme, false);
+          const colorValue = normalizeHex(preferredColor, group.fallbackColor);
+          const colorLabel = style.color
+            ? normalizeHex(style.color, group.fallbackColor)
+            : adaptive
+              ? "Adaptive per surface"
+              : `${colorValue} · theme`;
           return (
-            <section key={group.key} className="rounded-lg border border-border/70 bg-card/60 p-4" aria-label={group.label}>
+            <section
+              key={group.key}
+              className="rounded-lg border border-border/70 bg-card/60 p-4"
+              aria-label={group.label}
+              data-typography-effective-family={family}
+              data-typography-effective-color={colorValue}
+            >
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h4 className="text-sm font-semibold text-foreground">{group.label}</h4>
@@ -359,13 +389,13 @@ function TypographyTune({
                   <span className="flex h-9 items-center gap-2 rounded-md border border-input px-2">
                     <input
                       type="color"
-                      value={/^#[0-9a-f]{6}$/i.test(style.color || "") ? style.color! : group.fallbackColor}
+                      value={colorValue}
                       disabled={disabled}
                       onChange={(event) => patchGroup(group, { color: event.target.value.toUpperCase() })}
                       className="h-6 w-7 cursor-pointer rounded border-0 bg-transparent p-0 disabled:cursor-not-allowed"
                       aria-label={`${group.key === "display" ? "Display" : "Body"} text color`}
                     />
-                    <span className="font-mono text-[10px] normal-case tracking-normal text-foreground/70">{style.color || "Theme foreground"}</span>
+                    <span className="font-mono text-[10px] normal-case tracking-normal text-foreground/70">{colorLabel}</span>
                   </span>
                 </label>
               </div>

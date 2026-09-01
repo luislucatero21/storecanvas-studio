@@ -32,6 +32,7 @@ import { pickText } from "@/lib/locale";
 import { constraintFor, resolveResponsiveTransform } from "@/lib/constraints";
 import { resolveAssetPath } from "@/lib/asset-library";
 import { captionContrastForRect } from "@/lib/caption-contrast";
+import { sampleArtworkBackgrounds, type ToneRect } from "@/lib/image-tone";
 import {
   clampSizeScale,
   effectiveTypographyColor,
@@ -233,6 +234,7 @@ function Caption({
   edit,
   align = "center",
   inverted,
+  backgroundColor,
   segmentColors,
   contrastGradient,
   onFocus,
@@ -246,6 +248,7 @@ function Caption({
   edit?: EditHandlers;
   align?: "center" | "left";
   inverted?: boolean;
+  backgroundColor?: string;
   segmentColors?: readonly string[];
   contrastGradient?: string;
   onFocus?: () => void;
@@ -259,9 +262,9 @@ function Caption({
     ...slide.textStyles?.headline,
   };
   const adaptiveLabel = labelStyle.adaptiveColor !== false;
-  const labelColor = effectiveTypographyColor("label", labelStyle, theme, !!inverted);
+  const labelColor = effectiveTypographyColor("label", labelStyle, theme, !!inverted, backgroundColor);
   const adaptiveHeadline = headlineStyle.adaptiveColor !== false;
-  const singleHeadlineColor = effectiveTypographyColor("headline", headlineStyle, theme, !!inverted);
+  const singleHeadlineColor = effectiveTypographyColor("headline", headlineStyle, theme, !!inverted, backgroundColor);
   const headlineGradient = adaptiveHeadline ? contrastGradient : undefined;
   // Scale typography off the *shorter* dimension so landscape layouts don't
   // produce headlines so tall they overlap the device frame.
@@ -642,6 +645,125 @@ function defaultElementZ(id: BuiltInElementId): number {
   return 4;
 }
 
+type ArtworkBackgroundState = {
+  source: string;
+  artworkRect: ToneRect;
+  sampleRegions: Array<ToneRect | undefined>;
+  baseColors: string[];
+  artworkOpacity: number;
+};
+
+/** Keep adaptive typography aware of a panorama even when its image is stored on slot 1. */
+function useArtworkBackgrounds({
+  slides,
+  device,
+  orientation,
+  locale,
+  assets,
+  theme,
+  connectedCanvas,
+}: {
+  slides: Slide[];
+  device: Device;
+  orientation: Orientation;
+  locale: string;
+  assets?: AssetLibrary;
+  theme: Theme;
+  connectedCanvas: boolean;
+}) {
+  const { cW } = getCanvas(device, orientation);
+  const states = React.useMemo<ArtworkBackgroundState[]>(() => {
+    const candidates = slides.flatMap((slide, index) =>
+      (slide.connectedArtworks || [])
+        .filter((artwork) => Boolean(artwork.image || artwork.assetRef))
+        .map((artwork) => ({ slide, artwork, index })),
+    );
+    const sortedCandidates = candidates.sort(
+      (first, second) => (second.artwork.spanSlots || 1) - (first.artwork.spanSlots || 1),
+    );
+    if (!sortedCandidates.length) return [];
+    const sampleRegions = slides.map((slide, index) => {
+      const { defaults } = getSlideGeometry(slide, device, orientation);
+      const caption = resolvedRectFor("caption", slide, device, orientation, locale, defaults);
+      if (!caption) return undefined;
+      return {
+        x: (connectedCanvas ? index * cW : 0) + caption.x,
+        y: caption.y,
+        width: caption.width,
+        height: caption.height,
+      };
+    });
+    return sortedCandidates.map(({ slide, artwork, index }) => {
+      const artworkId = toArtworkElementId(artwork.id);
+      const source = img(resolveAssetPath(artwork.assetRef, locale, assets, artwork.image));
+      const localArtworkRect = getElementTransform(
+        slide,
+        device,
+        orientation,
+        artworkId,
+        locale,
+      ) || artwork.transform;
+      const originX = connectedCanvas ? index * cW : 0;
+      return {
+        source,
+        artworkRect: { ...localArtworkRect, x: localArtworkRect.x + originX },
+        sampleRegions,
+        baseColors: slides.map((segment) => (segment.inverted ? theme.bgAlt : theme.bg)),
+        artworkOpacity: artwork.opacity ?? 1,
+      };
+    });
+  }, [
+    assets,
+    cW,
+    connectedCanvas,
+    device,
+    locale,
+    orientation,
+    slides,
+    theme.bg,
+    theme.bgAlt,
+  ]);
+  const [backgrounds, setBackgrounds] = React.useState<Array<string | undefined> | null>(null);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const usableStates = states.filter((candidate) => candidate.source);
+    if (!usableStates.length) {
+      setBackgrounds(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+    setBackgrounds(null);
+    Promise.all(usableStates.map((state) => sampleArtworkBackgrounds({
+      source: state.source,
+      deckLength: connectedCanvas ? slides.length : 1,
+      artboardWidth: cW,
+      artworkRect: state.artworkRect,
+      baseColors: connectedCanvas ? state.baseColors : [state.baseColors[0] || theme.bg],
+      sampleRegions: connectedCanvas ? state.sampleRegions : [state.sampleRegions[0]],
+      artworkOpacity: state.artworkOpacity,
+    }))).then((results) => {
+      if (cancelled) return;
+      const merged = Array.from({ length: connectedCanvas ? slides.length : 1 }, () => undefined as string | undefined);
+      let sampled = false;
+      for (const result of results) {
+        if (!result) continue;
+        sampled = true;
+        result.forEach((color, index) => {
+          if (!merged[index] && color) merged[index] = color;
+        });
+      }
+      setBackgrounds(sampled ? merged : null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [cW, connectedCanvas, slides.length, states, theme.bg]);
+
+  return backgrounds;
+}
+
 // ---------- Main single-screen canvas ----------
 
 export function SlideCanvas({
@@ -660,6 +782,15 @@ export function SlideCanvas({
   hideEmpty,
 }: Props) {
   const { cW, cH } = getCanvas(device, orientation);
+  const artworkBackgrounds = useArtworkBackgrounds({
+    slides: [slide],
+    device,
+    orientation,
+    locale,
+    assets,
+    theme,
+    connectedCanvas: true,
+  });
 
   if (slide.layout === "feature-graphic" || device === "feature-graphic") {
     return (
@@ -711,6 +842,7 @@ export function SlideCanvas({
         allowCrossScreen={false}
         deckInverted={[!!slide.inverted]}
         artworkSegmentInverted={[!!slide.inverted]}
+        artworkBackgrounds={artworkBackgrounds}
       />
     </div>
   );
@@ -738,6 +870,15 @@ export function DeckCanvas({
 }: DeckCanvasProps) {
   const { cW, cH } = getCanvas(device, orientation);
   const totalW = Math.max(1, slides.length) * cW;
+  const artworkBackgrounds = useArtworkBackgrounds({
+    slides,
+    device,
+    orientation,
+    locale,
+    assets,
+    theme,
+    connectedCanvas,
+  });
 
   return (
     <div
@@ -848,6 +989,7 @@ export function DeckCanvas({
             allowCrossScreen={connectedCanvas}
             deckInverted={connectedCanvas ? slides.map((segment) => !!segment.inverted) : [!!slide.inverted]}
             artworkSegmentInverted={artworkSegmentInverted}
+            artworkBackgrounds={artworkBackgrounds}
             showCaption={!connectedCanvas || !isCaptionContinuation(slides, index, locale)}
           />
         );
@@ -1067,6 +1209,7 @@ function SlideElements({
   allowCrossScreen,
   deckInverted,
   artworkSegmentInverted,
+  artworkBackgrounds,
   showCaption = true,
 }: {
   slide: Slide;
@@ -1086,6 +1229,7 @@ function SlideElements({
   allowCrossScreen: boolean;
   deckInverted: readonly boolean[];
   artworkSegmentInverted?: readonly boolean[];
+  artworkBackgrounds?: readonly (string | undefined)[] | null;
   showCaption?: boolean;
 }) {
   const isHidden = (id: ElementId) => slide.hiddenElements?.includes(id) ?? false;
@@ -1099,6 +1243,7 @@ function SlideElements({
   );
   const { cW, cH, Frame, frameAspect, defaults } = getSlideGeometry(slide, device, orientation);
   const inverted = !!slide.inverted;
+  const artworkBackground = artworkBackgrounds?.[Math.max(0, Math.floor(screenX / Math.max(1, cW)))];
   const captionRect = resolvedRectFor("caption", slide, device, orientation, locale, defaults);
   const headlineStyle = {
     ...typographyForRole(theme.typography, "headline"),
@@ -1113,11 +1258,12 @@ function SlideElements({
           cW,
           screenX + captionRect.x,
           captionRect.width,
-          (_baseColor, segmentInverted) => effectiveTypographyColor(
+          (_baseColor, segmentInverted, artboard) => effectiveTypographyColor(
             "headline",
             headlineStyle,
             theme,
             segmentInverted,
+            artworkBackgrounds?.[artboard],
           ),
         )
       : undefined
@@ -1156,6 +1302,7 @@ function SlideElements({
         edit={edit}
         align={captionRect.align || "center"}
         inverted={inverted}
+        backgroundColor={artworkBackground}
         segmentColors={captionContrast?.colors}
         contrastGradient={captionContrast?.gradient}
         onFocus={() => edit?.onSelectElement?.("caption")}
@@ -1264,7 +1411,7 @@ function SlideElements({
       adaptiveColor: textElement.adaptiveColor,
     };
     const preferredColor = textStyle.color || (inverted ? theme.fgAlt : theme.fg);
-    const textColor = effectiveTypographyColor("text", textStyle, theme, inverted);
+    const textColor = effectiveTypographyColor("text", textStyle, theme, inverted, artworkBackground);
     return (
       <Movable
         key={textElement.id}

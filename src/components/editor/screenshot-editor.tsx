@@ -691,6 +691,7 @@ export function ScreenshotEditor() {
         copyLinked={state.copySync?.enabled === true}
         brandColors={state.brand?.colors}
         brandTypography={state.brand?.typography}
+        theme={theme}
         accentMode={state.brand?.accentMode}
         onTemplateChange={(templateId, options) => {
           const template = state.customTemplate?.id === templateId ? state.customTemplate : campaignTemplateById(templateId);
