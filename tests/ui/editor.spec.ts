@@ -585,6 +585,14 @@ test.describe("StoreCanvas editor", () => {
     await expect(headline).toHaveAttribute("data-caption-segment-colors", "#131B2C,#FFF9F0");
     await expect(headline).toHaveCSS("background-clip", "text");
 
+    const label = page
+      .locator('[data-slide-id="demo-8-routine"] [data-caption-label]')
+      .filter({ hasText: "PRIVADO POR DISEÑO" })
+      .first();
+    await expect(label).toHaveAttribute("data-caption-label-contrast", "per-slot");
+    await expect(label).toHaveAttribute("data-caption-label-segment-colors", /,/);
+    await expect(label).toHaveCSS("background-clip", "text");
+
     const continuationHeadline = page
       .locator('[data-slide-id="demo-9-reminders"] [data-caption-headline]')
       .filter({ hasText: "Tu dinero sigue siendo tuyo." })

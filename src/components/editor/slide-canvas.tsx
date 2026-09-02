@@ -235,6 +235,8 @@ function Caption({
   align = "center",
   inverted,
   backgroundColor,
+  labelSegmentColors,
+  labelContrastGradient,
   segmentColors,
   contrastGradient,
   onFocus,
@@ -249,6 +251,8 @@ function Caption({
   align?: "center" | "left";
   inverted?: boolean;
   backgroundColor?: string;
+  labelSegmentColors?: readonly string[];
+  labelContrastGradient?: string;
   segmentColors?: readonly string[];
   contrastGradient?: string;
   onFocus?: () => void;
@@ -263,6 +267,7 @@ function Caption({
   };
   const adaptiveLabel = labelStyle.adaptiveColor !== false;
   const labelColor = effectiveTypographyColor("label", labelStyle, theme, !!inverted, backgroundColor);
+  const labelGradient = adaptiveLabel ? labelContrastGradient : undefined;
   const adaptiveHeadline = headlineStyle.adaptiveColor !== false;
   const singleHeadlineColor = effectiveTypographyColor("headline", headlineStyle, theme, !!inverted, backgroundColor);
   const headlineGradient = adaptiveHeadline ? contrastGradient : undefined;
@@ -280,7 +285,13 @@ function Caption({
         dataAttributes={{
           "data-caption-label": "true",
           "data-accent-adaptive": adaptiveLabel ? "true" : "false",
-          "data-caption-effective-color": labelColor,
+          "data-caption-label-contrast": labelGradient ? "per-slot" : "single-slot",
+          "data-caption-effective-color": labelGradient
+            ? labelSegmentColors?.join(",") || labelColor
+            : labelColor,
+          ...(labelSegmentColors?.length
+            ? { "data-caption-label-segment-colors": labelSegmentColors.join(",") }
+            : {}),
         }}
         style={{
           fontFamily: fontFamilyCss(labelStyle.family, "body"),
@@ -290,7 +301,14 @@ function Caption({
           textDecoration: labelStyle.decoration ?? "none",
           letterSpacing: unit * (labelStyle.letterSpacing ?? 0.0015),
           lineHeight: labelStyle.lineHeight ?? 1.15,
-          color: labelColor,
+          color: labelGradient ? "transparent" : labelColor,
+          backgroundImage: labelGradient,
+          backgroundClip: labelGradient ? "text" : undefined,
+          WebkitBackgroundClip: labelGradient ? "text" : undefined,
+          WebkitTextFillColor: labelGradient ? "transparent" : undefined,
+          backgroundRepeat: labelGradient ? "no-repeat" : undefined,
+          backgroundSize: labelGradient ? "100% 100%" : undefined,
+          caretColor: labelColor,
           textTransform: "uppercase",
           marginBottom: unit * 0.018,
           minHeight: unit * 0.03,
@@ -1268,6 +1286,29 @@ function SlideElements({
         )
       : undefined
     : undefined;
+  const labelStyle = {
+    ...typographyForRole(theme.typography, "label"),
+    ...slide.textStyles?.label,
+  };
+  const labelAdaptive = labelStyle.adaptiveColor !== false;
+  const labelContrast = captionRect
+    ? labelAdaptive
+      ? captionContrastForRect(
+          theme,
+          deckInverted,
+          cW,
+          screenX + captionRect.x,
+          captionRect.width,
+          (_baseColor, segmentInverted, artboard) => effectiveTypographyColor(
+            "label",
+            labelStyle,
+            theme,
+            segmentInverted,
+            artworkBackgrounds?.[artboard],
+          ),
+        )
+      : undefined
+    : undefined;
   const deviceRect = resolvedRectFor("device", slide, device, orientation, locale, defaults);
   const secondaryRect = resolvedRectFor(
     "deviceSecondary",
@@ -1303,6 +1344,8 @@ function SlideElements({
         align={captionRect.align || "center"}
         inverted={inverted}
         backgroundColor={artworkBackground}
+        labelSegmentColors={labelContrast?.colors}
+        labelContrastGradient={labelContrast?.gradient}
         segmentColors={captionContrast?.colors}
         contrastGradient={captionContrast?.gradient}
         onFocus={() => edit?.onSelectElement?.("caption")}

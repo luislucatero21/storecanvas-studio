@@ -1688,6 +1688,7 @@ function CaptionTypographyPanel({
   };
   const labelPreferredColor = preferredTypographyColor("label", labelStyle, theme, !!slide.inverted);
   const labelEffectiveColor = effectiveTypographyColor("label", labelStyle, theme, !!slide.inverted);
+  const labelAdaptive = labelStyle.adaptiveColor !== false;
   const headlinePreferredColor = preferredTypographyColor("headline", headlineStyle, theme, !!slide.inverted);
   const headlineAdaptive = headlineStyle.adaptiveColor !== false;
   const captionRect = getElementTransform(slide, device, orientation, "caption");
@@ -1695,6 +1696,24 @@ function CaptionTypographyPanel({
   const captionX = connectedCanvas
     ? activeSlideIndex * cW + (captionRect?.x || 0)
     : captionRect?.x || 0;
+  const labelContrast = labelAdaptive && captionRect
+    ? captionContrastForRect(
+        theme,
+        inversionPattern,
+        cW,
+        captionX,
+        captionRect.width,
+        (_baseColor, segmentInverted) => effectiveTypographyColor(
+          "label",
+          labelStyle,
+          theme,
+          segmentInverted,
+        ),
+      )
+    : undefined;
+  const labelEffectiveColors = labelContrast?.colors?.length
+    ? labelContrast.colors
+    : [labelEffectiveColor];
   const headlineContrast = headlineAdaptive && captionRect
     ? captionContrastForRect(
         theme,
@@ -1726,7 +1745,7 @@ function CaptionTypographyPanel({
         fallbackSize={unit * 0.028 * clampSizeScale(labelStyle.sizeScale)}
         fallbackFamily="dm-sans"
         preferredColor={labelPreferredColor}
-        effectiveColors={[labelEffectiveColor]}
+        effectiveColors={labelEffectiveColors}
         onPatch={onPatch}
         onReset={onReset}
       />
