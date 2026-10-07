@@ -1162,7 +1162,7 @@ describe("sticker artwork", () => {
   it("keeps toneOverlay=false so mascot stickers render without the tone veil", async () => {
     const { ProjectStateSchema } = await import("@/lib/schema");
     const project = structuredClone(DEFAULT_PROJECT);
-    const device = Object.keys(project.slidesByDevice).find((key) => project.slidesByDevice[key]?.length)!;
+    const device = "iphone" as const;
     project.slidesByDevice[device][0].connectedArtworks = [{
       id: "mascot",
       image: "/screenshots/uploaded/mascot.png",

@@ -44,6 +44,7 @@ const ActionSchema = z.enum([
   "apply-template",
   "remove-element",
   "generate-background",
+  "set-background",
 ]);
 
 type Body = Record<string, unknown>;
@@ -227,6 +228,38 @@ export async function POST(request: Request) {
   const startSlot = integerOf(body.startSlot, 1, "startSlot");
   if (isError(startSlot)) return errorResponse(startSlot.error);
   const startIndex = startSlot - 1;
+  if (action === "set-background") {
+    // Place artwork produced elsewhere (ChatGPT, a designer, a stock file)
+    // with the same connected-slot rules as generate-background.
+    const image = stringOf(body.image, "image", true);
+    if (isError(image)) return errorResponse(image.error);
+    if (!image || !image.startsWith("/")) return errorResponse("image must be a local public path such as /screenshots/uploaded/art.png");
+    const artworkId = stringOf(body.artworkId, "artworkId");
+    if (isError(artworkId)) return errorResponse(artworkId.error);
+    try {
+      const resolvedArtworkId = artworkId || `background-${startIndex + 1}-${spanSlots}`;
+      const state = upsertGeneratedArtwork(project, {
+        device,
+        startIndex,
+        spanSlots: spanSlots as SlotSpan,
+        image,
+        artworkId: resolvedArtworkId,
+      });
+      return noStoreJson({
+        ok: true,
+        action,
+        state,
+        path: image,
+        artworkId: resolvedArtworkId,
+        startSlot,
+        spanSlots,
+        summary: summarizeProject(state),
+      });
+    } catch (error) {
+      return errorResponse(error instanceof Error ? error.message : "Could not place background.");
+    }
+  }
+
   const applyTemplate = body.applyTemplate !== false;
   const paletteId = stringOf(body.paletteId, "paletteId");
   if (isError(paletteId)) return errorResponse(paletteId.error);

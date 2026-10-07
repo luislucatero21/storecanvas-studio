@@ -75,4 +75,33 @@ describe("StoreCanvas agent CLI", () => {
       dryRun: true,
     });
   });
+
+  it("plans placing an external image as connected artwork without contacting the app", async () => {
+    const { stdout } = await runCli(
+      "set-background",
+      "--project",
+      "example-project.json",
+      "--device",
+      "iphone",
+      "--slots",
+      "10",
+      "--image",
+      "public/backgrounds/ledgerly-signal.png",
+      "--dry-run",
+      "--json",
+    );
+    expect(JSON.parse(stdout)).toMatchObject({
+      command: "set-background",
+      spanSlots: 10,
+      startSlot: 1,
+      artworkId: "background-1-10",
+      dryRun: true,
+    });
+  });
+
+  it("rejects unsupported image formats for set-background", async () => {
+    await expect(runCli(
+      "set-background", "--project", "example-project.json", "--image", "README.md", "--dry-run",
+    )).rejects.toThrow(/png, \.jpg/);
+  });
 });
