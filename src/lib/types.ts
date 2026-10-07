@@ -100,6 +100,8 @@ export type ConnectedArtwork = {
   transform: ElementTransform;
   spanSlots: SlotSpan;
   opacity?: number;
+  /** False for transparent stickers (e.g. a mascot) that must not get the background tone veil. */
+  toneOverlay?: boolean;
 };
 
 export type BuiltInElementId = "caption" | "device" | "deviceSecondary";

@@ -1540,8 +1540,9 @@ function SlideElements({
     // Keep reused panoramas proportional across device canvases. Stretching a
     // phone panorama to the much wider iPad strip makes the artwork visibly
     // distorted; cover preserves its texture and focal rhythm instead.
-    const objectFit = "cover";
-    const tones = artworkSegmentInverted?.slice(0, artwork.spanSlots);
+    const isSticker = artwork.toneOverlay === false;
+    const objectFit = isSticker ? "contain" : "cover";
+    const tones = isSticker ? undefined : artworkSegmentInverted?.slice(0, artwork.spanSlots);
     return (
       <Movable
         key={artwork.id}
