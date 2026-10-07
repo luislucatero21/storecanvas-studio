@@ -73,6 +73,8 @@ const ConnectedArtworkSchema = z.object({
   transform: TransformSchema,
   spanSlots: SlotSpanSchema,
   opacity: z.number().finite().min(0).max(1).optional(),
+  /** False for transparent stickers (e.g. a mascot) that must not get the background tone veil. */
+  toneOverlay: z.boolean().optional(),
 });
 const ConstraintSchema = z.object({
   x: z.object({ anchor: z.string().optional(), value: z.number().finite().optional(), offset: z.number().finite().optional(), unit: z.enum(["px", "percent"]).optional() }).optional(),

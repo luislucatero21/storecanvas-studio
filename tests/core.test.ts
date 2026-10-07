@@ -1157,3 +1157,20 @@ function contrastRatio(first: string, second: string) {
   const dark = Math.min(luminance(first), luminance(second));
   return (light + 0.05) / (dark + 0.05);
 }
+
+describe("sticker artwork", () => {
+  it("keeps toneOverlay=false so mascot stickers render without the tone veil", async () => {
+    const { ProjectStateSchema } = await import("@/lib/schema");
+    const project = structuredClone(DEFAULT_PROJECT);
+    const device = Object.keys(project.slidesByDevice).find((key) => project.slidesByDevice[key]?.length)!;
+    project.slidesByDevice[device][0].connectedArtworks = [{
+      id: "mascot",
+      image: "/screenshots/uploaded/mascot.png",
+      transform: { x: 10, y: 10, width: 200, height: 200, zIndex: 5 },
+      spanSlots: 1,
+      toneOverlay: false,
+    }];
+    const parsed = ProjectStateSchema.parse(project);
+    expect(parsed.slidesByDevice[device][0].connectedArtworks?.[0]?.toneOverlay).toBe(false);
+  });
+});
