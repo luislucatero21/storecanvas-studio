@@ -65,6 +65,25 @@ Important behavior:
 - The provider key is read from `OPENAI_API_KEY` by default, or from the variable named by `--api-key-env`; it is never written to project JSON or output.
 - Generated files are materialized under ignored `public/screenshots/uploaded/` so the result works in the local editor and renderer.
 
+Place artwork made elsewhere (ChatGPT, a designer, a stock file) with the
+same connected-slot rules, without an API key:
+
+```bash
+pnpm storecanvas set-background \
+  --image ~/Downloads/background.png \
+  --device iphone \
+  --start-slot 1 \
+  --slots 10 \
+  --artwork-id rutmia-panorama \
+  --json
+```
+
+The file is copied into ignored `public/screenshots/uploaded/`; reusing
+`--artwork-id` replaces the previous placement.
+
+For transparent stickers such as an app mascot, add a single-slot connected
+artwork with `"toneOverlay": false` so it renders without the slot tone veil.
+
 Remove a selected canvas layer from an agent workflow. The editor uses the
 same semantics: user-created text, artwork, and extra device slots are
 removed; layout-owned `caption`, `device`, and `deviceSecondary` layers are
@@ -91,7 +110,7 @@ Use `--all` for every configured device and locale. The CLI syncs the selected s
 ## Agent contract
 
 - `GET /api/agent?view=catalog` returns protocol version, capabilities, devices, templates, and palettes.
-- `POST /api/agent` supports `catalog`, `inspect`, `validate`, `apply-template`, `remove-element`, and `generate-background`.
+- `POST /api/agent` supports `catalog`, `inspect`, `validate`, `apply-template`, `remove-element`, `generate-background`, and `set-background`.
 - Mutating API calls return a validated `state`; the CLI persists it atomically and refreshes the running local editor when available.
 - The bridge is local-first and stateless. Vercel remains read-only; do not treat it as a project database.
 - Keep private screenshots, app-store imports, generated artwork, API keys, and local project files out of commits.

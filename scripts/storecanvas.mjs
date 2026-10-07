@@ -82,6 +82,7 @@ Usage:
   pnpm storecanvas apply-template --template <id> [options]
   pnpm storecanvas remove-element --element <id> [options]
   pnpm storecanvas generate-background --prompt <text> --slots <1-10> [options]
+  pnpm storecanvas set-background --image <file> --slots <1-10> [--start-slot n] [--artwork-id id]
   pnpm storecanvas render [--all] [--device iphone] [--locale en-US] [--output exports/rendered]
 
 Agent options:
@@ -556,6 +557,55 @@ async function generateBackgroundCommand() {
   output(result, `Generated ${localImage} across slots ${startSlot}–${startSlot + spanSlots - 1}${result.backup ? ` · backup ${result.backup}` : ""}`);
 }
 
+async function setBackgroundCommand() {
+  const projectFile = resolveProjectFile();
+  const project = await loadProject(projectFile);
+  const imageFile = requiredArg("--image", "--image <path to a png, jpg or webp> is required");
+  const device = arg("--device", project.device);
+  if (!SUPPORTED_DEVICES.has(device)) throw new Error(`Unsupported device: ${device}`);
+  const spanSlots = integerArg("--slots", 2, { min: 1, max: 10 });
+  const startSlot = integerArg("--start-slot", 1, { min: 1, max: 10 });
+  const deckLength = Array.isArray(project.slidesByDevice?.[device]) ? project.slidesByDevice[device].length : 0;
+  if (startSlot + spanSlots - 1 > deckLength) {
+    throw new Error(`Artwork range ${startSlot}–${startSlot + spanSlots - 1} exceeds the ${device} deck (${deckLength} screens).`);
+  }
+  const extension = path.extname(imageFile).toLowerCase();
+  const mime = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp" }[extension];
+  if (!mime) throw new Error("--image must be a .png, .jpg, .jpeg or .webp file.");
+  const plan = {
+    command: "set-background",
+    projectFile,
+    device,
+    startSlot,
+    spanSlots,
+    source: path.resolve(imageFile),
+    artworkId: arg("--artwork-id") || `background-${startSlot}-${spanSlots}`,
+  };
+  if (hasFlag("--dry-run")) {
+    output({ ...plan, dryRun: true }, `Would place ${plan.source} across slots ${startSlot}–${startSlot + spanSlots - 1}`);
+    return;
+  }
+
+  const localImage = await saveGeneratedBytes(await fs.readFile(imageFile), mime);
+  const response = await agentRequest("POST", "/api/agent", {
+    action: "set-background",
+    project,
+    device,
+    startSlot,
+    spanSlots,
+    image: localImage,
+    artworkId: plan.artworkId,
+  });
+  const result = {
+    ...plan,
+    image: localImage,
+    dryRun: false,
+    summary: response.summary,
+    ...(await persistProject(projectFile, response.state)),
+  };
+  output(result, `Placed ${localImage} across slots ${startSlot}–${startSlot + spanSlots - 1}${result.backup ? ` · backup ${result.backup}` : ""}`);
+}
+
 function localesFor(project) {
   const requested = arg("--locale");
   if (requested) return [requested];
@@ -653,6 +703,7 @@ async function main() {
   if (command === "apply-template" || command === "template") return applyTemplateCommand();
   if (command === "remove-element" || command === "delete-element") return removeElementCommand();
   if (command === "generate-background" || command === "background") return generateBackgroundCommand();
+  if (command === "set-background") return setBackgroundCommand();
   if (command === "render") return renderCommand();
   throw new Error(`Unknown command: ${command}. Run pnpm storecanvas --help.`);
 }
