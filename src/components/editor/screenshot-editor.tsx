@@ -77,6 +77,7 @@ export function ScreenshotEditor() {
     redo,
   } = useProject();
   const [activeSlideId, setActiveSlideId] = React.useState<string | null>(null);
+  const [shortcutsOpen, setShortcutsOpen] = React.useState(false);
   const [selectedElement, setSelectedElement] = React.useState<SelectedElement | null>(null);
   const [exporting, setExporting] = React.useState<string | null>(null);
   const [ready, setReady] = React.useState(false);
@@ -496,13 +497,26 @@ export function ScreenshotEditor() {
         redo();
         return;
       }
+      if ((e.metaKey || e.ctrlKey) && (e.key === "e" || e.key === "E")) {
+        e.preventDefault();
+        void exportAll();
+        return;
+      }
+      if (e.key === "?" && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        setShortcutsOpen(true);
+        return;
+      }
       if (!currentSlides.length) return;
       const idx = activeSlide ? currentSlides.findIndex((s) => s.id === activeSlide.id) : -1;
-      if (e.key === "ArrowDown" || (e.key === "j" && !e.metaKey && !e.ctrlKey)) {
+      // Left/right only page screens when nothing is selected, so they never
+      // fight with element-level handling on the canvas.
+      const pageKey = !selectedElement && !e.metaKey && !e.ctrlKey && !e.altKey;
+      if (e.key === "ArrowDown" || (pageKey && e.key === "ArrowRight") || (e.key === "j" && !e.metaKey && !e.ctrlKey)) {
         e.preventDefault();
         const next = currentSlides[Math.min(currentSlides.length - 1, idx + 1)];
         if (next) setActiveSlideId(next.id);
-      } else if (e.key === "ArrowUp" || (e.key === "k" && !e.metaKey && !e.ctrlKey)) {
+      } else if (e.key === "ArrowUp" || (pageKey && e.key === "ArrowLeft") || (e.key === "k" && !e.metaKey && !e.ctrlKey)) {
         e.preventDefault();
         const next = currentSlides[Math.max(0, idx - 1)];
         if (next) setActiveSlideId(next.id);
@@ -520,7 +534,7 @@ export function ScreenshotEditor() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [activeSlide, currentSlides, deleteSelectedElement, duplicateSlide, deleteSlide, exporting, redo, selectedElement, undo]);
+  }, [activeSlide, currentSlides, deleteSelectedElement, duplicateSlide, deleteSlide, exportAll, exporting, redo, selectedElement, undo]);
 
   // ---------- Export ----------
 
@@ -763,6 +777,13 @@ export function ScreenshotEditor() {
           exportSizeIds: { ...(p.exportSizeIds || {}), [device]: ids },
         }))}
         onExport={exportAll}
+        shortcutsOpen={shortcutsOpen}
+        onShortcutsOpenChange={setShortcutsOpen}
+        onSelectIssue={(device, slideId) => {
+          if (device !== state.device) setState((p) => ({ ...p, device }));
+          setSelectedElement(null);
+          setActiveSlideId(slideId);
+        }}
         onResetAll={() => {
           reset();
           setActiveSlideId(null);

@@ -149,6 +149,10 @@ Useful automation commands:
 | `catalog --json` | List supported devices, templates, palettes and capabilities. |
 | `inspect --json` | Summarize the selected project and every connected artwork span; with the app running, also expands empty iPad/Android decks using the editor defaults. |
 | `validate --json` | Run schema and export-readiness checks; exits non-zero on errors. |
+| `screens --json` | List every screen's layout, headline/label, resolved screenshot, artwork and hidden layers (works offline). |
+| `edit-screen --screen <n>` | Change a screen's `--headline`, `--label`, `--layout`, `--image` or `--secondary-image` (alias `set-copy`). |
+| `set-project` | Switch `--device`, `--orientation`, `--locale`, `--app-name`, `--palette` or `--connected on|off`. |
+| `help [command] [--json]` | Command list and typical flow; `--json` emits a machine-readable manifest. |
 | `apply-template --template <id>` | Recompose one device deck with optional palette/reset flags. |
 | `remove-element --element <id>` | Remove a text/artwork/extra slot, or hide a built-in layer; use `--screen` to target a screen. |
 | `generate-background --slots <1-10>` | Generate and attach one connected artwork to adjacent slots. |

@@ -104,4 +104,71 @@ describe("StoreCanvas agent CLI", () => {
       "set-background", "--project", "example-project.json", "--image", "README.md", "--dry-run",
     )).rejects.toThrow(/png, \.jpg/);
   });
+
+  it("lists screens with resolved copy and screenshots offline", async () => {
+    const { stdout } = await runCli("screens", "--project", "example-project.json", "--json");
+    const payload = JSON.parse(stdout);
+    expect(payload.device).toBe("iphone");
+    expect(payload.screens).toHaveLength(10);
+    expect(payload.screens[0]).toMatchObject({
+      screen: 1,
+      layout: "hero",
+      headline: expect.any(String),
+      screenshot: expect.stringMatching(/^\/screenshots\//),
+      connectedArtworks: expect.any(Array),
+      hiddenElements: expect.any(Array),
+    });
+  });
+
+  it("plans a screen edit without the app and rejects empty or invalid edits", async () => {
+    const { stdout } = await runCli(
+      "edit-screen", "--project", "example-project.json", "--screen", "2",
+      "--headline", "Fresh headline", "--layout", "hero", "--dry-run", "--json",
+    );
+    expect(JSON.parse(stdout)).toMatchObject({
+      command: "edit-screen",
+      screen: 2,
+      changes: { headline: "Fresh headline", layout: "hero" },
+      dryRun: true,
+    });
+    await expect(runCli("edit-screen", "--project", "example-project.json", "--screen", "1", "--json"))
+      .rejects.toMatchObject({ stdout: expect.stringContaining("at least one change") });
+    await expect(runCli("edit-screen", "--project", "example-project.json", "--screen", "1", "--layout", "nope", "--json"))
+      .rejects.toMatchObject({ stdout: expect.stringContaining("Valid layouts") });
+  });
+
+  it("rejects landscape on devices that do not support it before contacting the app", async () => {
+    await expect(runCli("set-project", "--project", "example-project.json", "--device", "android", "--orientation", "landscape"))
+      .rejects.toThrow(/does not support landscape/);
+  });
+
+  it("emits a machine-readable command manifest", async () => {
+    const { stdout } = await runCli("help", "--json");
+    const manifest = JSON.parse(stdout);
+    const names = manifest.commands.map((command: { name: string }) => command.name);
+    expect(names).toEqual(expect.arrayContaining(["screens", "edit-screen", "set-project", "inspect", "render"]));
+    const edit = manifest.commands.find((command: { name: string }) => command.name === "edit-screen");
+    expect(edit).toMatchObject({ aliases: ["set-copy"], needsApp: true, writes: true });
+    expect(edit.flags).toContainEqual(expect.objectContaining({ name: "--screen", value: "1-10", required: true }));
+    expect(edit.examples.length).toBeGreaterThan(0);
+    expect(JSON.parse((await runCli("commands", "--json")).stdout)).toEqual(manifest);
+  });
+
+  it("prints per-command help for `help <command>` and `<command> --help`", async () => {
+    const viaHelp = (await runCli("help", "screens")).stdout;
+    const viaFlag = (await runCli("screens", "--help")).stdout;
+    expect(viaHelp).toBe(viaFlag);
+    expect(viaHelp).toContain("Usage:");
+    expect((await runCli("help")).stdout).toContain("Typical flow:");
+  });
+
+  it("suggests the closest command in a JSON error", async () => {
+    const failure = await runCli("screeens", "--json").catch((error) => error);
+    expect(failure.code).toBe(1);
+    expect(JSON.parse(failure.stdout)).toMatchObject({
+      ok: false,
+      error: "Unknown command: screeens.",
+      hint: expect.stringContaining('"screens"'),
+    });
+  });
 });

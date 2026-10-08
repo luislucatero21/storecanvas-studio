@@ -568,6 +568,22 @@ test.describe("StoreCanvas editor", () => {
     }
   });
 
+  test("pages screens with the keyboard and lists the shortcuts", async ({ page }) => {
+    await page.goto("/");
+    const headline = page.getByRole("textbox", { name: "Headline" });
+    const locale = baseline.locale as keyof (typeof baseline.slidesByDevice.iphone)[number]["headline"];
+    await expect(headline).toHaveValue(baseline.slidesByDevice.iphone[0].headline[locale]);
+
+    await page.locator("body").press("ArrowRight");
+    await expect(headline).toHaveValue(baseline.slidesByDevice.iphone[1].headline[locale]);
+    await page.locator("body").press("ArrowLeft");
+    await expect(headline).toHaveValue(baseline.slidesByDevice.iphone[0].headline[locale]);
+
+    await page.locator("body").press("?");
+    await expect(page.getByRole("dialog", { name: "Keyboard shortcuts" })).toBeVisible();
+    await expect(page.getByText("Export bundle", { exact: true }).last()).toBeVisible();
+  });
+
   test("uses the full connected deck when rendering sidebar thumbnails", async ({ page }) => {
     await page.goto("/");
     const secondScreen = page.getByRole("button", { name: /Screen 2 ·/ });

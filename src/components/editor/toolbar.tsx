@@ -5,6 +5,7 @@ import {
   Check,
   Cloud,
   Download,
+  Keyboard,
   Link2,
   RotateCcw,
   ShieldAlert,
@@ -97,6 +98,10 @@ type Props = {
   onApplyCampaignImport: (proposal: CampaignImportProposal, options: CampaignImportOptions) => void;
   onApplyAiProposal: (proposal: AiProposal) => void;
   validation: ValidationResult;
+  /** Jump to the screen an issue points at (switching device when needed). */
+  onSelectIssue?: (device: Device, slideId: string) => void;
+  shortcutsOpen: boolean;
+  onShortcutsOpenChange: (open: boolean) => void;
   editorLayout: EditorLayoutPreferences;
   onEditorLayoutChange: (patch: Partial<EditorLayoutPreferences>) => void;
 };
@@ -329,6 +334,16 @@ export function Toolbar(props: Props) {
           variant="ghost"
           size="icon"
           className="h-8 w-8"
+          onClick={() => props.onShortcutsOpenChange(true)}
+          title="Keyboard shortcuts (?)"
+          aria-label="Keyboard shortcuts"
+        >
+          <Keyboard className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
           onClick={() => setResetOpen(true)}
           title="Reset screens to defaults"
           aria-label="Reset"
@@ -367,14 +382,66 @@ export function Toolbar(props: Props) {
             {props.validation.issues.length === 0 ? (
               <p className="flex items-center gap-2 text-emerald-700"><ShieldCheck className="h-4 w-4" /> No blockers found.</p>
             ) : (
-              props.validation.issues.map((issue, index) => (
-                <div key={`${issue.code}-${issue.slideId || "project"}-${index}`} className="flex gap-2 rounded border bg-background/70 p-2">
-                  {issue.severity === "error" ? <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" /> : <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />}
-                  <span>{issue.message}</span>
-                </div>
-              ))
+              props.validation.issues.map((issue, index) => {
+                const icon = issue.severity === "error"
+                  ? <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+                  : <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />;
+                const where = issue.device
+                  ? `${DEVICE_LABEL[issue.device]}${issue.screen ? ` · Screen ${issue.screen}` : ""}`
+                  : null;
+                const body = (
+                  <>
+                    {icon}
+                    <span className="min-w-0 flex-1">
+                      {where ? <span className="block text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{where}</span> : null}
+                      {issue.message}
+                    </span>
+                  </>
+                );
+                const key = `${issue.code}-${issue.device || "project"}-${issue.slideId || "project"}-${index}`;
+                const issueDevice = issue.device;
+                const issueSlide = issue.slideId;
+                if (!issueDevice || !issueSlide || !props.onSelectIssue) {
+                  return <div key={key} className="flex gap-2 rounded border bg-background/70 p-2">{body}</div>;
+                }
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    className="flex w-full gap-2 rounded border bg-background/70 p-2 text-left transition-colors hover:border-foreground/30 hover:bg-background"
+                    onClick={() => {
+                      setQaOpen(false);
+                      props.onSelectIssue?.(issueDevice, issueSlide);
+                    }}
+                    title="Go to this screen"
+                  >
+                    {body}
+                  </button>
+                );
+              })
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={props.shortcutsOpen} onOpenChange={props.onShortcutsOpenChange}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Keyboard className="h-5 w-5" /> Keyboard shortcuts</DialogTitle>
+            <DialogDescription>Shortcuts work whenever you are not typing in a field.</DialogDescription>
+          </DialogHeader>
+          <dl className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 text-xs">
+            {SHORTCUTS.map(([keys, action]) => (
+              <React.Fragment key={action}>
+                <dt className="flex gap-1">
+                  {keys.map((key) => (
+                    <kbd key={key} className="rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px]">{key}</kbd>
+                  ))}
+                </dt>
+                <dd className="text-muted-foreground">{action}</dd>
+              </React.Fragment>
+            ))}
+          </dl>
         </DialogContent>
       </Dialog>
 
@@ -416,6 +483,21 @@ export function Toolbar(props: Props) {
     </div>
   );
 }
+
+const MOD = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘" : "Ctrl";
+
+const SHORTCUTS: Array<[string[], string]> = [
+  [["←", "→"], "Previous / next screen"],
+  [["J", "K"], "Next / previous screen"],
+  [[MOD, "D"], "Duplicate screen"],
+  [[MOD, "⌫"], "Delete screen"],
+  [["⌫"], "Delete selected element"],
+  [[MOD, "Z"], "Undo"],
+  [[MOD, "⇧", "Z"], "Redo"],
+  [[MOD, "E"], "Export bundle"],
+  [["Esc"], "Deselect"],
+  [["?"], "Show this list"],
+];
 
 function SaveStatus({ savedAt, saveError, fileSyncAvailable }: { savedAt: number | null; saveError: string | null; fileSyncAvailable: boolean }) {
   const [, setTick] = React.useState(0);

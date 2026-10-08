@@ -8,7 +8,9 @@ import {
 import {
   applyAgentTemplate,
   assertConnectedArtworkRange,
+  editAgentScreen,
   removeAgentElement,
+  setAgentProject,
   resolveAgentPalette,
   resolveAgentTemplate,
   summarizeProject,
@@ -43,6 +45,8 @@ const ActionSchema = z.enum([
   "validate",
   "apply-template",
   "remove-element",
+  "edit-screen",
+  "set-project",
   "generate-background",
   "set-background",
 ]);
@@ -118,6 +122,8 @@ function catalog() {
       validate: true,
       applyTemplate: true,
       removeElement: true,
+      editScreen: true,
+      setProject: true,
       generateBackground: true,
       maxArtworkSlots: 10,
     },
@@ -194,6 +200,80 @@ export async function POST(request: Request) {
       });
     } catch (error) {
       return errorResponse(error instanceof Error ? error.message : "Could not remove element.");
+    }
+  }
+
+  if (action === "edit-screen") {
+    const screenIndex = integerOf(body.screenIndex, 0, "screenIndex");
+    if (isError(screenIndex)) return errorResponse(screenIndex.error);
+    const fields: Record<"locale" | "layout" | "screenshot" | "screenshotSecondary", string | undefined> = {
+      locale: undefined, layout: undefined, screenshot: undefined, screenshotSecondary: undefined,
+    };
+    for (const key of Object.keys(fields) as Array<keyof typeof fields>) {
+      const value = stringOf(body[key], key);
+      if (isError(value)) return errorResponse(value.error);
+      fields[key] = value;
+    }
+    for (const key of ["screenshot", "screenshotSecondary"] as const) {
+      const value = fields[key];
+      if (value && !value.startsWith("/") && !value.startsWith("data:")) {
+        return errorResponse(`${key} must be a local public path such as /screenshots/uploaded/screen.png`);
+      }
+    }
+    // Copy text may be empty (clears the locale's value), so it is validated separately.
+    const text: Record<"headline" | "label", string | undefined> = { headline: undefined, label: undefined };
+    for (const key of ["headline", "label"] as const) {
+      const value = body[key];
+      if (value !== undefined && typeof value !== "string") return errorResponse(`${key} must be a string`);
+      text[key] = value as string | undefined;
+    }
+    try {
+      const result = editAgentScreen(project, { device, screenIndex, ...fields, ...text });
+      return noStoreJson({
+        ok: true,
+        action,
+        device,
+        screenIndex: result.screenIndex,
+        locale: result.locale,
+        changes: result.changes,
+        state: result.state,
+        summary: summarizeProject(result.state),
+      });
+    } catch (error) {
+      return errorResponse(error instanceof Error ? error.message : "Could not edit screen.");
+    }
+  }
+
+  if (action === "set-project") {
+    const orientation = stringOf(body.orientation, "orientation");
+    if (isError(orientation)) return errorResponse(orientation.error);
+    const locale = stringOf(body.locale, "locale");
+    if (isError(locale)) return errorResponse(locale.error);
+    const appName = stringOf(body.appName, "appName");
+    if (isError(appName)) return errorResponse(appName.error);
+    const paletteId = stringOf(body.paletteId, "paletteId");
+    if (isError(paletteId)) return errorResponse(paletteId.error);
+    if (body.connectedCanvas !== undefined && typeof body.connectedCanvas !== "boolean") {
+      return errorResponse("connectedCanvas must be a boolean");
+    }
+    try {
+      const result = setAgentProject(project, {
+        device: body.device === undefined ? undefined : device,
+        orientation: orientation as "portrait" | "landscape" | undefined,
+        locale,
+        appName,
+        paletteId,
+        connectedCanvas: body.connectedCanvas as boolean | undefined,
+      });
+      return noStoreJson({
+        ok: true,
+        action,
+        changes: result.changes,
+        state: result.state,
+        summary: summarizeProject(result.state),
+      });
+    } catch (error) {
+      return errorResponse(error instanceof Error ? error.message : "Could not update project.");
     }
   }
 
