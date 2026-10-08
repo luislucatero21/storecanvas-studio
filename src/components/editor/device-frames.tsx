@@ -17,7 +17,15 @@ type FrameProps = {
 
 // iPhone hardware is rendered as a layered vector frame so its cutout,
 // controls and side rail remain legible under the shared 3D camera rig.
-export function Phone({ src, alt = "", style, hideEmpty, model, presentation }: FrameProps) {
+export function Phone({
+  src,
+  alt = "",
+  style,
+  hideEmpty,
+  model,
+  presentation,
+  sideways,
+}: FrameProps & { sideways?: boolean }) {
   const resolved = img(src);
   const hardware = iphoneModelDefinition(model);
   const tilt = presentation?.rotateY || 0;
@@ -84,13 +92,14 @@ export function Phone({ src, alt = "", style, hideEmpty, model, presentation }: 
           height: `${PHONE_SCREEN.H}%`,
           borderRadius: `${PHONE_SCREEN.RX}% / ${PHONE_SCREEN.RY}%`,
           background: "#111",
+          ...(sideways ? { containerType: "size" as const } : {}),
         }}
       >
         {resolved ? (
           <img
             src={resolved}
             alt={alt}
-            style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
+            style={sideways ? SIDEWAYS_CAPTURE : { display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
             draggable={false}
           />
         ) : hideEmpty ? null : (
@@ -166,6 +175,47 @@ export function Phone({ src, alt = "", style, hideEmpty, model, presentation }: 
           />
         );
       })}
+    </div>
+  );
+}
+
+// A landscape capture drawn inside the portrait screen, turned so it reads
+// upright once PhoneLandscape rotates the whole handset a quarter turn.
+const SIDEWAYS_CAPTURE: React.CSSProperties = {
+  position: "absolute",
+  left: "50%",
+  top: "50%",
+  width: "100cqh",
+  maxWidth: "none",
+  height: "100cqw",
+  objectFit: "cover",
+  objectPosition: "top",
+  transform: "translate(-50%, -50%) rotate(90deg)",
+};
+
+/** iPhone held sideways with the Dynamic Island on the left. */
+export function PhoneLandscape({ style, ...props }: FrameProps) {
+  return (
+    <div
+      data-device-orientation="landscape"
+      style={{
+        position: "relative",
+        aspectRatio: "2082 / 1022",
+        transformStyle: "preserve-3d",
+        ...style,
+      }}
+    >
+      <Phone
+        {...props}
+        sideways
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: "50%",
+          width: `${(1022 / 2082) * 100}%`,
+          transform: "translate(-50%, -50%) rotate(-90deg)",
+        }}
+      />
     </div>
   );
 }
@@ -339,15 +389,24 @@ export function AndroidTabletL({ src, alt = "", style, hideEmpty }: FrameProps) 
   );
 }
 
-export function IPad({ src, alt = "", style, hideEmpty }: FrameProps) {
+export function IPad(props: FrameProps) {
+  return <IPadFrame {...props} landscape={false} />;
+}
+
+export function IPadLandscape(props: FrameProps) {
+  return <IPadFrame {...props} landscape />;
+}
+
+// Bezel and corner radii are expressed against each edge, so landscape swaps them.
+function IPadFrame({ src, alt = "", style, hideEmpty, landscape }: FrameProps & { landscape: boolean }) {
   const resolved = img(src);
   return (
-    <div style={{ position: "relative", aspectRatio: "770 / 1000", ...style }}>
+    <div style={{ position: "relative", aspectRatio: landscape ? "1000 / 770" : "770 / 1000", ...style }}>
       <div
         style={{
           width: "100%",
           height: "100%",
-          borderRadius: "5% / 3.6%",
+          borderRadius: landscape ? "3.6% / 5%" : "5% / 3.6%",
           background: "linear-gradient(180deg, #2C2C2E 0%, #1C1C1E 100%)",
           position: "relative",
           overflow: "hidden",
@@ -357,11 +416,11 @@ export function IPad({ src, alt = "", style, hideEmpty }: FrameProps) {
         <div
           style={{
             position: "absolute",
-            top: "1.2%",
+            top: landscape ? "1.6%" : "1.2%",
             left: "50%",
             transform: "translateX(-50%)",
-            width: "0.9%",
-            height: "0.65%",
+            width: landscape ? "0.65%" : "0.9%",
+            height: landscape ? "0.9%" : "0.65%",
             borderRadius: "50%",
             background: "#111113",
             zIndex: 20,
@@ -370,11 +429,11 @@ export function IPad({ src, alt = "", style, hideEmpty }: FrameProps) {
         <div
           style={{
             position: "absolute",
-            left: "4%",
-            top: "2.8%",
-            width: "92%",
-            height: "94.4%",
-            borderRadius: "2.2% / 1.6%",
+            left: landscape ? "2.8%" : "4%",
+            top: landscape ? "4%" : "2.8%",
+            width: landscape ? "94.4%" : "92%",
+            height: landscape ? "92%" : "94.4%",
+            borderRadius: landscape ? "1.6% / 2.2%" : "2.2% / 1.6%",
             overflow: "hidden",
             background: "#000",
           }}

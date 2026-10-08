@@ -2,8 +2,8 @@ import type { Device, ExportSizeSelection, Orientation, SlideLayout, Theme, Them
 
 // ---------- Canvas dimensions (design at largest required resolution) ----------
 export const CANVAS: Record<Device, { w: number; h: number; wL?: number; hL?: number }> = {
-  iphone:        { w: 1320, h: 2868 },
-  ipad:          { w: 2064, h: 2752 },
+  iphone:        { w: 1320, h: 2868, wL: 2868, hL: 1320 },
+  ipad:          { w: 2064, h: 2752, wL: 2752, hL: 2064 },
   android:       { w: 1080, h: 1920 },
   "android-7":   { w: 1200, h: 1920, wL: 1920, hL: 1200 },
   "android-10":  { w: 1600, h: 2560, wL: 2560, hL: 1600 },
@@ -30,8 +30,15 @@ export const EXPORT_SIZES: Record<Device, ExportSize[]> = {
   "feature-graphic": [{ id: "feature-graphic", label: "Feature Graphic", w: 1024, h: 500 }],
 };
 
-// Landscape sizes (tablets only)
+function rotated(sizes: ExportSize[]): ExportSize[] {
+  return sizes.map((size) => ({ id: `${size.id}-landscape`, label: `${size.label} Landscape`, w: size.h, h: size.w }));
+}
+
+// App Store Connect accepts every iPhone and iPad display class in either
+// orientation; Google Play only documents landscape for tablets.
 export const EXPORT_SIZES_LANDSCAPE: Partial<Record<Device, ExportSize[]>> = {
+  iphone: rotated(EXPORT_SIZES.iphone),
+  ipad: rotated(EXPORT_SIZES.ipad),
   "android-7":  [{ id: "android-7-landscape", label: '7" Landscape',  w: 1920, h: 1200 }],
   "android-10": [{ id: "android-10-landscape", label: '10" Landscape', w: 2560, h: 1600 }],
 };
@@ -74,8 +81,14 @@ export function getSelectedExportSizes(
   const sizes = getExportSizes(device, orientation);
   const requested = selection?.[device];
   if (!Array.isArray(requested) || requested.length === 0) return sizes.slice(0, 1);
-  const selected = sizes.filter((size) => requested.includes(size.id));
+  // Match by display class so a size picked in one orientation survives a flip.
+  const requestedClasses = new Set(requested.map(sizeClassId));
+  const selected = sizes.filter((size) => requestedClasses.has(sizeClassId(size.id)));
   return selected.length > 0 ? selected : sizes.slice(0, 1);
+}
+
+function sizeClassId(id: string) {
+  return id.replace(/-(portrait|landscape)$/, "");
 }
 
 // ---------- Frame aspect ratios ----------
@@ -109,6 +122,10 @@ export function tabletLW(cW: number, cH: number, clamp = 0.62) {
 }
 export function ipadW(cW: number, cH: number, clamp = 0.75) {
   return Math.min(clamp, 0.72 * (cH / cW) * IPAD_RATIO);
+}
+/** Width fraction for a sideways frame whose height should fill ~70% of the canvas. */
+export function landscapeW(cW: number, cH: number, aspect: number, clamp = 0.62) {
+  return Math.min(clamp, 0.7 * (cH / cW) * aspect);
 }
 
 // ---------- Themes ----------

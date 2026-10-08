@@ -19,6 +19,7 @@ import {
   IPAD_RATIO,
   MK_RATIO,
   ipadW,
+  landscapeW,
   phoneW,
   phoneWSmall,
   tabletLW,
@@ -44,7 +45,9 @@ import {
   AndroidTabletL,
   AndroidTabletP,
   IPad,
+  IPadLandscape,
   Phone,
+  PhoneLandscape,
 } from "./device-frames";
 
 type FrameComp = React.ComponentType<{
@@ -61,9 +64,9 @@ export { getCanvas } from "@/lib/canvas";
 // Aspect ratio (w/h) of each device frame — must match device-frames.tsx
 function getFrameAspect(device: Device, orientation: Orientation) {
   switch (device) {
-    case "iphone":      return MK_RATIO;
+    case "iphone":      return orientation === "landscape" ? 1 / MK_RATIO : MK_RATIO;
     case "android":     return 9 / 19.5;
-    case "ipad":        return IPAD_RATIO;
+    case "ipad":        return orientation === "landscape" ? 1 / IPAD_RATIO : IPAD_RATIO;
     case "android-7":
     case "android-10":  return orientation === "landscape" ? 8 / 5 : 5 / 8;
     default:            return 1;
@@ -77,8 +80,22 @@ export function getFrameForDevice(device: Device, orientation: Orientation): {
 } {
   switch (device) {
     case "iphone":
+      if (orientation === "landscape") {
+        return {
+          Comp: PhoneLandscape,
+          widthFn: (cW, cH) => landscapeW(cW, cH, 1 / MK_RATIO),
+          smallWidthFn: (cW, cH) => landscapeW(cW, cH, 1 / MK_RATIO, 0.48),
+        };
+      }
       return { Comp: Phone, widthFn: phoneW, smallWidthFn: phoneWSmall };
     case "ipad":
+      if (orientation === "landscape") {
+        return {
+          Comp: IPadLandscape,
+          widthFn: (cW, cH) => landscapeW(cW, cH, 1 / IPAD_RATIO),
+          smallWidthFn: (cW, cH) => landscapeW(cW, cH, 1 / IPAD_RATIO, 0.48),
+        };
+      }
       return { Comp: IPad, widthFn: ipadW, smallWidthFn: (cW, cH) => ipadW(cW, cH, 0.6) };
     case "android":
       return { Comp: AndroidPhone, widthFn: phoneW, smallWidthFn: phoneWSmall };
