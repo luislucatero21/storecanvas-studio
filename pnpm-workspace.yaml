@@ -1,14 +1,12 @@
 allowBuilds:
   esbuild: true
   sharp: true
-minimumReleaseAgeExclude:
-  - '@next/env@16.3.3'
-  - '@next/swc-darwin-arm64@16.3.3'
-  - '@next/swc-darwin-x64@16.3.3'
-  - '@next/swc-linux-arm64-gnu@16.3.3'
-  - '@next/swc-linux-arm64-musl@16.3.3'
-  - '@next/swc-linux-x64-gnu@16.3.3'
-  - '@next/swc-linux-x64-musl@16.3.3'
-  - '@next/swc-win32-arm64-msvc@16.3.3'
-  - '@next/swc-win32-x64-msvc@16.3.3'
-  - next@16.3.3
+overrides:
+  sharp: ^0.35.5
+  source-map-js: ^1.2.2
+  undici@8: ^8.10.2
+auditConfig:
+  ignoreGhsas:
+    # braces has no patched release on npm yet; it only reaches the tree through
+    # tailwindcss 3's file watcher (chokidar), which never parses untrusted input.
+    - GHSA-vfj7-8cjw-p6xm
