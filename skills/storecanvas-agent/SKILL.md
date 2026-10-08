@@ -1,6 +1,6 @@
 ---
 name: storecanvas-agent
-description: Use the StoreCanvas CLI to inspect campaigns, choose templates and palettes, remove canvas layers, generate connected AI artwork across 1–10 screenshot slots, validate projects, and render deterministic App Store assets.
+description: Use the StoreCanvas CLI to inspect campaigns, list and edit screen copy, swap screenshots, switch device/orientation/locale, choose templates and palettes, remove canvas layers, generate connected AI artwork across 1–10 screenshot slots, validate projects, and render deterministic App Store assets.
 ---
 
 # StoreCanvas agent workflow
@@ -28,6 +28,32 @@ Use this skill from the StoreCanvas repository root. The CLI is the supported ag
    ```bash
    pnpm storecanvas catalog --json
    ```
+
+## Typical flow
+
+`pnpm storecanvas help` lists every command; `help <command>` (or `<command> --help`) prints flags and examples, and `help --json` emits a machine manifest (`commands[]` with `flags`, `needsApp`, `writes`). Never hand-edit project JSON; follow:
+
+1. `inspect` — project, device, locales, decks (human output ends with a `Next:` hint).
+2. `screens --json` — per screen: `screen` (1-based), `id`, `layout`, `label`, `headline`, resolved `screenshot`, `connectedArtworks`, `hiddenElements`. Works offline; `--device` and `--locale` select the deck/locale.
+3. `edit-screen` / `apply-template` — change things.
+4. `validate --json`, then `render`.
+
+Edit one screen (`set-copy` is an alias). At least one change flag is required; copy is written for `--locale` and follows the project's copy linking between decks; `--layout` resets manual transforms; `--image` copies a png/jpg/webp into `public/screenshots/uploaded` and updates the asset library:
+
+```bash
+pnpm storecanvas edit-screen --screen 2 --headline "Track every payment" --label "Insights" --json
+pnpm storecanvas edit-screen --screen 3 --layout device-top --image ~/shots/home.png --dry-run
+```
+
+Layouts: `hero`, `device-bottom`, `device-top`, `two-devices`, `no-device`, `split-landscape`, `feature-graphic`. `--secondary-image` needs `two-devices`.
+
+Switch project-level settings (landscape only for iphone, ipad, android-7, android-10; locale must already exist in the project):
+
+```bash
+pnpm storecanvas set-project --device ipad --orientation landscape --palette afterglow-pulse --connected on
+```
+
+With `--json`, failures print `{"ok":false,"error":"...","hint":"..."}` on stdout and exit 1. If the app is unreachable, start it with `pnpm dev -p 3100` (or point `STORECANVAS_URL` at it). Unknown template/palette ids: run `pnpm storecanvas catalog --json`.
 
 ## Compose a campaign
 
@@ -110,7 +136,7 @@ Use `--all` for every configured device and locale. The CLI syncs the selected s
 ## Agent contract
 
 - `GET /api/agent?view=catalog` returns protocol version, capabilities, devices, templates, and palettes.
-- `POST /api/agent` supports `catalog`, `inspect`, `validate`, `apply-template`, `remove-element`, `generate-background`, and `set-background`.
+- `POST /api/agent` supports `catalog`, `inspect`, `validate`, `apply-template`, `remove-element`, `edit-screen`, `set-project`, `generate-background`, and `set-background`.
 - Mutating API calls return a validated `state`; the CLI persists it atomically and refreshes the running local editor when available.
 - The bridge is local-first and stateless. Vercel remains read-only; do not treat it as a project database.
 - Keep private screenshots, app-store imports, generated artwork, API keys, and local project files out of commits.

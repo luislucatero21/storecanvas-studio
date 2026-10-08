@@ -9,6 +9,10 @@ export type ValidationIssue = {
   severity: "error" | "warning";
   message: string;
   slideId?: string;
+  /** Deck the issue belongs to, so people and agents can jump straight to it. */
+  device?: Device;
+  /** One-based screen number within that deck. */
+  screen?: number;
   locale?: string;
 };
 
@@ -52,21 +56,21 @@ export function validateProject(
   for (const [device, slides] of Object.entries(project.slidesByDevice) as [Device, Slide[]][]) {
     const maxSlides = device === "iphone" || device === "ipad" ? 10 : 8;
     if (slides.length > maxSlides) {
-      issues.push({ code: "slide-limit", severity: "error", message: `${device} has ${slides.length} slides; the store limit is ${maxSlides}.` });
+      issues.push({ code: "slide-limit", severity: "error", message: `${device} has ${slides.length} slides; the store limit is ${maxSlides}.`, device });
     }
     if (!getExportSizes(device, device === "android-7" || device === "android-10" ? project.orientation : "portrait").length) {
-      issues.push({ code: "no-export-target", severity: "error", message: `No export target is configured for ${device}.` });
+      issues.push({ code: "no-export-target", severity: "error", message: `No export target is configured for ${device}.`, device });
     }
     slides.forEach((slide, slideIndex) => {
       if (needsScreenshot(device, slide)) {
         if (slide.assetRef && !project.assets?.[slide.assetRef] && !slide.screenshot) {
-          issues.push({ code: "unresolved-asset", severity: "error", message: `Asset ${slide.assetRef} is not defined.`, slideId: slide.id });
+          issues.push({ code: "unresolved-asset", severity: "error", message: `Asset ${slide.assetRef} is not defined.`, slideId: slide.id, device, screen: slideIndex + 1 });
         }
         const resolved = resolveAssetPath(slide.assetRef, project.locale, project.assets, slide.screenshot);
         if (!resolved) {
-          issues.push({ code: "missing-screenshot", severity: severity(strict), message: "Add a screenshot or semantic capture before exporting.", slideId: slide.id, locale: project.locale });
+          issues.push({ code: "missing-screenshot", severity: severity(strict), message: "Add a screenshot or semantic capture before exporting.", slideId: slide.id, device, screen: slideIndex + 1, locale: project.locale });
         } else if (options.existingPaths && !resolved.startsWith("data:") && !options.existingPaths.has(resolved)) {
-          issues.push({ code: "missing-file", severity: severity(strict), message: `Screenshot file is missing at ${resolved}.`, slideId: slide.id, locale: project.locale });
+          issues.push({ code: "missing-file", severity: severity(strict), message: `Screenshot file is missing at ${resolved}.`, slideId: slide.id, device, screen: slideIndex + 1, locale: project.locale });
         }
       }
       for (const ref of [slide.assetRef, slide.assetRefSecondary]) {
@@ -77,20 +81,20 @@ export function validateProject(
       for (const slot of slide.deviceSlots || []) {
         const resolved = resolveAssetPath(slot.assetRef, project.locale, project.assets, slot.screenshot);
         if (!resolved) {
-          issues.push({ code: "missing-slot-screenshot", severity: severity(strict), message: "Add a capture to every extra device slot before exporting.", slideId: slide.id, locale: project.locale });
+          issues.push({ code: "missing-slot-screenshot", severity: severity(strict), message: "Add a capture to every extra device slot before exporting.", slideId: slide.id, device, screen: slideIndex + 1, locale: project.locale });
         } else if (options.existingPaths && !resolved.startsWith("data:") && !options.existingPaths.has(resolved)) {
-          issues.push({ code: "missing-slot-file", severity: severity(strict), message: `Extra device capture is missing at ${resolved}.`, slideId: slide.id, locale: project.locale });
+          issues.push({ code: "missing-slot-file", severity: severity(strict), message: `Extra device capture is missing at ${resolved}.`, slideId: slide.id, device, screen: slideIndex + 1, locale: project.locale });
         }
       }
       for (const artwork of slide.connectedArtworks || []) {
         const resolved = resolveAssetPath(artwork.assetRef, project.locale, project.assets, artwork.image);
         if (!resolved) {
-          issues.push({ code: "missing-connected-artwork", severity: severity(strict), message: "Add an image to every connected artwork before exporting.", slideId: slide.id, locale: project.locale });
+          issues.push({ code: "missing-connected-artwork", severity: severity(strict), message: "Add an image to every connected artwork before exporting.", slideId: slide.id, device, screen: slideIndex + 1, locale: project.locale });
         } else if (options.existingPaths && !resolved.startsWith("data:") && !options.existingPaths.has(resolved)) {
-          issues.push({ code: "missing-connected-artwork-file", severity: severity(strict), message: `Connected artwork is missing at ${resolved}.`, slideId: slide.id, locale: project.locale });
+          issues.push({ code: "missing-connected-artwork-file", severity: severity(strict), message: `Connected artwork is missing at ${resolved}.`, slideId: slide.id, device, screen: slideIndex + 1, locale: project.locale });
         }
         if (slideIndex + artwork.spanSlots > slides.length) {
-          issues.push({ code: "connected-artwork-overflow", severity: "error", message: `Connected artwork needs ${artwork.spanSlots} screens but reaches past the end of the deck.`, slideId: slide.id });
+          issues.push({ code: "connected-artwork-overflow", severity: "error", message: `Connected artwork needs ${artwork.spanSlots} screens but reaches past the end of the deck.`, slideId: slide.id, device, screen: slideIndex + 1 });
         }
       }
     });

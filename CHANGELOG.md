@@ -10,6 +10,8 @@ All notable changes to StoreCanvas are documented here. This project follows a l
 - A repository audit record with reproducible quality and dependency checks.
 - A JSON-first agent bridge and CLI for catalog discovery, template/palette composition, 1–10-slot AI backgrounds, validation, and deterministic rendering, plus a reusable `storecanvas-agent` skill.
 - iPhone and iPad landscape: sideways device frames and every App Store display class rotated (6.9", 6.5", 6.3", 6.1", 13", 12.9"), with size selections carried across orientation flips and the split layout available on landscape Apple decks.
+- Agent CLI commands to read and edit a campaign without touching JSON: `screens`, `edit-screen` (copy, layout, screenshots) and `set-project` (device, orientation, locale, palette), plus per-command help, a `help --json` manifest, JSON errors with hints and typo suggestions.
+- Editor: a keyboard shortcuts sheet (`?`), left/right screen paging and `⌘/Ctrl+E` export; QA issues name their device and screen and jump to it; optional artwork and extra-device panels fold under "Extras" until a screen uses them.
 
 ### Changed
 

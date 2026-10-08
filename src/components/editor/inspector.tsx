@@ -367,28 +367,33 @@ export function Inspector({
         )}
 
         {!isFeatureGraphic ? (
-              <ConnectedArtworkPanel
+          <ExtrasSection
+            key={slide.id}
+            summary={extrasSummary(slide, isNoDevice)}
+            autoOpen={extrasInUse(slide, selectedElementId)}
+          >
+            <ConnectedArtworkPanel
+              slide={slide}
+              device={device}
+              orientation={orientation}
+              maxArtworkSpan={maxArtworkSpan}
+              artworkTonePattern={artworkTonePattern}
+              onChange={onChange}
+              onSelectElement={onSelectElement}
+            />
+            {!isNoDevice ? (
+              <DeviceSlotsPanel
                 slide={slide}
                 device={device}
                 orientation={orientation}
-                maxArtworkSpan={maxArtworkSpan}
-                artworkTonePattern={artworkTonePattern}
+                locale={locale}
+                assets={assets}
                 onChange={onChange}
                 onSelectElement={onSelectElement}
+                onAssetLibraryChange={onAssetLibraryChange}
               />
-        ) : null}
-
-        {!isFeatureGraphic && !isNoDevice ? (
-          <DeviceSlotsPanel
-            slide={slide}
-            device={device}
-            orientation={orientation}
-            locale={locale}
-            assets={assets}
-            onChange={onChange}
-            onSelectElement={onSelectElement}
-            onAssetLibraryChange={onAssetLibraryChange}
-          />
+            ) : null}
+          </ExtrasSection>
         ) : null}
 
         {!isFeatureGraphic && (
@@ -414,6 +419,62 @@ export function Inspector({
         )}
       </div>
     </div>
+  );
+}
+
+function extrasInUse(slide: Slide, selectedElementId?: ElementId | null) {
+  return Boolean(
+    slide.connectedArtworks?.length
+      || slide.deviceSlots?.length
+      || (selectedElementId && (isArtworkElementId(selectedElementId) || isDeviceSlotElementId(selectedElementId))),
+  );
+}
+
+function extrasSummary(slide: Slide, isNoDevice: boolean) {
+  const artwork = slide.connectedArtworks?.length || 0;
+  const slots = slide.deviceSlots?.length || 0;
+  const parts = [
+    artwork ? `${artwork} artwork` : null,
+    slots ? `${slots} extra device${slots === 1 ? "" : "s"}` : null,
+  ].filter(Boolean);
+  if (parts.length) return parts.join(" · ");
+  return isNoDevice ? "Background art across screens" : "Background art, extra devices";
+}
+
+/**
+ * Optional, power-user layers stay folded until a screen actually uses them so
+ * the essentials (layout, copy, screenshot) read first. Opens on its own when
+ * the screen has artwork/extra devices or one of them is selected on canvas.
+ */
+function ExtrasSection({
+  summary,
+  autoOpen,
+  children,
+}: {
+  summary: string;
+  autoOpen: boolean;
+  children: React.ReactNode;
+}) {
+  const [userOpen, setUserOpen] = React.useState<boolean | null>(null);
+  const open = userOpen ?? autoOpen;
+  return (
+    <details
+      open={open}
+      onToggle={(event) => {
+        const next = (event.currentTarget as HTMLDetailsElement).open;
+        if (next !== open) setUserOpen(next);
+      }}
+      className="group rounded-lg border bg-muted/15"
+    >
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5">
+        <span className="min-w-0">
+          <span className="block text-xs font-semibold">Extras</span>
+          <span className="block truncate text-[10px] text-muted-foreground">{summary}</span>
+        </span>
+        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="space-y-4 border-t p-2.5">{children}</div>
+    </details>
   );
 }
 
