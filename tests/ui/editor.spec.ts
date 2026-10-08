@@ -956,6 +956,19 @@ test.describe("StoreCanvas editor", () => {
     await expect(render.locator("[data-render-slide]").first()).toHaveJSProperty("clientHeight", 2752);
   });
 
+  test("renders iPhone and iPad campaigns in App Store landscape sizes", async ({ page }) => {
+    await gotoRender(page, "/render?source=example&device=iphone&orientation=landscape&locale=en-US&size=2868x1320");
+    let render = page.locator('[data-render-valid="true"]');
+    await expect(render.locator("[data-render-slide]").first()).toHaveJSProperty("clientWidth", 2868);
+    await expect(render.locator("[data-render-slide]").first()).toHaveJSProperty("clientHeight", 1320);
+    await expect(render.locator('[data-device-orientation="landscape"]').first()).toBeVisible();
+
+    await gotoRender(page, "/render?source=example&device=ipad&orientation=landscape&locale=en-US&size=2752x2064");
+    render = page.locator('[data-render-valid="true"]');
+    await expect(render.locator("[data-render-slide]").first()).toHaveJSProperty("clientWidth", 2752);
+    await expect(render.locator("[data-render-slide]").first()).toHaveJSProperty("clientHeight", 2064);
+  });
+
   test("starts iPad with the same ten-screen story as iPhone", async ({ page }) => {
     await page.goto("/");
     const response = await page.request.get("/api/project");

@@ -2,12 +2,14 @@ import type {
   BrandTokens,
   CampaignTemplate,
   Device,
+  Orientation,
   PalettePreset,
   ProjectState,
   Slide,
   SlideLayout,
   TemplateApplyOptions,
 } from "./types";
+import { supportsLandscape } from "./constants";
 import { fitConnectedArtwork } from "./connected-artwork";
 
 /**
@@ -484,9 +486,11 @@ function hasSecondaryCapture(slide: Slide) {
   return Boolean(slide.screenshotSecondary || slide.assetRefSecondary);
 }
 
-function resolveLayout(layout: SlideLayout, slide: Slide, device: Device): SlideLayout {
+function resolveLayout(layout: SlideLayout, slide: Slide, device: Device, orientation: Orientation): SlideLayout {
   if (layout === "two-devices" && !hasSecondaryCapture(slide)) return "device-bottom";
-  if (layout === "split-landscape" && device !== "android-7" && device !== "android-10") {
+  const androidTablet = device === "android-7" || device === "android-10";
+  const sideways = orientation === "landscape" && supportsLandscape(device);
+  if (layout === "split-landscape" && !androidTablet && !sideways) {
     return "device-bottom";
   }
   if (layout === "feature-graphic" && device !== "feature-graphic") return "device-bottom";
@@ -527,7 +531,7 @@ export function applyCampaignTemplateDefinition(
         })()
       : slide;
     const templateLayout = template.layouts[index % template.layouts.length] || "device-bottom";
-    const layout = resolveLayout(templateLayout, slide, device);
+    const layout = resolveLayout(templateLayout, slide, device, project.orientation);
     const inverted = template.invertedIndices.includes(index % template.layouts.length);
     return {
       ...preserved,

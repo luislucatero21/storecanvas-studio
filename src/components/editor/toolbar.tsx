@@ -222,7 +222,7 @@ export function Toolbar(props: Props) {
           onValueChange={(v) => props.setOrientation(v as Orientation)}
           disabled={props.busy}
         >
-          <SelectTrigger className="h-8 w-32 text-xs">
+          <SelectTrigger className="h-8 w-32 text-xs" aria-label="Orientation">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

@@ -6,6 +6,7 @@ import type {
   Device,
   ElementId,
   ElementTransform,
+  Orientation,
   ProjectState,
   Slide,
   TextElement,
@@ -25,9 +26,10 @@ function scaleTransform(
   transform: ElementTransform,
   sourceDevice: Device,
   targetDevice: Device,
+  orientation: Orientation,
 ): ElementTransform {
-  const source = getCanvas(sourceDevice, "portrait");
-  const target = getCanvas(targetDevice, "portrait");
+  const source = getCanvas(sourceDevice, orientation);
+  const target = getCanvas(targetDevice, orientation);
   const scaleX = target.cW / source.cW;
   const scaleY = target.cH / source.cH;
   return {
@@ -79,12 +81,13 @@ function cloneTextElement(
   element: TextElement,
   sourceDevice: Device,
   targetDevice: Device,
+  orientation: Orientation,
 ): TextElement {
   return {
     ...element,
     id: `${element.id}-${targetDevice}`,
     text: { ...element.text },
-    transform: scaleTransform(element.transform, sourceDevice, targetDevice),
+    transform: scaleTransform(element.transform, sourceDevice, targetDevice, orientation),
   };
 }
 
@@ -96,6 +99,7 @@ function cloneSlide(
   sourceSlideIndex: number,
   assets: AssetLibrary,
   clonedRefs: Map<string, string>,
+  orientation: Orientation,
 ): Slide {
   const mapAsset = (ref: string | undefined) =>
     cloneAssetReference(ref, targetDevice, sourceDevice, assets, clonedRefs);
@@ -103,7 +107,7 @@ function cloneSlide(
     ? Object.fromEntries(
         Object.entries(slide.transforms).map(([id, transform]) => [
           id,
-          scaleTransform(transform, sourceDevice, targetDevice),
+          scaleTransform(transform, sourceDevice, targetDevice, orientation),
         ]),
       ) as Slide["transforms"]
     : undefined;
@@ -146,7 +150,7 @@ function cloneSlide(
             id: `${slot.id}-${targetDevice}`,
             screenshot: adaptDevicePath(slot.screenshot, sourceDevice, targetDevice),
             ...(slot.assetRef ? { assetRef: mapAsset(slot.assetRef) } : {}),
-            transform: scaleTransform(slot.transform, sourceDevice, targetDevice),
+            transform: scaleTransform(slot.transform, sourceDevice, targetDevice, orientation),
             ...(slot.presentation ? { presentation: { ...slot.presentation } } : {}),
           })),
         }
@@ -162,7 +166,7 @@ function cloneSlide(
                 ...(artwork.assetRef ? { assetRef: mapAsset(artwork.assetRef) } : {}),
               },
               targetDevice,
-              "portrait",
+              orientation,
               Math.max(1, Math.min(artwork.spanSlots, remainingSlides)) as ConnectedArtwork["spanSlots"],
             ),
           ),
@@ -171,7 +175,7 @@ function cloneSlide(
     ...(captionSpan && captionSpan > 1 ? { captionSpan } : { captionSpan: undefined }),
     ...(transforms ? { transforms } : {}),
     ...(slide.textElements
-      ? { textElements: slide.textElements.map((element) => cloneTextElement(element, sourceDevice, targetDevice)) }
+      ? { textElements: slide.textElements.map((element) => cloneTextElement(element, sourceDevice, targetDevice, orientation)) }
       : {}),
     ...(constraints ? { constraints } : {}),
     ...(responsive ? { responsive } : {}),
@@ -216,7 +220,7 @@ export function cloneDeckToDevice(
   );
   const clonedRefs = new Map<string, string>();
   const slides = sourceSlides.map((slide, index) =>
-    cloneSlide(slide, sourceDevice, targetDevice, sourceSlides.length, index, assets, clonedRefs),
+    cloneSlide(slide, sourceDevice, targetDevice, sourceSlides.length, index, assets, clonedRefs, project.orientation),
   );
   return {
     ...project,

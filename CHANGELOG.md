@@ -9,6 +9,7 @@ All notable changes to StoreCanvas are documented here. This project follows a l
 - Open-source community health files, contribution guidance, issue forms, CI, Dependabot, security policy, support policy, roadmap, architecture notes, and citation metadata.
 - A repository audit record with reproducible quality and dependency checks.
 - A JSON-first agent bridge and CLI for catalog discovery, template/palette composition, 1–10-slot AI backgrounds, validation, and deterministic rendering, plus a reusable `storecanvas-agent` skill.
+- iPhone and iPad landscape: sideways device frames and every App Store display class rotated (6.9", 6.5", 6.3", 6.1", 13", 12.9"), with size selections carried across orientation flips and the split layout available on landscape Apple decks.
 
 ### Changed
 

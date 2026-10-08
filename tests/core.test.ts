@@ -1174,3 +1174,64 @@ describe("sticker artwork", () => {
     expect(parsed.slidesByDevice[device][0].connectedArtworks?.[0]?.toneOverlay).toBe(false);
   });
 });
+
+describe("Apple landscape", () => {
+  it("rotates the iPhone and iPad canvases and store sizes", async () => {
+    const { getCanvas } = await import("@/lib/canvas");
+    const { getExportSizes, supportsLandscape } = await import("@/lib/constants");
+    expect(supportsLandscape("iphone")).toBe(true);
+    expect(supportsLandscape("ipad")).toBe(true);
+    expect(supportsLandscape("android")).toBe(false);
+    expect(getCanvas("iphone", "landscape")).toEqual({ cW: 2868, cH: 1320 });
+    expect(getCanvas("ipad", "landscape")).toEqual({ cW: 2752, cH: 2064 });
+    expect(getExportSizes("iphone", "landscape").map(({ id, w, h }) => [id, w, h])).toEqual([
+      ["iphone-6.9-landscape", 2868, 1320],
+      ["iphone-6.5-landscape", 2778, 1284],
+      ["iphone-6.3-landscape", 2622, 1206],
+      ["iphone-6.1-landscape", 2436, 1125],
+    ]);
+    expect(getExportSizes("ipad", "landscape").map(({ w, h }) => [w, h])).toEqual([[2752, 2064], [2732, 2048]]);
+  });
+
+  it("keeps a size selection when the orientation flips", () => {
+    const selection = { iphone: ["iphone-6.5", "iphone-6.1"], "android-7": ["android-7-portrait"] };
+    expect(getSelectedExportSizes("iphone", "landscape", selection).map((size) => size.id))
+      .toEqual(["iphone-6.5-landscape", "iphone-6.1-landscape"]);
+    expect(getSelectedExportSizes("android-7", "landscape", selection).map((size) => size.id))
+      .toEqual(["android-7-landscape"]);
+    expect(getSelectedExportSizes("iphone", "portrait", { iphone: ["iphone-6.3-landscape"] }).map((size) => size.id))
+      .toEqual(["iphone-6.3"]);
+  });
+
+  it("lays a sideways frame inside the landscape iPhone canvas", () => {
+    const slide = { ...DEFAULT_PROJECT.slidesByDevice.iphone[0], layout: "split-landscape" as const, transforms: undefined };
+    const device = getElementTransform(slide, "iphone", "landscape", "device");
+    expect(device).toBeDefined();
+    expect(device!.width).toBeGreaterThan(device!.height);
+    expect(device!.x + device!.width).toBeLessThanOrEqual(2868 * 1.05);
+    expect(device!.y).toBeGreaterThanOrEqual(0);
+    expect(device!.y + device!.height).toBeLessThanOrEqual(1320);
+  });
+
+  it("keeps split-landscape for Apple decks only when the project is landscape", async () => {
+    const { applyCampaignTemplateDefinition } = await import("@/lib/campaign-presets");
+    const template = { ...CAMPAIGN_TEMPLATES[0], layouts: ["split-landscape" as const] };
+    const portrait = applyCampaignTemplateDefinition(DEFAULT_PROJECT, template, "iphone");
+    const landscape = applyCampaignTemplateDefinition({ ...DEFAULT_PROJECT, orientation: "landscape" }, template, "iphone");
+    expect(portrait.slidesByDevice.iphone[0].layout).toBe("device-bottom");
+    expect(landscape.slidesByDevice.iphone[0].layout).toBe("split-landscape");
+  });
+
+  it("scales cloned iPad layers against landscape canvases", () => {
+    const project = structuredClone({ ...DEFAULT_PROJECT, orientation: "landscape" as const });
+    project.slidesByDevice.iphone[0].textElements = [{
+      id: "note",
+      text: { en: "Hi" },
+      transform: { x: 2868, y: 1320, width: 100, height: 100 },
+    } as never];
+    const cloned = cloneDeckToDevice(project, "iphone", "ipad");
+    const note = cloned.slidesByDevice.ipad[0].textElements![0];
+    expect(note.transform.x).toBeCloseTo(2752);
+    expect(note.transform.y).toBeCloseTo(2064);
+  });
+});

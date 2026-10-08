@@ -17,7 +17,7 @@ export type SlideLayout =
   | "device-top"       // device top, headline bottom (contrast)
   | "two-devices"      // back + front phones, headline above
   | "no-device"        // big headline + decorative blob, no device
-  | "split-landscape"  // landscape tablets only: caption left + device right
+  | "split-landscape"  // landscape canvases: caption left + device right
   | "feature-graphic"; // 1024×500 banner with icon + name + tagline
 
 // Per-element rect in canvas pixel space. Optional rotation in degrees and zIndex.

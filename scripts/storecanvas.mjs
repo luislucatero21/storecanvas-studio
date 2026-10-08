@@ -10,19 +10,34 @@ const root = process.cwd();
 const baseUrl = process.env.STORECANVAS_URL || "http://127.0.0.1:3100";
 const executablePath = process.env.PLAYWRIGHT_EXECUTABLE_PATH;
 
+// Mirrors EXPORT_SIZES in src/lib/constants.ts so selected sizes render from the CLI too.
 const defaultSizes = {
-  iphone: [{ id: "iphone-6.9", w: 1320, h: 2868 }],
-  ipad: [{ id: "ipad-13", w: 2064, h: 2752 }],
+  iphone: [
+    { id: "iphone-6.9", w: 1320, h: 2868 },
+    { id: "iphone-6.5", w: 1284, h: 2778 },
+    { id: "iphone-6.3", w: 1206, h: 2622 },
+    { id: "iphone-6.1", w: 1125, h: 2436 },
+  ],
+  ipad: [
+    { id: "ipad-13", w: 2064, h: 2752 },
+    { id: "ipad-12.9", w: 2048, h: 2732 },
+  ],
   android: [{ id: "android-phone", w: 1080, h: 1920 }],
   "android-7": [{ id: "android-7-portrait", w: 1200, h: 1920 }],
   "android-10": [{ id: "android-10-portrait", w: 1600, h: 2560 }],
   "feature-graphic": [{ id: "feature-graphic", w: 1024, h: 500 }],
 };
 
+const rotated = (sizes) => sizes.map((size) => ({ id: `${size.id}-landscape`, w: size.h, h: size.w }));
+
 const landscapeSizes = {
+  iphone: rotated(defaultSizes.iphone),
+  ipad: rotated(defaultSizes.ipad),
   "android-7": [{ id: "android-7-landscape", w: 1920, h: 1200 }],
   "android-10": [{ id: "android-10-landscape", w: 2560, h: 1600 }],
 };
+
+const sizeClassId = (id) => id.replace(/-(portrait|landscape)$/, "");
 
 const SUPPORTED_DEVICES = new Set([
   "iphone",
@@ -630,7 +645,8 @@ function exportSizesFor(project, device, orientation) {
   if (!catalog) return undefined;
   const requested = project.exportSizeIds?.[device];
   if (!Array.isArray(requested) || requested.length === 0) return catalog.slice(0, 1);
-  const selected = catalog.filter((size) => requested.includes(size.id));
+  const requestedClasses = new Set(requested.map(sizeClassId));
+  const selected = catalog.filter((size) => requestedClasses.has(sizeClassId(size.id)));
   return selected.length > 0 ? selected : catalog.slice(0, 1);
 }
 
