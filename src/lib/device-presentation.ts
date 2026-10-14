@@ -1,5 +1,5 @@
 import { getCanvas } from "./canvas";
-import { IPAD_RATIO, MK_RATIO } from "./constants";
+import { DUO_RATIO, IPAD_RATIO, MK_RATIO } from "./constants";
 import type {
   Device,
   DeviceAnglePreset,
@@ -108,6 +108,7 @@ function frameAspect(device: Device, orientation: Orientation) {
   if (device === "iphone") return orientation === "landscape" ? 1 / MK_RATIO : MK_RATIO;
   if (device === "android") return 9 / 19.5;
   if (device === "ipad") return orientation === "landscape" ? 1 / IPAD_RATIO : IPAD_RATIO;
+  if (device === "iphone-duo") return orientation === "landscape" ? 1 / DUO_RATIO : DUO_RATIO;
   if (device === "android-7" || device === "android-10") return orientation === "landscape" ? 8 / 5 : 5 / 8;
   return 1;
 }

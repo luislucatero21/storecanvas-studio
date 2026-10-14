@@ -18,7 +18,7 @@ import type { Device, Orientation, ProjectState } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-const DEVICES: Device[] = ["iphone", "ipad", "android", "android-7", "android-10", "feature-graphic"];
+const DEVICES: Device[] = ["iphone", "ipad", "android", "android-7", "android-10", "iphone-duo", "feature-graphic"];
 
 function one(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;

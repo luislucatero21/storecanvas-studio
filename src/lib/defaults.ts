@@ -1,5 +1,5 @@
 import { DEFAULT_LOCALE } from "./locale";
-import { DEFAULT_EXPORT_SIZE_IDS, DEFAULT_THEME_ID, PROJECT_SCHEMA_VERSION } from "./constants";
+import { APPLE_DEVICES, DEFAULT_EXPORT_SIZE_IDS, DEFAULT_THEME_ID, PROJECT_SCHEMA_VERSION } from "./constants";
 import type { Device, ProjectState, Slide } from "./types";
 
 let _id = 0;
@@ -101,6 +101,7 @@ export const DEFAULT_PROJECT: ProjectState = {
     ipad: makeStarterSlides(),
     "android-7": tabletStarter("7"),
     "android-10": tabletStarter("10"),
+    "iphone-duo": makeStarterSlides(),
     "feature-graphic": fgStarter(),
   },
 };
@@ -116,5 +117,5 @@ export function newSlide(layout: Slide["layout"] = "device-bottom"): Slide {
 }
 
 export function detectPlatform(device: Device): "ios" | "android" {
-  return device === "iphone" || device === "ipad" ? "ios" : "android";
+  return APPLE_DEVICES.includes(device) ? "ios" : "android";
 }

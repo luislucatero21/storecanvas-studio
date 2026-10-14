@@ -4,6 +4,7 @@ export type Device =
   | "android"
   | "android-7"
   | "android-10"
+  | "iphone-duo"
   | "feature-graphic";
 
 export type Orientation = "portrait" | "landscape";

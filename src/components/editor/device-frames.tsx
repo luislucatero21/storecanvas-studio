@@ -397,11 +397,20 @@ export function IPadLandscape(props: FrameProps) {
   return <IPadFrame {...props} landscape />;
 }
 
+/** iPhone Duo unfolded: iPad-style bezel around the 1398x2034 inner display (DUO_RATIO). */
+export function IPhoneDuo(props: FrameProps) {
+  return <IPadFrame {...props} landscape={false} aspect="705.2 / 1000" />;
+}
+
+export function IPhoneDuoLandscape(props: FrameProps) {
+  return <IPadFrame {...props} landscape aspect="1000 / 705.2" />;
+}
+
 // Bezel and corner radii are expressed against each edge, so landscape swaps them.
-function IPadFrame({ src, alt = "", style, hideEmpty, landscape }: FrameProps & { landscape: boolean }) {
+function IPadFrame({ src, alt = "", style, hideEmpty, landscape, aspect }: FrameProps & { landscape: boolean; aspect?: string }) {
   const resolved = img(src);
   return (
-    <div style={{ position: "relative", aspectRatio: landscape ? "1000 / 770" : "770 / 1000", ...style }}>
+    <div style={{ position: "relative", aspectRatio: aspect ?? (landscape ? "1000 / 770" : "770 / 1000"), ...style }}>
       <div
         style={{
           width: "100%",

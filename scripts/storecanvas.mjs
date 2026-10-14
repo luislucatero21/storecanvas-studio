@@ -25,6 +25,10 @@ const defaultSizes = {
   android: [{ id: "android-phone", w: 1080, h: 1920 }],
   "android-7": [{ id: "android-7-portrait", w: 1200, h: 1920 }],
   "android-10": [{ id: "android-10-portrait", w: 1600, h: 2560 }],
+  "iphone-duo": [
+    { id: "iphone-duo", w: 2007, h: 2853 },
+    { id: "iphone-duo-compact", w: 1398, h: 2034 },
+  ],
   "feature-graphic": [{ id: "feature-graphic", w: 1024, h: 500 }],
 };
 
@@ -33,6 +37,7 @@ const rotated = (sizes) => sizes.map((size) => ({ id: `${size.id}-landscape`, w:
 const landscapeSizes = {
   iphone: rotated(defaultSizes.iphone),
   ipad: rotated(defaultSizes.ipad),
+  "iphone-duo": rotated(defaultSizes["iphone-duo"]),
   "android-7": [{ id: "android-7-landscape", w: 1920, h: 1200 }],
   "android-10": [{ id: "android-10-landscape", w: 2560, h: 1600 }],
 };
@@ -45,6 +50,7 @@ const SUPPORTED_DEVICES = new Set([
   "android",
   "android-7",
   "android-10",
+  "iphone-duo",
   "feature-graphic",
 ]);
 const SUPPORTED_TONES = new Set(["light", "dark", "mixed"]);
@@ -114,7 +120,7 @@ const WRITE_FLAGS = [
   { name: "--no-backup", description: "Skip the automatic JSON backup in exports/backups/." },
   { name: "--no-sync-app", description: "Do not refresh the running local editor after a write." },
 ];
-const DEVICE_FLAG = { name: "--device", value: "device", description: "Device deck: iphone, ipad, android, android-7, android-10, feature-graphic (default: project device)." };
+const DEVICE_FLAG = { name: "--device", value: "device", description: "Device deck: iphone, ipad, android, android-7, android-10, iphone-duo, feature-graphic (default: project device)." };
 const LOCALE_FLAG = { name: "--locale", value: "locale", description: "Locale code from the project's locales (default: project locale)." };
 
 const COMMANDS = [
@@ -159,7 +165,7 @@ const COMMANDS = [
     usage: "pnpm storecanvas set-project [--device <d>] [--orientation portrait|landscape] [--locale <l>] [--app-name <name>] [--palette <id>] [--connected on|off] [options]",
     flags: [
       { name: "--device", value: "device", description: "Make this the active device." },
-      { name: "--orientation", value: "portrait|landscape", description: "Landscape only for iphone, ipad, android-7, android-10." },
+      { name: "--orientation", value: "portrait|landscape", description: "Landscape only for iphone, ipad, iphone-duo, android-7, android-10." },
       { name: "--locale", value: "locale", description: "Make this the active locale (must already be in the project's locales)." },
       { name: "--app-name", value: "name", description: "Rename the app." },
       { name: "--palette", value: "id", description: "Apply a palette id from catalog." },

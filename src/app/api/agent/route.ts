@@ -36,6 +36,7 @@ const DeviceSchema = z.enum([
   "android",
   "android-7",
   "android-10",
+  "iphone-duo",
   "feature-graphic",
 ]);
 const ToneSchema = z.enum(["light", "dark", "mixed"]);

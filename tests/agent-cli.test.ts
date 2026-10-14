@@ -142,6 +142,23 @@ describe("StoreCanvas agent CLI", () => {
       .rejects.toThrow(/does not support landscape/);
   });
 
+  it("accepts iPhone Duo landscape and lists it among valid devices", async () => {
+    const offline = { ...process.env, OPENAI_API_KEY: "", STORECANVAS_URL: "http://127.0.0.1:9" };
+    const duo = await run(process.execPath, [
+      cli, "set-project", "--project", "example-project.json", "--device", "iphone-duo", "--orientation", "landscape", "--json",
+    ], { cwd: process.cwd(), env: offline }).catch((error) => error);
+    // Local validation passes; the only failure left is the unreachable app.
+    expect(JSON.parse(duo.stdout)).toMatchObject({ ok: false, error: expect.stringContaining("Could not reach StoreCanvas") });
+
+    const typo = await runCli("set-project", "--project", "example-project.json", "--device", "iphone-dou", "--json")
+      .catch((error) => error);
+    expect(JSON.parse(typo.stdout).hint).toContain("iphone-duo");
+
+    const manifest = JSON.parse((await runCli("help", "--json")).stdout);
+    const render = manifest.commands.find((command: { name: string }) => command.name === "render");
+    expect(render.flags).toContainEqual(expect.objectContaining({ name: "--device", description: expect.stringContaining("iphone-duo") }));
+  });
+
   it("emits a machine-readable command manifest", async () => {
     const { stdout } = await runCli("help", "--json");
     const manifest = JSON.parse(stdout);

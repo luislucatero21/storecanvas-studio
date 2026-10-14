@@ -17,6 +17,7 @@ import type {
 } from "@/lib/types";
 import {
   IPAD_RATIO,
+  DUO_RATIO,
   MK_RATIO,
   ipadW,
   landscapeW,
@@ -46,6 +47,8 @@ import {
   AndroidTabletP,
   IPad,
   IPadLandscape,
+  IPhoneDuo,
+  IPhoneDuoLandscape,
   Phone,
   PhoneLandscape,
 } from "./device-frames";
@@ -69,6 +72,7 @@ function getFrameAspect(device: Device, orientation: Orientation) {
     case "ipad":        return orientation === "landscape" ? 1 / IPAD_RATIO : IPAD_RATIO;
     case "android-7":
     case "android-10":  return orientation === "landscape" ? 8 / 5 : 5 / 8;
+    case "iphone-duo":  return orientation === "landscape" ? 1 / DUO_RATIO : DUO_RATIO;
     default:            return 1;
   }
 }
@@ -97,6 +101,19 @@ export function getFrameForDevice(device: Device, orientation: Orientation): {
         };
       }
       return { Comp: IPad, widthFn: ipadW, smallWidthFn: (cW, cH) => ipadW(cW, cH, 0.6) };
+    case "iphone-duo":
+      if (orientation === "landscape") {
+        return {
+          Comp: IPhoneDuoLandscape,
+          widthFn: (cW, cH) => landscapeW(cW, cH, 1 / DUO_RATIO),
+          smallWidthFn: (cW, cH) => landscapeW(cW, cH, 1 / DUO_RATIO, 0.48),
+        };
+      }
+      return {
+        Comp: IPhoneDuo,
+        widthFn: (cW, cH) => Math.min(0.8, 0.72 * (cH / cW) * DUO_RATIO),
+        smallWidthFn: (cW, cH) => Math.min(0.62, 0.72 * (cH / cW) * DUO_RATIO),
+      };
     case "android":
       return { Comp: AndroidPhone, widthFn: phoneW, smallWidthFn: phoneWSmall };
     case "android-7":

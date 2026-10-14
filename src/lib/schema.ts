@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { SLOT_SPAN_OPTIONS } from "./types";
 
-const DeviceSchema = z.enum(["iphone", "ipad", "android", "android-7", "android-10", "feature-graphic"]);
+const DeviceSchema = z.enum(["iphone", "ipad", "android", "android-7", "android-10", "iphone-duo", "feature-graphic"]);
 const LayoutSchema = z.enum(["hero", "device-bottom", "device-top", "two-devices", "no-device", "split-landscape", "feature-graphic"]);
 const LocalizedTextSchema = z.union([z.string(), z.record(z.string(), z.string())]);
 const TypographyStyleSchema = z.object({

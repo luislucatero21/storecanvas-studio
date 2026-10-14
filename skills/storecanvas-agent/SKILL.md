@@ -45,9 +45,11 @@ pnpm storecanvas edit-screen --screen 2 --headline "Track every payment" --label
 pnpm storecanvas edit-screen --screen 3 --layout device-top --image ~/shots/home.png --dry-run
 ```
 
+Devices: `iphone`, `ipad`, `iphone-duo` (Apple's foldable, exported at 2007×2853 and 1398×2034), `android`, `android-7`, `android-10`, `feature-graphic`. Apple decks allow ten screens; Google Play decks allow eight.
+
 Layouts: `hero`, `device-bottom`, `device-top`, `two-devices`, `no-device`, `split-landscape`, `feature-graphic`. `--secondary-image` needs `two-devices`.
 
-Switch project-level settings (landscape only for iphone, ipad, android-7, android-10; locale must already exist in the project):
+Switch project-level settings (landscape only for iphone, ipad, iphone-duo, android-7, android-10; locale must already exist in the project):
 
 ```bash
 pnpm storecanvas set-project --device ipad --orientation landscape --palette afterglow-pulse --connected on
