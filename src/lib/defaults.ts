@@ -1,5 +1,5 @@
 import { DEFAULT_LOCALE } from "./locale";
-import { DEFAULT_EXPORT_SIZE_IDS, DEFAULT_THEME_ID, PROJECT_SCHEMA_VERSION } from "./constants";
+import { APPLE_DEVICES, DEFAULT_EXPORT_SIZE_IDS, DEFAULT_THEME_ID, PROJECT_SCHEMA_VERSION } from "./constants";
 import type { Device, ProjectState, Slide } from "./types";
 
 let _id = 0;
@@ -68,6 +68,26 @@ function tabletStarter(kind: "7" | "10"): Slide[] {
   ];
 }
 
+function watchStarter(): Slide[] {
+  return [
+    {
+      id: nid(),
+      layout: "device-bottom",
+      label: en("ON YOUR WRIST"),
+      headline: en("Your day,\nat a glance."),
+      screenshot: "",
+    },
+    {
+      id: nid(),
+      layout: "device-bottom",
+      label: en("FEATURE 01"),
+      headline: en("One idea\nper screen."),
+      screenshot: "",
+      inverted: true,
+    },
+  ];
+}
+
 function fgStarter(): Slide[] {
   return [
     {
@@ -101,6 +121,9 @@ export const DEFAULT_PROJECT: ProjectState = {
     ipad: makeStarterSlides(),
     "android-7": tabletStarter("7"),
     "android-10": tabletStarter("10"),
+    "iphone-duo": makeStarterSlides(),
+    "watch-ultra": watchStarter(),
+    "watch-series": watchStarter(),
     "feature-graphic": fgStarter(),
   },
 };
@@ -116,5 +139,5 @@ export function newSlide(layout: Slide["layout"] = "device-bottom"): Slide {
 }
 
 export function detectPlatform(device: Device): "ios" | "android" {
-  return device === "iphone" || device === "ipad" ? "ios" : "android";
+  return APPLE_DEVICES.includes(device) ? "ios" : "android";
 }

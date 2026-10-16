@@ -60,6 +60,7 @@ describe("StoreCanvas agent workflow", () => {
     expect(response.status).toBe(200);
     expect(payload.state.slidesByDevice.iphone).toHaveLength(10);
     expect(payload.state.slidesByDevice.ipad).toHaveLength(10);
+    expect(payload.state.slidesByDevice["iphone-duo"]).toHaveLength(10);
     expect(payload.state.slidesByDevice.android).toHaveLength(8);
     expect(payload.state.slidesByDevice["android-7"]).toHaveLength(8);
     expect(payload.state.slidesByDevice["android-10"]).toHaveLength(8);
@@ -262,6 +263,16 @@ describe("StoreCanvas agent workflow", () => {
       });
       expect(state).toMatchObject({ device: "ipad", orientation: "landscape", appName: "Renamed", connectedCanvas: false });
       expect(changes).toEqual(["device", "orientation", "appName", "connectedCanvas"]);
+    });
+
+    it("switches to Apple Watch decks in portrait only", () => {
+      expect(setAgentProject(CHECKED_IN_EXAMPLE_PROJECT, { device: "watch-series" }).state.device).toBe("watch-series");
+      expect(() => setAgentProject(CHECKED_IN_EXAMPLE_PROJECT, { device: "watch-ultra", orientation: "landscape" })).toThrow(/does not support landscape/);
+    });
+
+    it("switches to the iPhone Duo in landscape", () => {
+      const { state } = setAgentProject(CHECKED_IN_EXAMPLE_PROJECT, { device: "iphone-duo", orientation: "landscape" });
+      expect(state).toMatchObject({ device: "iphone-duo", orientation: "landscape" });
     });
 
     it("rejects landscape on unsupported devices, unknown locales and unknown palettes", () => {

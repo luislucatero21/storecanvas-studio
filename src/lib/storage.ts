@@ -262,7 +262,7 @@ function mergeWithDefaults(parsed: Partial<ProjectState>): ProjectState {
     } as ProjectState["slidesByDevice"],
   };
   if (merged.copySync) {
-    const validDevices: Device[] = ["iphone", "ipad", "android", "android-7", "android-10", "feature-graphic"];
+    const validDevices: Device[] = ["iphone", "ipad", "android", "android-7", "android-10", "iphone-duo", "watch-ultra", "watch-series", "feature-graphic"];
     if (!validDevices.includes(merged.copySync.sourceDevice)) merged.copySync = undefined;
     else merged.copySync = { ...merged.copySync, matchBy: "copyKey-or-index" };
   }
