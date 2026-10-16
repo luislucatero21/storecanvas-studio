@@ -68,6 +68,26 @@ function tabletStarter(kind: "7" | "10"): Slide[] {
   ];
 }
 
+function watchStarter(): Slide[] {
+  return [
+    {
+      id: nid(),
+      layout: "device-bottom",
+      label: en("ON YOUR WRIST"),
+      headline: en("Your day,\nat a glance."),
+      screenshot: "",
+    },
+    {
+      id: nid(),
+      layout: "device-bottom",
+      label: en("FEATURE 01"),
+      headline: en("One idea\nper screen."),
+      screenshot: "",
+      inverted: true,
+    },
+  ];
+}
+
 function fgStarter(): Slide[] {
   return [
     {
@@ -102,6 +122,8 @@ export const DEFAULT_PROJECT: ProjectState = {
     "android-7": tabletStarter("7"),
     "android-10": tabletStarter("10"),
     "iphone-duo": makeStarterSlides(),
+    "watch-ultra": watchStarter(),
+    "watch-series": watchStarter(),
     "feature-graphic": fgStarter(),
   },
 };

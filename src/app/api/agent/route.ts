@@ -37,6 +37,8 @@ const DeviceSchema = z.enum([
   "android-7",
   "android-10",
   "iphone-duo",
+  "watch-ultra",
+  "watch-series",
   "feature-graphic",
 ]);
 const ToneSchema = z.enum(["light", "dark", "mixed"]);

@@ -29,6 +29,14 @@ const defaultSizes = {
     { id: "iphone-duo", w: 2007, h: 2853 },
     { id: "iphone-duo-compact", w: 1398, h: 2034 },
   ],
+  "watch-ultra": [
+    { id: "watch-ultra", w: 422, h: 514 },
+    { id: "watch-ultra-compact", w: 410, h: 502 },
+  ],
+  "watch-series": [
+    { id: "watch-series", w: 416, h: 496 },
+    { id: "watch-series-compact", w: 396, h: 484 },
+  ],
   "feature-graphic": [{ id: "feature-graphic", w: 1024, h: 500 }],
 };
 
@@ -51,6 +59,8 @@ const SUPPORTED_DEVICES = new Set([
   "android-7",
   "android-10",
   "iphone-duo",
+  "watch-ultra",
+  "watch-series",
   "feature-graphic",
 ]);
 const SUPPORTED_TONES = new Set(["light", "dark", "mixed"]);
@@ -120,7 +130,7 @@ const WRITE_FLAGS = [
   { name: "--no-backup", description: "Skip the automatic JSON backup in exports/backups/." },
   { name: "--no-sync-app", description: "Do not refresh the running local editor after a write." },
 ];
-const DEVICE_FLAG = { name: "--device", value: "device", description: "Device deck: iphone, ipad, android, android-7, android-10, iphone-duo, feature-graphic (default: project device)." };
+const DEVICE_FLAG = { name: "--device", value: "device", description: "Device deck: iphone, ipad, android, android-7, android-10, iphone-duo, watch-ultra, watch-series, feature-graphic (default: project device)." };
 const LOCALE_FLAG = { name: "--locale", value: "locale", description: "Locale code from the project's locales (default: project locale)." };
 
 const COMMANDS = [

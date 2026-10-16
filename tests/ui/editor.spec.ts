@@ -1002,6 +1002,23 @@ test.describe("StoreCanvas editor", () => {
     await expect(render.locator("[data-render-slide]").first()).toHaveJSProperty("clientHeight", 2007);
   });
 
+  test("renders Apple Watch campaigns at the exact App Store sizes", async ({ page }) => {
+    for (const [device, w, h] of [["watch-ultra", 422, 514], ["watch-ultra", 410, 502], ["watch-series", 416, 496], ["watch-series", 396, 484]] as const) {
+      await gotoRender(page, `/render?source=example&device=${device}&locale=en-US&size=${w}x${h}`);
+      const render = page.locator('[data-render-valid="true"]');
+      await expect(render.locator("[data-render-slide]").first()).toHaveJSProperty("clientWidth", w);
+      await expect(render.locator("[data-render-slide]").first()).toHaveJSProperty("clientHeight", h);
+    }
+  });
+
+  test("offers Apple Watch in the iOS device picker", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("combobox", { name: "Device" }).click();
+    await page.getByRole("option", { name: "Apple Watch Ultra" }).click();
+    await expect(page.getByRole("combobox", { name: "Device" })).toContainText("Apple Watch Ultra");
+    await expect(page.getByRole("combobox", { name: "Orientation" })).toHaveCount(0);
+  });
+
   test("offers iPhone Duo in the iOS device picker", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("combobox", { name: "Device" }).click();

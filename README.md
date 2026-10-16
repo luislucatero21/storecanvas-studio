@@ -19,7 +19,7 @@ Most screenshot tools treat each frame as a separate poster. StoreCanvas treats 
 | | StoreCanvas approach |
 | --- | --- |
 | **Story** | Connected captions and artwork can span up to ten adjacent screens while keeping each slot editable. |
-| **Real product UI** | Use your actual captures inside hardware-aware iPhone, iPad, iPhone Duo, and Android frames. |
+| **Real product UI** | Use your actual captures inside hardware-aware iPhone, iPad, iPhone Duo, Apple Watch, and Android frames. |
 | **Precision** | Device slots are independent by default; shared transforms and copy continuity are explicit opt-ins. |
 | **Ownership** | Projects live in browser storage or an explicitly configured local JSON file. Vercel stays read-only and needs no remote database. |
 | **No lock-in** | Export PNGs or a JSON backup. Optional AI uses a key you provide for the current session; StoreCanvas has no accounts, plans, checkout, or usage meter. |
@@ -57,7 +57,7 @@ The private filename, uploaded screenshots, generated backgrounds, and exports a
 2. Add real captures by dropping files into the inspector, choosing a checked-in fixture, or importing public App Store metadata.
 3. Select a template and palette. Manual placement, custom tokens, and connected artwork remain untouched unless the corresponding reset/reflow option is enabled.
 4. Arrange copy, device slots, hardware model, camera angle, crop, visibility, and locking on the canvas. Select any layer and press **Delete** (or **Backspace**) to remove it; built-in layout layers are hidden reversibly and custom layers can be restored with **Undo**.
-5. Use the **sizes** control beside the device selector to choose export targets. New iPhone, iPad, and iPhone Duo projects start with Apple's largest target only (iPhone Duo also offers 1398×2034); additional sizes are opt-in and saved per device.
+5. Use the **sizes** control beside the device selector to choose export targets. New iPhone, iPad, and iPhone Duo projects start with Apple's largest target only (iPhone Duo also offers 1398×2034); additional sizes are opt-in and saved per device. Apple Watch (`watch-ultra` 422×514 / 410×502 and `watch-series` 416×496 / 396×484, portrait only) has its own compact layout: a short eyebrow and headline on top and the raw watch capture in a thin bezel below, bleeding slightly off the bottom. An empty watch deck starts from a short watch story rather than cloning iPhone captures. Render it with `pnpm storecanvas render --device watch-ultra --locale es-MX`.
 6. Export the selected locale/device deck or use the CLI for repeatable render jobs. When a supported phone, iPad, or tablet deck is empty, it receives an independent copy of the iPhone story, including adapted device paths and connected artwork bounds. iPad and iPhone Duo keep all ten slots; Android phone/tablet decks mirror the first eight because Google Play's export limit is eight screenshots.
 
 ### Explore the checked-in demo

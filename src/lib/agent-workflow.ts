@@ -39,7 +39,7 @@ export type RemoveElementOptions = {
   screenIndex?: number;
 };
 
-export const AGENT_DEVICES: Device[] = ["iphone", "ipad", "android", "android-7", "android-10", "iphone-duo", "feature-graphic"];
+export const AGENT_DEVICES: Device[] = ["iphone", "ipad", "android", "android-7", "android-10", "iphone-duo", "watch-ultra", "watch-series", "feature-graphic"];
 export const AGENT_LAYOUTS: SlideLayout[] = [
   "hero",
   "device-bottom",

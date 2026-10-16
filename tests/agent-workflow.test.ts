@@ -265,6 +265,11 @@ describe("StoreCanvas agent workflow", () => {
       expect(changes).toEqual(["device", "orientation", "appName", "connectedCanvas"]);
     });
 
+    it("switches to Apple Watch decks in portrait only", () => {
+      expect(setAgentProject(CHECKED_IN_EXAMPLE_PROJECT, { device: "watch-series" }).state.device).toBe("watch-series");
+      expect(() => setAgentProject(CHECKED_IN_EXAMPLE_PROJECT, { device: "watch-ultra", orientation: "landscape" })).toThrow(/does not support landscape/);
+    });
+
     it("switches to the iPhone Duo in landscape", () => {
       const { state } = setAgentProject(CHECKED_IN_EXAMPLE_PROJECT, { device: "iphone-duo", orientation: "landscape" });
       expect(state).toMatchObject({ device: "iphone-duo", orientation: "landscape" });

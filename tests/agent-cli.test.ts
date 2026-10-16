@@ -142,6 +142,19 @@ describe("StoreCanvas agent CLI", () => {
       .rejects.toThrow(/does not support landscape/);
   });
 
+  it("accepts Apple Watch devices in portrait but not landscape", async () => {
+    const offline = { ...process.env, OPENAI_API_KEY: "", STORECANVAS_URL: "http://127.0.0.1:9" };
+    const watch = await run(process.execPath, [
+      cli, "set-project", "--project", "example-project.json", "--device", "watch-ultra", "--json",
+    ], { cwd: process.cwd(), env: offline }).catch((error) => error);
+    expect(JSON.parse(watch.stdout)).toMatchObject({ ok: false, error: expect.stringContaining("Could not reach StoreCanvas") });
+    await expect(runCli("set-project", "--project", "example-project.json", "--device", "watch-series", "--orientation", "landscape"))
+      .rejects.toThrow(/does not support landscape/);
+    const manifest = JSON.parse((await runCli("help", "--json")).stdout);
+    const render = manifest.commands.find((command: { name: string }) => command.name === "render");
+    expect(render.flags).toContainEqual(expect.objectContaining({ name: "--device", description: expect.stringContaining("watch-ultra, watch-series") }));
+  });
+
   it("accepts iPhone Duo landscape and lists it among valid devices", async () => {
     const offline = { ...process.env, OPENAI_API_KEY: "", STORECANVAS_URL: "http://127.0.0.1:9" };
     const duo = await run(process.execPath, [
