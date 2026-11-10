@@ -345,6 +345,19 @@ test.describe("StoreCanvas editor", () => {
     await expect(page.getByRole("button", { name: "Export bundle" })).toBeEnabled();
   });
 
+  test("exports the iPhone deck while other decks still need captures", async ({ page }) => {
+    test.setTimeout(150_000);
+    // The empty Apple Watch decks start from a capture-less watch story; their
+    // QA blockers must not stop the iPhone bundle the user is exporting.
+    await page.goto("/");
+    await expect(page.getByText("10 screens")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Preflight QA" })).toContainText("issues");
+
+    const download = page.waitForEvent("download", { timeout: 130_000 });
+    await page.getByRole("button", { name: "Export bundle" }).click();
+    expect((await download).suggestedFilename()).toMatch(/-ios-iphone-.*\.zip$/);
+  });
+
   test("deletes a selected canvas layer with the Delete key and offers undo", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: /^Text$/ }).click();

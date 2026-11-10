@@ -552,9 +552,12 @@ export function ScreenshotEditor() {
       return;
     }
 
-    if (!validation.valid) {
+    // Export bundles only the active deck, so only its blockers (and
+    // project-wide ones) stop it. Other decks stay listed in Preflight QA.
+    const blockers = validation.errors.filter((issue) => !issue.device || issue.device === state.device);
+    if (blockers.length > 0) {
       toast.error("Resolve QA blockers before exporting", {
-        description: validation.errors.slice(0, 3).map((issue) => issue.message).join(" "),
+        description: blockers.slice(0, 3).map((issue) => issue.message).join(" "),
       });
       return;
     }

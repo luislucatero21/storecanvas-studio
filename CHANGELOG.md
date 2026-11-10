@@ -31,5 +31,6 @@ All notable changes to StoreCanvas are documented here. This project follows a l
 
 ### Fixed
 
+- Export bundles are gated only by QA blockers in the deck being exported (plus project-wide ones). Before, the capture-less Apple Watch starter decks blocked every export, including the example iPhone campaign.
 - Agent API schema errors now name the failing field (for example `project.slidesByDevice.iphone.0.presentations.device.rotateX: Required`) instead of a bare `project: Required`.
 
