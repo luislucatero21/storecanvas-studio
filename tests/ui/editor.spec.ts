@@ -58,6 +58,36 @@ test.describe("StoreCanvas editor", () => {
     await expect(page.getByText("10 screens")).toBeVisible();
   });
 
+  test("serves a restrictive CSP without blocking the editor or the render page", async ({ page }) => {
+    await page.addInitScript(() => {
+      (window as unknown as { __cspViolations: string[] }).__cspViolations = [];
+      document.addEventListener("securitypolicyviolation", (event) => {
+        (window as unknown as { __cspViolations: string[] }).__cspViolations
+          .push(`${event.violatedDirective} ${event.blockedURI}`);
+      });
+    });
+    // Production builds forbid eval. Zod and a generator polyfill probe for it
+    // inside try/catch and fall back, so those probes are expected reports.
+    const violations = async () => (await page.evaluate(() => (window as unknown as { __cspViolations: string[] }).__cspViolations))
+      .filter((entry) => !entry.startsWith("script-src eval"));
+
+    const response = await page.goto("/");
+    const headers = response?.headers() || {};
+    expect(headers["content-security-policy"]).toContain("frame-ancestors 'none'");
+    expect(headers["content-security-policy"]).toContain("object-src 'none'");
+    expect(headers["content-security-policy"]).toContain("connect-src 'self'");
+    expect(headers["x-content-type-options"]).toBe("nosniff");
+    expect(headers["x-frame-options"]).toBe("DENY");
+    await expect(page.getByText("10 screens")).toBeVisible();
+    await expect(page.getByRole("main").locator("img").first()).toBeVisible();
+    expect(await violations()).toEqual([]);
+
+    await gotoRender(page, "/render?source=example&device=iphone&locale=en-US&size=1320x2868");
+    await expect(page.locator('[data-render-valid="true"]')).toHaveCount(1);
+    await page.waitForFunction(() => Array.from(document.images).every((image) => image.complete && image.naturalWidth > 0));
+    expect(await violations()).toEqual([]);
+  });
+
   test("keeps the canvas usable and exposes every editor panel on mobile", async ({ page }) => {
     for (const viewport of [
       { width: 390, height: 844 },

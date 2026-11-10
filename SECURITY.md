@@ -28,6 +28,9 @@ We aim to acknowledge a report within seven days and will coordinate disclosure 
 - AI keys are supplied by the user for the current dialog session, sent to the selected provider, and never written to StoreCanvas project storage.
 - App Store imports accept the public Apple lookup flow and validate Apple image hosts before downloading assets.
 - Vercel cannot provide durable local-file or asset storage; the deployed project keeps edits in the current browser origin.
+- Write routes (`POST /api/*`) accept only `application/json` from the same origin, so another website cannot drive a running local server.
+- `pnpm dev` and `pnpm start` listen on every network interface. Anyone on the same network can open the editor and read the current project. On a shared network, run `pnpm dev -H 127.0.0.1`.
+- Any shared or public host that is not Vercel must set `STORECANVAS_READ_ONLY=1`; otherwise visitors can write uploads to disk and replace the in-memory project other visitors see.
 - Imported App Store metadata, screenshots, app icons, and logos may have third-party terms. Users are responsible for permissions and redistribution rights.
 
 ## Keeping deployments safe

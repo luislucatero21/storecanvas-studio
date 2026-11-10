@@ -26,6 +26,7 @@ import { inheritDefaultDeviceDecks } from "@/lib/device-sync";
 import { ProjectStateSchema } from "@/lib/schema";
 import { validateProject } from "@/lib/validation";
 import type { Device, ProjectState, SlotSpan } from "@/lib/types";
+import { rejectCrossSiteRequest } from "@/lib/request-guard";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -145,6 +146,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const forbidden = rejectCrossSiteRequest(request);
+  if (forbidden) return forbidden;
   let raw: unknown;
   try {
     raw = await request.json();

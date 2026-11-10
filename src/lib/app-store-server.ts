@@ -150,22 +150,89 @@ function localeForCountry(country: string) {
   return "en-US";
 }
 
-function assertAppleImageUrl(rawUrl: string) {
-  const url = new URL(rawUrl);
-  if (url.protocol !== "https:" || !url.hostname.endsWith(".mzstatic.com")) {
-    throw new AppStoreImportError("Apple returned an unsupported image host.", 502);
+export const APPLE_IMAGE_MAX_BYTES = 15 * 1024 * 1024;
+const APPLE_IMAGE_MAX_REDIRECTS = 3;
+const APPLE_IMAGE_TYPES: Record<string, "png" | "jpg" | "webp" | "gif"> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/jpg": "jpg",
+  "image/webp": "webp",
+  "image/gif": "gif",
+};
+
+/** Only Apple's public image CDN over https; anything else is refused. */
+export function appleImageUrl(rawUrl: string): URL | null {
+  let url: URL;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    return null;
   }
+  if (url.protocol !== "https:" || !url.hostname.endsWith(".mzstatic.com") || url.username || url.password) return null;
   return url;
 }
 
-async function downloadAppleImage(rawUrl: string, fetchImpl: FetchLike) {
-  assertAppleImageUrl(rawUrl);
-  const response = await fetchImpl(rawUrl, { signal: AbortSignal.timeout(20_000) });
+function assertAppleImageUrl(rawUrl: string) {
+  const url = appleImageUrl(rawUrl);
+  if (!url) throw new AppStoreImportError("Apple returned an unsupported image host.", 502);
+  return url;
+}
+
+async function readBounded(response: Response, maxBytes: number) {
+  if (!response.body) return Buffer.alloc(0);
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel().catch(() => undefined);
+      throw new AppStoreImportError("An App Store image exceeded the 15 MB import limit.", 413);
+    }
+    chunks.push(value);
+  }
+  return Buffer.concat(chunks);
+}
+
+/**
+ * Downloads one App Store image without trusting the network path: every
+ * redirect hop must stay on Apple's https image CDN, only raster image types
+ * are accepted, and the body is capped at 15 MB while it streams.
+ */
+export async function fetchAppleImage(rawUrl: string, fetchImpl: FetchLike = fetch) {
+  let url = assertAppleImageUrl(rawUrl);
+  let response: Response | undefined;
+  for (let hop = 0; hop <= APPLE_IMAGE_MAX_REDIRECTS; hop += 1) {
+    response = await fetchImpl(url, { redirect: "manual", cache: "no-store", signal: AbortSignal.timeout(20_000) });
+    if (response.status < 300 || response.status >= 400) break;
+    const location = response.headers.get("location");
+    await response.body?.cancel().catch(() => undefined);
+    if (!location || hop === APPLE_IMAGE_MAX_REDIRECTS) {
+      throw new AppStoreImportError("Apple image redirected too many times.", 502);
+    }
+    url = assertAppleImageUrl(new URL(location, url).toString());
+  }
+  if (!response) throw new AppStoreImportError("Apple image download failed.", 502);
   if (!response.ok) throw new AppStoreImportError(`Apple image download failed with HTTP ${response.status}.`, 502);
-  const buffer = Buffer.from(await response.arrayBuffer());
-  if (buffer.byteLength > 15 * 1024 * 1024) throw new AppStoreImportError("An App Store image exceeded the 15 MB import limit.", 413);
-  const contentType = response.headers.get("content-type") || "image/jpeg";
-  const extension = contentType.includes("png") ? "png" : contentType.includes("webp") ? "webp" : "jpg";
+  const contentType = (response.headers.get("content-type") || "image/jpeg").split(";")[0].trim().toLowerCase();
+  const extension = APPLE_IMAGE_TYPES[contentType];
+  if (!extension) {
+    await response.body?.cancel().catch(() => undefined);
+    throw new AppStoreImportError("Apple returned a non-image response.", 502);
+  }
+  const declaredLength = Number(response.headers.get("content-length"));
+  if (Number.isFinite(declaredLength) && declaredLength > APPLE_IMAGE_MAX_BYTES) {
+    await response.body?.cancel().catch(() => undefined);
+    throw new AppStoreImportError("An App Store image exceeded the 15 MB import limit.", 413);
+  }
+  const buffer = await readBounded(response, APPLE_IMAGE_MAX_BYTES);
+  return { buffer, contentType: contentType === "image/jpg" ? "image/jpeg" : contentType, extension };
+}
+
+async function downloadAppleImage(rawUrl: string, fetchImpl: FetchLike) {
+  const { buffer, extension } = await fetchAppleImage(rawUrl, fetchImpl);
   return { buffer, extension };
 }
 
