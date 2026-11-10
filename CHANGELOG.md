@@ -21,3 +21,8 @@ All notable changes to StoreCanvas are documented here. This project follows a l
 - Updated Next.js, React, Sharp, Vitest, Playwright, Vite, jsdom, and related test tooling to supported patched versions, with Node.js `>=22.13.0` matching pnpm 11's runtime requirement.
 - Made pnpm the single documented package-manager path and pinned the supported Node.js and pnpm versions.
 - Declared local development origins for the Next.js dev server so browser tests remain reproducible.
+
+### Fixed
+
+- Agent API schema errors now name the failing field (for example `project.slidesByDevice.iphone.0.presentations.device.rotateX: Required`) instead of a bare `project: Required`.
+
