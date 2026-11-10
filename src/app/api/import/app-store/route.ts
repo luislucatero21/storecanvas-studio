@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import { AppStoreImportError, fetchAppStoreCampaign } from "@/lib/app-store-server";
 import { isReadOnlyRuntime } from "@/lib/runtime";
+import { rejectCrossSiteRequest } from "@/lib/request-guard";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const forbidden = rejectCrossSiteRequest(request);
+  if (forbidden) return forbidden;
   let body: unknown;
   try {
     body = await request.json();

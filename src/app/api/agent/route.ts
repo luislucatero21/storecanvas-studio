@@ -26,6 +26,7 @@ import { inheritDefaultDeviceDecks } from "@/lib/device-sync";
 import { ProjectStateSchema } from "@/lib/schema";
 import { validateProject } from "@/lib/validation";
 import type { Device, ProjectState, SlotSpan } from "@/lib/types";
+import { rejectCrossSiteRequest } from "@/lib/request-guard";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -81,7 +82,9 @@ function projectOf(value: unknown): ProjectState | { error: string } {
   const parsed = ProjectStateSchema.safeParse(value);
   if (parsed.success) return parsed.data as ProjectState;
   const issue = parsed.error.issues[0];
-  return { error: `project: ${issue?.message || "invalid StoreCanvas project"}` };
+  // Name the failing field: a bare "project: Required" gives an agent nothing to fix.
+  const where = issue?.path.length ? `project.${issue.path.join(".")}` : "project";
+  return { error: `${where}: ${issue?.message || "invalid StoreCanvas project"}` };
 }
 
 function deviceOf(value: unknown, fallback: Device): Device | { error: string } {
@@ -143,6 +146,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const forbidden = rejectCrossSiteRequest(request);
+  if (forbidden) return forbidden;
   let raw: unknown;
   try {
     raw = await request.json();

@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { ArtworkImageError, requestArtworkImage } from "@/lib/artwork-ai-server";
+import { rejectCrossSiteRequest } from "@/lib/request-guard";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
+  const forbidden = rejectCrossSiteRequest(request);
+  if (forbidden) return forbidden;
   try {
     const result = await requestArtworkImage(await request.json());
     return NextResponse.json({ ok: true, ...result });

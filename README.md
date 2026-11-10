@@ -10,6 +10,8 @@ StoreCanvas is a free, open-source, local-first studio for turning real mobile-a
 
 **[Open the live Vercel demo](https://storecanvas-studio.vercel.app/)** · **[Read the architecture](docs/architecture.md)** · **[Contribute](CONTRIBUTING.md)**
 
+> **Rather not do it yourself?** [StoreCanvas Sets](https://storecanvas-sets.vercel.app) is an optional done-for-you service from the author: send raw captures, get a localized, store-sized set back. It is separate from this project. The editor stays free, open source, and without accounts or checkout.
+
 The public demo starts from a self-contained Ledgerly finance campaign. Your local projects, screenshots, generated backgrounds, and browser edits are not uploaded automatically.
 
 ## Why StoreCanvas?

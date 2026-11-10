@@ -1110,6 +1110,16 @@ async function renderCommand() {
     }
   }
   const outputDir = path.resolve(root, arg("--output", "exports/rendered"));
+  // Locales and devices become folder names. A shared or synced project must
+  // not be able to steer PNG writes outside the chosen output folder.
+  for (const device of devicesFor(project)) {
+    if (!SUPPORTED_DEVICES.has(device)) throw new CliError(`Unsupported device: ${device}`);
+  }
+  for (const locale of localesFor(project)) {
+    if (typeof locale !== "string" || !/^[A-Za-z]{2,8}(?:[-_][A-Za-z0-9]{1,8})*$/.test(locale)) {
+      throw new CliError(`Invalid locale ${JSON.stringify(locale)}: use a language tag such as en-US or es-MX.`);
+    }
+  }
   const browser = await chromium.launch(executablePath ? { executablePath } : {});
   const context = await browser.newContext({ deviceScaleFactor: 1 });
   const page = await context.newPage();
@@ -1138,6 +1148,9 @@ async function renderCommand() {
             const layout = await slide.getAttribute("data-layout");
             const filename = `${String(index + 1).padStart(2, "0")}-${layout || slideId || "slide"}.png`;
             const destination = path.join(outputDir, device, `${size.w}x${size.h}`, locale, filename);
+            if (!destination.startsWith(outputDir + path.sep)) {
+              throw new CliError(`Refusing to write outside ${outputDir}: ${destination}`);
+            }
             await fs.mkdir(path.dirname(destination), { recursive: true });
             await slide.screenshot({ path: destination });
             count += 1;

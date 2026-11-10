@@ -11,6 +11,7 @@ import { inheritDefaultDeviceDecks } from "@/lib/device-sync";
 import { isReadOnlyRuntime } from "@/lib/runtime";
 import { getLocalProject, setLocalProject } from "@/lib/local-project-server";
 import type { ProjectState } from "@/lib/types";
+import { rejectCrossSiteRequest } from "@/lib/request-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -66,6 +67,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(req: Request) {
+  const forbidden = rejectCrossSiteRequest(req);
+  if (forbidden) return forbidden;
   let body: unknown;
   try {
     body = await req.json();
