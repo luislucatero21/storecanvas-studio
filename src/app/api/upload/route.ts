@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { saveUploadedDataUrl, UploadedImageError } from "@/lib/uploaded-image-server";
+import { rejectCrossSiteRequest } from "@/lib/request-guard";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
+  const forbidden = rejectCrossSiteRequest(req);
+  if (forbidden) return forbidden;
   try {
     const body = await req.json() as { dataUrl?: string };
     if (typeof body.dataUrl !== "string") {
