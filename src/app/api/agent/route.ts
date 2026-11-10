@@ -78,7 +78,9 @@ function projectOf(value: unknown): ProjectState | { error: string } {
   const parsed = ProjectStateSchema.safeParse(value);
   if (parsed.success) return parsed.data as ProjectState;
   const issue = parsed.error.issues[0];
-  return { error: `project: ${issue?.message || "invalid StoreCanvas project"}` };
+  // Name the failing field: a bare "project: Required" gives an agent nothing to fix.
+  const where = issue?.path.length ? `project.${issue.path.join(".")}` : "project";
+  return { error: `${where}: ${issue?.message || "invalid StoreCanvas project"}` };
 }
 
 function deviceOf(value: unknown, fallback: Device): Device | { error: string } {

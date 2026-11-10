@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { POST, GET } from "@/app/api/agent/route";
 import {
@@ -15,6 +17,34 @@ import { DEFAULT_PROJECT } from "@/lib/defaults";
 import { CHECKED_IN_EXAMPLE_PROJECT } from "@/lib/project-file";
 
 describe("StoreCanvas agent workflow", () => {
+  it("names the failing field when a project does not match the schema", async () => {
+    const project = JSON.parse(readFileSync(resolve("example-project.json"), "utf8"));
+    delete project.slidesByDevice.iphone[0].presentations.device.rotateX;
+
+    const response = await POST(new Request("http://localhost/api/agent", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "validate", project }),
+    }));
+    const payload = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(payload.ok).toBe(false);
+    expect(payload.error).toContain("project.slidesByDevice.iphone.0.presentations.device.rotateX");
+  });
+
+  it("keeps the plain project prefix when the whole project is missing", async () => {
+    const response = await POST(new Request("http://localhost/api/agent", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "validate" }),
+    }));
+    const payload = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(payload.error).toMatch(/^project: /);
+  });
+
   it("exposes the same templates and palettes used by the editor", async () => {
     const response = await GET(new Request("http://localhost/api/agent?view=catalog"));
     const payload = await response.json();
