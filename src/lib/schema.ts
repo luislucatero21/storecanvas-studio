@@ -127,7 +127,7 @@ export const SlideSchema = z.object({
   copyKey: z.string().trim().min(1).optional(),
   inverted: z.boolean().optional(),
   transforms: z.record(z.string(), TransformSchema).optional(),
-  textStyles: z.record(TypographyStyleSchema).optional(),
+  textStyles: z.record(z.string(), TypographyStyleSchema).optional(),
   textElements: z.array(TextElementSchema).optional(),
   constraints: z.record(z.string(), ConstraintSchema).optional(),
   responsive: z.record(z.string(), z.record(z.string(), ConstraintSchema)).optional(),
