@@ -15,6 +15,13 @@ All notable changes to StoreCanvas are documented here. This project follows a l
 - Agent CLI commands to read and edit a campaign without touching JSON: `screens`, `edit-screen` (copy, layout, screenshots) and `set-project` (device, orientation, locale, palette), plus per-command help, a `help --json` manifest, JSON errors with hints and typo suggestions.
 - Editor: a keyboard shortcuts sheet (`?`), left/right screen paging and `⌘/Ctrl+E` export; QA issues name their device and screen and jump to it; optional artwork and extra-device panels fold under "Extras" until a screen uses them.
 
+### Security
+
+- API write routes accept only same-origin `application/json` requests, so another website cannot overwrite a local project file or write uploads through a running StoreCanvas server.
+- App Store image downloads and the image proxy stay on Apple's https image CDN across redirects, accept only raster images, stream with a 15 MB cap, and serve proxied bytes with `nosniff` and a sandboxing CSP.
+- `storecanvas render` refuses locales that are not language tags and never writes outside `--output`.
+- Every response carries a Content-Security-Policy (`connect-src 'self'`, `object-src 'none'`, `frame-ancestors 'none'`), `X-Frame-Options`, `nosniff`, `Referrer-Policy` and `Permissions-Policy`; the `X-Powered-By` header is gone.
+
 ### Changed
 
 - Cleared the November 2026 high and critical audit advisories: Next.js 16.4.5 (image-optimizer RCE, `use cache` RCE and Server Actions DoS fixed in 16.4.1), Zod 4.6.7 (unbounded issue accumulation on large arrays; Zod 3 has no patched release), Vite 8.3 (`launch-editor` path check) and undici 8.12 through the existing override (TLS validation, redirect cache poisoning and decompression DoS).
