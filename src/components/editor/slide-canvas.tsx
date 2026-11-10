@@ -17,6 +17,9 @@ import type {
 } from "@/lib/types";
 import {
   IPAD_RATIO,
+  DUO_RATIO,
+  WATCH_RATIO,
+  isWatchDevice,
   MK_RATIO,
   ipadW,
   landscapeW,
@@ -46,6 +49,9 @@ import {
   AndroidTabletP,
   IPad,
   IPadLandscape,
+  IPhoneDuo,
+  IPhoneDuoLandscape,
+  WatchFrame,
   Phone,
   PhoneLandscape,
 } from "./device-frames";
@@ -69,6 +75,9 @@ function getFrameAspect(device: Device, orientation: Orientation) {
     case "ipad":        return orientation === "landscape" ? 1 / IPAD_RATIO : IPAD_RATIO;
     case "android-7":
     case "android-10":  return orientation === "landscape" ? 8 / 5 : 5 / 8;
+    case "watch-ultra":
+    case "watch-series": return WATCH_RATIO;
+    case "iphone-duo":  return orientation === "landscape" ? 1 / DUO_RATIO : DUO_RATIO;
     default:            return 1;
   }
 }
@@ -97,6 +106,24 @@ export function getFrameForDevice(device: Device, orientation: Orientation): {
         };
       }
       return { Comp: IPad, widthFn: ipadW, smallWidthFn: (cW, cH) => ipadW(cW, cH, 0.6) };
+    case "iphone-duo":
+      if (orientation === "landscape") {
+        return {
+          Comp: IPhoneDuoLandscape,
+          widthFn: (cW, cH) => landscapeW(cW, cH, 1 / DUO_RATIO),
+          smallWidthFn: (cW, cH) => landscapeW(cW, cH, 1 / DUO_RATIO, 0.48),
+        };
+      }
+      return {
+        Comp: IPhoneDuo,
+        widthFn: (cW, cH) => Math.min(0.8, 0.72 * (cH / cW) * DUO_RATIO),
+        smallWidthFn: (cW, cH) => Math.min(0.62, 0.72 * (cH / cW) * DUO_RATIO),
+      };
+    case "watch-ultra":
+    case "watch-series": {
+      // Frame width as a share of the canvas: the display lands at ~79% of the width.
+      return { Comp: WatchFrame, widthFn: () => 0.86, smallWidthFn: () => 0.7 };
+    }
     case "android":
       return { Comp: AndroidPhone, widthFn: phoneW, smallWidthFn: phoneWSmall };
     case "android-7":
@@ -257,7 +284,9 @@ function Caption({
   segmentColors,
   contrastGradient,
   onFocus,
+  compact,
 }: {
+  compact?: boolean;
   cW: number;
   cH: number;
   slide: Slide;
@@ -312,11 +341,11 @@ function Caption({
         }}
         style={{
           fontFamily: fontFamilyCss(labelStyle.family, "body"),
-          fontSize: labelStyle.fontSize ?? unit * 0.028 * clampSizeScale(labelStyle.sizeScale),
+          fontSize: labelStyle.fontSize ?? unit * (compact ? 0.029 : 0.028) * clampSizeScale(labelStyle.sizeScale),
           fontWeight: labelStyle.weight ?? 600,
           fontStyle: labelStyle.style ?? "normal",
           textDecoration: labelStyle.decoration ?? "none",
-          letterSpacing: unit * (labelStyle.letterSpacing ?? 0.0015),
+          letterSpacing: unit * (labelStyle.letterSpacing ?? (compact ? 0.003 : 0.0015)),
           lineHeight: labelStyle.lineHeight ?? 1.15,
           color: labelGradient ? "transparent" : labelColor,
           backgroundImage: labelGradient,
@@ -351,11 +380,11 @@ function Caption({
         }}
         style={{
           fontFamily: fontFamilyCss(headlineStyle.family, "display"),
-          fontSize: headlineStyle.fontSize ?? unit * 0.092 * clampSizeScale(headlineStyle.sizeScale),
+          fontSize: headlineStyle.fontSize ?? unit * (compact ? 0.082 : 0.092) * clampSizeScale(headlineStyle.sizeScale),
           fontWeight: headlineStyle.weight ?? 700,
           fontStyle: headlineStyle.style ?? "normal",
           textDecoration: headlineStyle.decoration ?? "none",
-          lineHeight: headlineStyle.lineHeight ?? 0.96,
+          lineHeight: headlineStyle.lineHeight ?? (compact ? 1.02 : 0.96),
           letterSpacing: unit * (headlineStyle.letterSpacing ?? -0.001),
           color: headlineGradient ? "transparent" : singleHeadlineColor,
           backgroundImage: headlineGradient,
@@ -444,6 +473,7 @@ function getDefaultRects(
   frameAspect: number,
   fwFrac: number,
   fwSmallFrac: number,
+  device?: Device,
 ): LayoutRects {
   const deviceW = fwFrac * cW;
   const deviceH = deviceW / frameAspect;
@@ -451,6 +481,15 @@ function getDefaultRects(
   const smallH = smallW / frameAspect;
   const capW = cW * 0.84;
   const capH = cH * 0.28;
+
+  // Watch canvases are ~420px wide: a compact caption on top and the watch
+  // bleeding slightly off the bottom edge, regardless of the phone layout names.
+  if (device && isWatchDevice(device) && layout !== "no-device") {
+    return {
+      caption: { x: cW * 0.07, y: cH * 0.055, width: cW * 0.86, height: cH * 0.22, align: "center" },
+      device: { x: (cW - deviceW) / 2, y: cH * 0.27, width: deviceW, height: deviceH },
+    };
+  }
 
   switch (layout) {
     case "hero":
@@ -568,7 +607,7 @@ function getSlideGeometry(slide: Slide, device: Device, orientation: Orientation
   const frameAspect = getFrameAspect(device, orientation);
   const fwFrac = widthFn(cW, cH);
   const fwSmallFrac = smallWidthFn(cW, cH);
-  const defaults = getDefaultRects(slide.layout, cW, cH, frameAspect, fwFrac, fwSmallFrac);
+  const defaults = getDefaultRects(slide.layout, cW, cH, frameAspect, fwFrac, fwSmallFrac, device);
   return { cW, cH, Frame, frameAspect, defaults };
 }
 
@@ -1351,6 +1390,7 @@ function SlideElements({
     const zIndex = saved?.zIndex ?? 4;
     const inner = (
       <Caption
+        compact={isWatchDevice(device)}
         cW={cW}
         cH={cH}
         slide={slide}

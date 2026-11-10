@@ -39,7 +39,7 @@ export type RemoveElementOptions = {
   screenIndex?: number;
 };
 
-export const AGENT_DEVICES: Device[] = ["iphone", "ipad", "android", "android-7", "android-10", "feature-graphic"];
+export const AGENT_DEVICES: Device[] = ["iphone", "ipad", "android", "android-7", "android-10", "iphone-duo", "watch-ultra", "watch-series", "feature-graphic"];
 export const AGENT_LAYOUTS: SlideLayout[] = [
   "hero",
   "device-bottom",
@@ -435,7 +435,7 @@ export function setAgentProject(project: ProjectState, options: SetProjectOption
     changes.push("orientation");
   }
   if (next.orientation === "landscape" && !supportsLandscape(next.device)) {
-    throw new Error(`${next.device} does not support landscape. Use portrait, or a device with landscape support (iphone, ipad, android-7, android-10).`);
+    throw new Error(`${next.device} does not support landscape. Use portrait, or a device with landscape support (iphone, ipad, iphone-duo, android-7, android-10).`);
   }
   if (options.locale !== undefined) {
     assertLocale(project, options.locale);

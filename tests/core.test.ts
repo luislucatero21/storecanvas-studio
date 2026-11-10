@@ -1235,3 +1235,130 @@ describe("Apple landscape", () => {
     expect(note.transform.y).toBeCloseTo(2064);
   });
 });
+
+describe("iPhone Duo", () => {
+  it("targets App Store Connect's APP_IPHONE_DUO sizes in both orientations", async () => {
+    const { getCanvas } = await import("@/lib/canvas");
+    const { getExportSizes, supportsLandscape, DEVICE_LABEL } = await import("@/lib/constants");
+    const { detectPlatform } = await import("@/lib/defaults");
+    expect(detectPlatform("iphone-duo")).toBe("ios");
+    expect(DEVICE_LABEL["iphone-duo"]).toBe("iPhone Duo");
+    expect(supportsLandscape("iphone-duo")).toBe(true);
+    expect(getCanvas("iphone-duo", "portrait")).toEqual({ cW: 2007, cH: 2853 });
+    expect(getCanvas("iphone-duo", "landscape")).toEqual({ cW: 2853, cH: 2007 });
+    expect(getExportSizes("iphone-duo", "portrait").map(({ id, w, h }) => [id, w, h])).toEqual([
+      ["iphone-duo", 2007, 2853],
+      ["iphone-duo-compact", 1398, 2034],
+    ]);
+    expect(getExportSizes("iphone-duo", "landscape").map(({ id, w, h }) => [id, w, h])).toEqual([
+      ["iphone-duo-landscape", 2853, 2007],
+      ["iphone-duo-compact-landscape", 2034, 1398],
+    ]);
+  });
+
+  it("defaults to the large size and keeps the compact class across a flip", () => {
+    expect(getSelectedExportSizes("iphone-duo", "portrait", {}).map((size) => size.id)).toEqual(["iphone-duo"]);
+    expect(getSelectedExportSizes("iphone-duo", "landscape", { "iphone-duo": ["iphone-duo-compact"] }).map((size) => size.id))
+      .toEqual(["iphone-duo-compact-landscape"]);
+    expect(DEFAULT_PROJECT.exportSizeIds?.["iphone-duo"]).toEqual(["iphone-duo"]);
+  });
+
+  it("exports under the iOS platform folder", () => {
+    expect(exportPath({ platform: "ios", device: "iphone-duo", width: 1398, height: 2034, locale: "en-US", index: 0, layout: "hero" }))
+      .toBe("ios/iphone-duo/1398x2034/en-US/01-hero.png");
+  });
+
+  it("frames the unfolded display inside the canvas in both orientations", () => {
+    const slide = { ...DEFAULT_PROJECT.slidesByDevice.iphone[0], layout: "device-bottom" as const, transforms: undefined };
+    const portrait = getElementTransform(slide, "iphone-duo", "portrait", "device");
+    expect(portrait).toBeDefined();
+    expect(portrait!.height).toBeGreaterThan(portrait!.width);
+    expect(portrait!.x).toBeGreaterThanOrEqual(0);
+    expect(portrait!.x + portrait!.width).toBeLessThanOrEqual(2007);
+
+    const split = { ...slide, layout: "split-landscape" as const };
+    const landscape = getElementTransform(split, "iphone-duo", "landscape", "device");
+    expect(landscape).toBeDefined();
+    expect(landscape!.width).toBeGreaterThan(landscape!.height);
+    expect(landscape!.y).toBeGreaterThanOrEqual(0);
+    expect(landscape!.y + landscape!.height).toBeLessThanOrEqual(2007);
+  });
+
+  it("allows Apple's ten screenshots and inherits the iPhone story", () => {
+    const iphone = DEFAULT_PROJECT.slidesByDevice.iphone[0];
+    const deck = (count: number) => Array.from({ length: count }, (_, index) => ({ ...iphone, id: `duo-${index}` }));
+    const limit = (count: number) => validateProject({
+      ...DEFAULT_PROJECT,
+      slidesByDevice: { ...DEFAULT_PROJECT.slidesByDevice, "iphone-duo": deck(count) },
+    }).issues.filter((issue) => issue.code === "slide-limit" && issue.device === "iphone-duo");
+    expect(limit(10)).toHaveLength(0);
+    expect(limit(11)).toHaveLength(1);
+
+    const project = structuredClone(DEFAULT_PROJECT);
+    project.slidesByDevice.iphone = deck(10).map((slide) => ({ ...slide, screenshot: "/screenshots/apple/iphone/{locale}/home.png" }));
+    const inherited = inheritDefaultDeviceDecks(project);
+    expect(inherited.slidesByDevice["iphone-duo"]).toHaveLength(10);
+    expect(inherited.slidesByDevice["iphone-duo"][0].screenshot).toBe("/screenshots/apple/iphone/{locale}/home.png");
+  });
+
+  it("round-trips an iPhone Duo project through the schema", () => {
+    const parsed = ProjectStateSchema.safeParse({ ...DEFAULT_PROJECT, device: "iphone-duo", orientation: "landscape" });
+    expect(parsed.success).toBe(true);
+  });
+});
+
+describe("Apple Watch", () => {
+  it("targets the Ultra 3 and Series 11 App Store sizes, portrait only", async () => {
+    const { getCanvas } = await import("@/lib/canvas");
+    const { getExportSizes, supportsLandscape, DEVICE_LABEL } = await import("@/lib/constants");
+    const { detectPlatform } = await import("@/lib/defaults");
+    expect(detectPlatform("watch-ultra")).toBe("ios");
+    expect(detectPlatform("watch-series")).toBe("ios");
+    expect(DEVICE_LABEL["watch-ultra"]).toBe("Apple Watch Ultra");
+    expect(supportsLandscape("watch-ultra")).toBe(false);
+    expect(supportsLandscape("watch-series")).toBe(false);
+    expect(getCanvas("watch-ultra", "portrait")).toEqual({ cW: 422, cH: 514 });
+    expect(getCanvas("watch-series", "portrait")).toEqual({ cW: 416, cH: 496 });
+    expect(getExportSizes("watch-ultra", "portrait").map(({ id, w, h }) => [id, w, h])).toEqual([
+      ["watch-ultra", 422, 514],
+      ["watch-ultra-compact", 410, 502],
+    ]);
+    expect(getExportSizes("watch-series", "portrait").map(({ id, w, h }) => [id, w, h])).toEqual([
+      ["watch-series", 416, 496],
+      ["watch-series-compact", 396, 484],
+    ]);
+    expect(getSelectedExportSizes("watch-series", "portrait", {}).map((size) => size.id)).toEqual(["watch-series"]);
+  });
+
+  it("exports under the iOS platform folder", () => {
+    expect(exportPath({ platform: "ios", device: "watch-ultra", width: 422, height: 514, locale: "es-MX", index: 0, layout: "device-bottom" }))
+      .toBe("ios/watch-ultra/422x514/es-MX/01-device-bottom.png");
+  });
+
+  it("places a caption on top and a bezelled watch that bleeds slightly off the bottom", () => {
+    for (const [device, w, h] of [["watch-ultra", 422, 514], ["watch-series", 416, 496]] as const) {
+      const slide = { ...DEFAULT_PROJECT.slidesByDevice[device][0], transforms: undefined };
+      const caption = getElementTransform(slide, device, "portrait", "caption")!;
+      const watch = getElementTransform(slide, device, "portrait", "device")!;
+      expect(caption.y).toBeLessThan(watch.y);
+      expect(watch.x).toBeGreaterThan(0);
+      expect(watch.x + watch.width).toBeCloseTo(w - watch.x);
+      expect(watch.width / w).toBeGreaterThan(0.84);
+      expect(watch.width / w).toBeLessThan(0.9);
+      expect(watch.y + watch.height).toBeGreaterThan(h);
+      expect(watch.y + watch.height).toBeLessThan(h * 1.2);
+    }
+  });
+
+  it("keeps Apple's ten-screenshot limit and round-trips through the schema", () => {
+    const base = DEFAULT_PROJECT.slidesByDevice["watch-ultra"][0];
+    const slides = (count: number) => Array.from({ length: count }, (_, index) => ({ ...base, id: `w-${index}` }));
+    const limit = (count: number) => validateProject({
+      ...DEFAULT_PROJECT,
+      slidesByDevice: { ...DEFAULT_PROJECT.slidesByDevice, "watch-series": slides(count) },
+    }).issues.filter((issue) => issue.code === "slide-limit" && issue.device === "watch-series");
+    expect(limit(10)).toHaveLength(0);
+    expect(limit(11)).toHaveLength(1);
+    expect(ProjectStateSchema.safeParse({ ...DEFAULT_PROJECT, device: "watch-ultra" }).success).toBe(true);
+  });
+});

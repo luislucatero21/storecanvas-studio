@@ -1,4 +1,4 @@
-import { getExportSizes } from "./constants";
+import { APPLE_DEVICES, getExportSizes } from "./constants";
 import { assetRefsInProject } from "./asset-library";
 import { resolveAssetPath } from "./asset-library";
 import { ProjectStateSchema } from "./schema";
@@ -54,11 +54,11 @@ export function validateProject(
   }
 
   for (const [device, slides] of Object.entries(project.slidesByDevice) as [Device, Slide[]][]) {
-    const maxSlides = device === "iphone" || device === "ipad" ? 10 : 8;
+    const maxSlides = APPLE_DEVICES.includes(device) ? 10 : 8;
     if (slides.length > maxSlides) {
       issues.push({ code: "slide-limit", severity: "error", message: `${device} has ${slides.length} slides; the store limit is ${maxSlides}.`, device });
     }
-    if (!getExportSizes(device, device === "android-7" || device === "android-10" ? project.orientation : "portrait").length) {
+    if (!getExportSizes(device, project.orientation).length) {
       issues.push({ code: "no-export-target", severity: "error", message: `No export target is configured for ${device}.`, device });
     }
     slides.forEach((slide, slideIndex) => {

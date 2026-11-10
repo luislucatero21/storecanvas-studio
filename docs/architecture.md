@@ -64,7 +64,7 @@ Add data-driven entries to `src/lib/campaign-presets.ts`. A template can define 
 
 ### Devices
 
-Add device dimensions and export targets in `src/lib/constants.ts`, then add presentation anatomy in `src/lib/device-models.ts` and frame rendering in `src/components/editor/device-frames.tsx`. Keep the screenshot transform independent from the hardware presentation transform.
+Add the id to `Device` in `src/lib/types.ts` and every device list (schema, storage, render page, agent route/workflow, `scripts/storecanvas.mjs`, toolbar picker, `detectPlatform`/`APPLE_DEVICES`). Add device dimensions and export targets (portrait and, when the store accepts it, landscape) in `src/lib/constants.ts`, then add presentation anatomy in `src/lib/device-models.ts` and frame rendering in `src/components/editor/device-frames.tsx`. Keep the screenshot transform independent from the hardware presentation transform.
 
 ### Imports
 

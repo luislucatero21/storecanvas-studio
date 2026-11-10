@@ -1,5 +1,6 @@
 import { getCanvas } from "./canvas";
 import { fitConnectedArtwork } from "./connected-artwork";
+import { DEFAULT_PROJECT } from "./defaults";
 import type {
   AssetLibrary,
   ConnectedArtwork,
@@ -240,12 +241,25 @@ export function cloneDeckToDevice(
  */
 export function inheritDefaultDeviceDecks(project: ProjectState) {
   let next = project;
-  for (const targetDevice of ["ipad", "android", "android-7", "android-10"] as const) {
+  for (const targetDevice of ["ipad", "iphone-duo", "android", "android-7", "android-10"] as const) {
     const sourceSlides = next.slidesByDevice.iphone || [];
     const targetSlides = next.slidesByDevice[targetDevice] || [];
     if (shouldInheritDeviceDeck(sourceSlides, targetSlides)) {
-      const maxSlides = targetDevice === "ipad" ? undefined : 8;
+      const maxSlides = targetDevice === "ipad" || targetDevice === "iphone-duo" ? undefined : 8;
       next = cloneDeckToDevice(next, "iphone", targetDevice, maxSlides);
+    }
+  }
+  // Watch captures are their own simulator screens, so an empty watch deck
+  // starts from the short watch story instead of cloning iPhone captures.
+  for (const watch of ["watch-ultra", "watch-series"] as const) {
+    if ((next.slidesByDevice[watch] || []).length === 0) {
+      next = {
+        ...next,
+        slidesByDevice: {
+          ...next.slidesByDevice,
+          [watch]: structuredClone(DEFAULT_PROJECT.slidesByDevice[watch]).map((slide, index) => ({ ...slide, id: `${watch}-starter-${index + 1}` })),
+        },
+      };
     }
   }
   return next;

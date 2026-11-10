@@ -7,6 +7,9 @@ export const CANVAS: Record<Device, { w: number; h: number; wL?: number; hL?: nu
   android:       { w: 1080, h: 1920 },
   "android-7":   { w: 1200, h: 1920, wL: 1920, hL: 1200 },
   "android-10":  { w: 1600, h: 2560, wL: 2560, hL: 1600 },
+  "iphone-duo":  { w: 2007, h: 2853, wL: 2853, hL: 2007 },
+  "watch-ultra": { w: 422, h: 514 },
+  "watch-series": { w: 416, h: 496 },
   "feature-graphic": { w: 1024, h: 500 },
 };
 
@@ -27,6 +30,18 @@ export const EXPORT_SIZES: Record<Device, ExportSize[]> = {
   android:       [{ id: "android-phone", label: "Phone",          w: 1080, h: 1920 }],
   "android-7":   [{ id: "android-7-portrait", label: '7" Portrait',    w: 1200, h: 1920 }],
   "android-10":  [{ id: "android-10-portrait", label: '10" Portrait',   w: 1600, h: 2560 }],
+  "iphone-duo": [
+    { id: "iphone-duo", label: "iPhone Duo", w: 2007, h: 2853 },
+    { id: "iphone-duo-compact", label: "iPhone Duo (1398)", w: 1398, h: 2034 },
+  ],
+  "watch-ultra": [
+    { id: "watch-ultra", label: "Apple Watch Ultra 3", w: 422, h: 514 },
+    { id: "watch-ultra-compact", label: "Apple Watch Ultra (410)", w: 410, h: 502 },
+  ],
+  "watch-series": [
+    { id: "watch-series", label: "Apple Watch Series 11 (46mm)", w: 416, h: 496 },
+    { id: "watch-series-compact", label: "Apple Watch Series (396)", w: 396, h: 484 },
+  ],
   "feature-graphic": [{ id: "feature-graphic", label: "Feature Graphic", w: 1024, h: 500 }],
 };
 
@@ -39,9 +54,18 @@ function rotated(sizes: ExportSize[]): ExportSize[] {
 export const EXPORT_SIZES_LANDSCAPE: Partial<Record<Device, ExportSize[]>> = {
   iphone: rotated(EXPORT_SIZES.iphone),
   ipad: rotated(EXPORT_SIZES.ipad),
+  "iphone-duo": rotated(EXPORT_SIZES["iphone-duo"]),
   "android-7":  [{ id: "android-7-landscape", label: '7" Landscape',  w: 1920, h: 1200 }],
   "android-10": [{ id: "android-10-landscape", label: '10" Landscape', w: 2560, h: 1600 }],
 };
+
+/** Apple Watch decks use the dedicated small-canvas watch layout. */
+export function isWatchDevice(device: Device): device is "watch-ultra" | "watch-series" {
+  return device === "watch-ultra" || device === "watch-series";
+}
+
+/** Devices that ship to App Store Connect rather than Google Play. */
+export const APPLE_DEVICES: readonly Device[] = ["iphone", "ipad", "iphone-duo", "watch-ultra", "watch-series"];
 
 export function supportsLandscape(device: Device): boolean {
   return device in EXPORT_SIZES_LANDSCAPE;
@@ -61,6 +85,9 @@ export const DEFAULT_EXPORT_SIZE_IDS: ExportSizeSelection = {
   android: ["android-phone"],
   "android-7": ["android-7-portrait"],
   "android-10": ["android-10-portrait"],
+  "iphone-duo": ["iphone-duo"],
+  "watch-ultra": ["watch-ultra"],
+  "watch-series": ["watch-series"],
   "feature-graphic": ["feature-graphic"],
 };
 
@@ -96,6 +123,16 @@ export const MK_RATIO    = 1022 / 2082; // iPhone frame aspect ratio
 export const TAB_P_RATIO = 0.667;        // tablet portrait
 export const TAB_L_RATIO = 1.5;          // tablet landscape
 export const IPAD_RATIO  = 0.770;        // iPad
+// iPhone Duo unfolded display is 1398x2034; the frame insets the screen 4%/2.8% like iPad.
+export const DUO_RATIO   = (1398 / 2034) * 0.944 / 0.92;
+
+// Apple Watch: thin bezel (4% of frame width per side) around a screen of ~0.825 aspect,
+// the shape of the 410-422 x 496-514 simulator captures.
+export const WATCH_BEZEL = 0.04;
+export const WATCH_SCREEN_ASPECT = 0.825;
+export const WATCH_RATIO = 1 / ((1 - 2 * WATCH_BEZEL) / WATCH_SCREEN_ASPECT + 2 * WATCH_BEZEL);
+/** Screen corner radius as a share of the display width (~18%). */
+export const WATCH_SCREEN_RADIUS = 0.18;
 
 // iPhone mockup screen overlay (pre-measured)
 export const PHONE_SCREEN = {
@@ -201,6 +238,9 @@ export const DEVICE_LABEL: Record<Device, string> = {
   android: "Android Phone",
   "android-7": 'Android 7" Tablet',
   "android-10": 'Android 10" Tablet',
+  "iphone-duo": "iPhone Duo",
+  "watch-ultra": "Apple Watch Ultra",
+  "watch-series": "Apple Watch Series",
   "feature-graphic": "Feature Graphic",
 };
 

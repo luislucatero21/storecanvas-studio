@@ -985,6 +985,48 @@ test.describe("StoreCanvas editor", () => {
     await expect(render.locator("[data-render-slide]").first()).toHaveJSProperty("clientHeight", 2064);
   });
 
+  test("renders iPhone Duo campaigns at both App Store sizes and in landscape", async ({ page }) => {
+    await gotoRender(page, "/render?source=example&device=iphone-duo&locale=en-US&size=2007x2853");
+    let render = page.locator('[data-render-valid="true"]');
+    await expect(render.locator("[data-render-slide]")).toHaveCount(10);
+    await expect(render.locator("[data-render-slide]").first()).toHaveJSProperty("clientWidth", 2007);
+    await expect(render.locator("[data-render-slide]").first()).toHaveJSProperty("clientHeight", 2853);
+
+    await gotoRender(page, "/render?source=example&device=iphone-duo&locale=en-US&size=1398x2034");
+    render = page.locator('[data-render-valid="true"]');
+    await expect(render.locator("[data-render-slide]").first()).toHaveJSProperty("clientWidth", 1398);
+
+    await gotoRender(page, "/render?source=example&device=iphone-duo&orientation=landscape&locale=en-US&size=2853x2007");
+    render = page.locator('[data-render-valid="true"]');
+    await expect(render.locator("[data-render-slide]").first()).toHaveJSProperty("clientWidth", 2853);
+    await expect(render.locator("[data-render-slide]").first()).toHaveJSProperty("clientHeight", 2007);
+  });
+
+  test("renders Apple Watch campaigns at the exact App Store sizes", async ({ page }) => {
+    for (const [device, w, h] of [["watch-ultra", 422, 514], ["watch-ultra", 410, 502], ["watch-series", 416, 496], ["watch-series", 396, 484]] as const) {
+      await gotoRender(page, `/render?source=example&device=${device}&locale=en-US&size=${w}x${h}`);
+      const render = page.locator('[data-render-valid="true"]');
+      await expect(render.locator("[data-render-slide]").first()).toHaveJSProperty("clientWidth", w);
+      await expect(render.locator("[data-render-slide]").first()).toHaveJSProperty("clientHeight", h);
+    }
+  });
+
+  test("offers Apple Watch in the iOS device picker", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("combobox", { name: "Device" }).click();
+    await page.getByRole("option", { name: "Apple Watch Ultra" }).click();
+    await expect(page.getByRole("combobox", { name: "Device" })).toContainText("Apple Watch Ultra");
+    await expect(page.getByRole("combobox", { name: "Orientation" })).toHaveCount(0);
+  });
+
+  test("offers iPhone Duo in the iOS device picker", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("combobox", { name: "Device" }).click();
+    await page.getByRole("option", { name: "iPhone Duo" }).click();
+    await expect(page.getByRole("combobox", { name: "Device" })).toContainText("iPhone Duo");
+    await expect(page.getByRole("combobox", { name: "Orientation" })).toBeVisible();
+  });
+
   test("starts iPad with the same ten-screen story as iPhone", async ({ page }) => {
     await page.goto("/");
     const response = await page.request.get("/api/project");

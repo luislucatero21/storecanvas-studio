@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { PHONE_SCREEN } from "@/lib/constants";
+import { PHONE_SCREEN, WATCH_BEZEL, WATCH_RATIO, WATCH_SCREEN_RADIUS } from "@/lib/constants";
 import { iphoneModelDefinition } from "@/lib/device-models";
 import { img } from "@/lib/image-cache";
 import type { DeviceModel, DevicePresentation } from "@/lib/types";
@@ -397,11 +397,75 @@ export function IPadLandscape(props: FrameProps) {
   return <IPadFrame {...props} landscape />;
 }
 
+/** iPhone Duo unfolded: iPad-style bezel around the 1398x2034 inner display (DUO_RATIO). */
+export function IPhoneDuo(props: FrameProps) {
+  return <IPadFrame {...props} landscape={false} aspect="705.2 / 1000" />;
+}
+
+export function IPhoneDuoLandscape(props: FrameProps) {
+  return <IPadFrame {...props} landscape aspect="1000 / 705.2" />;
+}
+
+/**
+ * Apple Watch: the raw display capture as a rounded rectangle inside a thin
+ * dark bezel with a faint edge highlight and glow. The same frame serves the
+ * Ultra and Series canvases; the capture is cover-fitted to the display.
+ */
+export function WatchFrame({ src, alt = "", style, hideEmpty }: FrameProps) {
+  const resolved = img(src);
+  const frameH = 1 / WATCH_RATIO; // frame height as a multiple of its width
+  const screenW = 1 - 2 * WATCH_BEZEL;
+  const screenH = frameH - 2 * WATCH_BEZEL;
+  const pct = (n: number) => `${(n * 100).toFixed(3)}%`;
+  const screenR = WATCH_SCREEN_RADIUS * screenW; // in frame widths
+  const outerR = screenR + WATCH_BEZEL;
+  return (
+    <div data-device-model="apple-watch" style={{ position: "relative", aspectRatio: `${WATCH_RATIO}`, ...style }}>
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          borderRadius: `${pct(outerR)} / ${pct(outerR / frameH)}`,
+          background: "linear-gradient(180deg, #1d1d20 0%, #08080a 100%)",
+          position: "relative",
+          overflow: "hidden",
+          boxShadow:
+            "inset 0 0 0 1px rgba(255,255,255,0.22), inset 0 1px 0 rgba(255,255,255,0.35), 0 0 22px rgba(255,255,255,0.10), 0 10px 36px rgba(0,0,0,0.55)",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            left: pct(WATCH_BEZEL),
+            top: pct(WATCH_BEZEL / frameH),
+            width: pct(screenW),
+            height: pct(screenH / frameH),
+            borderRadius: `${pct(screenR / screenW)} / ${pct(screenR / screenH)}`,
+            overflow: "hidden",
+            background: "#000",
+          }}
+        >
+          {resolved ? (
+            <img
+              src={resolved}
+              alt={alt}
+              style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
+              draggable={false}
+            />
+          ) : hideEmpty ? null : (
+            <EmptySlot />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Bezel and corner radii are expressed against each edge, so landscape swaps them.
-function IPadFrame({ src, alt = "", style, hideEmpty, landscape }: FrameProps & { landscape: boolean }) {
+function IPadFrame({ src, alt = "", style, hideEmpty, landscape, aspect }: FrameProps & { landscape: boolean; aspect?: string }) {
   const resolved = img(src);
   return (
-    <div style={{ position: "relative", aspectRatio: landscape ? "1000 / 770" : "770 / 1000", ...style }}>
+    <div style={{ position: "relative", aspectRatio: aspect ?? (landscape ? "1000 / 770" : "770 / 1000"), ...style }}>
       <div
         style={{
           width: "100%",
