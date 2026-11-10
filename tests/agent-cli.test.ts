@@ -1,7 +1,10 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
+import { existsSync } from "node:fs";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 
 const run = promisify(execFile);
 const cli = resolve(process.cwd(), "scripts/storecanvas.mjs");
@@ -201,4 +204,21 @@ describe("StoreCanvas agent CLI", () => {
       hint: expect.stringContaining('"screens"'),
     });
   });
+
+  it("refuses a project locale that would write renders outside the output folder", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "storecanvas-render-"));
+    try {
+      const project = JSON.parse(await readFile(resolve(process.cwd(), "example-project.json"), "utf8"));
+      const file = join(dir, "crafted.json");
+      await writeFile(file, JSON.stringify({ ...project, locale: "../../../../escaped", locales: ["../../../../escaped"] }));
+      const failure = await runCli("render", "--project", file, "--no-sync-app", "--output", join(dir, "out"), "--json")
+        .then(() => null, (error: { stdout: string }) => error);
+      expect(failure).not.toBeNull();
+      expect(JSON.parse(failure!.stdout)).toMatchObject({ ok: false, error: expect.stringContaining("Invalid locale") });
+      expect(existsSync(join(dir, "escaped"))).toBe(false);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }, 60_000);
 });
+
