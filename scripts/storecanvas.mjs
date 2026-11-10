@@ -1105,8 +1105,11 @@ async function renderCommand() {
     try {
       const response = await agentRequest("POST", "/api/project", project);
       project = response.state || project;
-    } catch {
-      // Rendering can still use the server's configured project when no app is running.
+    } catch (error) {
+      // Rendering continues with the app's current project, but say so: a
+      // rejected sync otherwise exports a different campaign without notice.
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`Warning: could not sync ${path.relative(root, resolveProjectFile()) || resolveProjectFile()} to ${baseUrl} (${message}). Rendering the app's current project instead.`);
     }
   }
   const outputDir = path.resolve(root, arg("--output", "exports/rendered"));

@@ -28,6 +28,7 @@ All notable changes to StoreCanvas are documented here. This project follows a l
 - Updated Next.js, React, Sharp, Vitest, Playwright, Vite, jsdom, and related test tooling to supported patched versions, with Node.js `>=22.13.0` matching pnpm 11's runtime requirement.
 - Made pnpm the single documented package-manager path and pinned the supported Node.js and pnpm versions.
 - Declared local development origins for the Next.js dev server so browser tests remain reproducible.
+- `storecanvas render` now warns when it cannot sync the project to the running app instead of silently rendering the app's current project, and the UI suite runs the documented `storecanvas render` against `next dev`.
 
 ### Fixed
 
