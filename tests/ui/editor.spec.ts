@@ -58,6 +58,19 @@ test.describe("StoreCanvas editor", () => {
     await expect(page.getByText("10 screens")).toBeVisible();
   });
 
+  test("exports the iPhone deck while other decks still need captures", async ({ page }) => {
+    test.setTimeout(150_000);
+    // The empty Apple Watch decks start from a capture-less watch story; their
+    // QA blockers must not stop the iPhone bundle the user is exporting.
+    await page.goto("/");
+    await expect(page.getByText("10 screens")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Preflight QA" })).toContainText("issues");
+
+    const download = page.waitForEvent("download", { timeout: 130_000 });
+    await page.getByRole("button", { name: "Export bundle" }).click();
+    expect((await download).suggestedFilename()).toMatch(/-ios-iphone-.*\.zip$/);
+  });
+
   test("keeps the canvas usable and exposes every editor panel on mobile", async ({ page }) => {
     for (const viewport of [
       { width: 390, height: 844 },

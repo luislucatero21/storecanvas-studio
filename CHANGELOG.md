@@ -17,6 +17,7 @@ All notable changes to StoreCanvas are documented here. This project follows a l
 
 ### Changed
 
+- Export bundles are gated only by QA blockers in the deck being exported (plus project-wide ones). Before, the capture-less Apple Watch starter decks blocked every export, including the example iPhone campaign.
 - Cleared the November 2026 high and critical audit advisories: Next.js 16.4.5 (image-optimizer RCE, `use cache` RCE and Server Actions DoS fixed in 16.4.1), Zod 4.6.7 (unbounded issue accumulation on large arrays; Zod 3 has no patched release), Vite 8.3 (`launch-editor` path check) and undici 8.12 through the existing override (TLS validation, redirect cache poisoning and decompression DoS).
 - Updated Next.js, React, Sharp, Vitest, Playwright, Vite, jsdom, and related test tooling to supported patched versions, with Node.js `>=22.13.0` matching pnpm 11's runtime requirement.
 - Made pnpm the single documented package-manager path and pinned the supported Node.js and pnpm versions.
