@@ -1,3 +1,8 @@
+import { execFile } from "node:child_process";
+import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { promisify } from "node:util";
 import { expect, test, type Page } from "@playwright/test";
 import baseline from "../../example-project.json";
 import { buildCampaignImportProposal, type AppStoreListing } from "../../src/lib/app-store-import";
@@ -86,6 +91,32 @@ test.describe("StoreCanvas editor", () => {
     await expect(page.locator('[data-render-valid="true"]')).toHaveCount(1);
     await page.waitForFunction(() => Array.from(document.images).every((image) => image.complete && image.naturalWidth > 0));
     expect(await violations()).toEqual([]);
+  });
+
+  // The README's agent workflow: `pnpm dev -p 3100`, then `pnpm storecanvas
+  // render`. The suite's web server is that same `next dev`, so this runs the
+  // real CLI against it (sync, render page, PNG capture) under the dev CSP and
+  // the API's cross-site checks.
+  test("renders the example deck through the documented storecanvas render CLI", async ({ baseURL }) => {
+    test.setTimeout(120_000);
+    const output = await mkdtemp(join(tmpdir(), "storecanvas-cli-render-"));
+    try {
+      const { stdout, stderr } = await promisify(execFile)(
+        process.execPath,
+        [resolve("scripts/storecanvas.mjs"), "render", "--project", "example-project.json", "--device", "iphone", "--locale", "en-US", "--output", output, "--json"],
+        { env: { ...process.env, STORECANVAS_URL: baseURL }, timeout: 100_000 },
+      );
+      expect(stderr).not.toContain("could not sync");
+      expect(JSON.parse(stdout)).toMatchObject({ command: "render", count: baseline.slidesByDevice.iphone.length });
+
+      const folder = join(output, "iphone", "1320x2868", "en-US");
+      const files = (await readdir(folder)).filter((file) => file.endsWith(".png"));
+      expect(files).toHaveLength(baseline.slidesByDevice.iphone.length);
+      const png = await readFile(join(folder, files[0]));
+      expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1320, 2868]);
+    } finally {
+      await rm(output, { recursive: true, force: true });
+    }
   });
 
   test("keeps the canvas usable and exposes every editor panel on mobile", async ({ page }) => {

@@ -205,6 +205,21 @@ describe("StoreCanvas agent CLI", () => {
     });
   });
 
+  it("warns instead of silently rendering another project when the project sync fails", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "storecanvas-render-"));
+    try {
+      const failure = await run(
+        process.execPath,
+        [cli, "render", "--project", "example-project.json", "--device", "iphone", "--output", join(dir, "out"), "--json"],
+        { cwd: process.cwd(), env: { ...process.env, OPENAI_API_KEY: "", STORECANVAS_URL: "http://127.0.0.1:9" } },
+      ).then(() => null, (error: { stderr: string }) => error);
+      expect(failure).not.toBeNull();
+      expect(failure!.stderr).toContain("Warning: could not sync example-project.json to http://127.0.0.1:9");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }, 60_000);
+
   it("refuses a project locale that would write renders outside the output folder", async () => {
     const dir = await mkdtemp(join(tmpdir(), "storecanvas-render-"));
     try {
